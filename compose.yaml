@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  nest-js-api:
+    build:
+      context: .
+      dockerfile: api/docker/nest-js-dev/Dockerfile
+      args:
+        BASE_IMAGE: ${BASE_IMAGE_NODE}
+    environment:
+      - APPLICATION_MODE=development
+    expose:
+      - 3000
+    volumes:
+      - ./api/src:/app/src
+      - ./api/package.json:/app/package.json
+      - ./api/package-lock.json:/app/package-lock.json
+    networks:
+      common:
+        aliases:
+          - nestjs.resource-manager
+
+  proxy:
+    build:
+      context: ./proxy
+      args:
+        BASE_IMAGE: ${BASE_IMAGE_NGINX}
+    environment:
+      - API_PROXY_PASS="http://nest-js-api:3000"
+      - EXTERNAL_API_PORT_HTTP=${EXTERNAL_API_PORT_HTTP}
+    depends_on:
+      - nest-js-api
+    ports:
+      - target: 3000
+        published: ${EXTERNAL_API_PORT_HTTP}
+    networks:
+      common:
+        aliases:
+          - api.resource-manager.lab
+
+networks:
+  common:
+    driver: bridge
