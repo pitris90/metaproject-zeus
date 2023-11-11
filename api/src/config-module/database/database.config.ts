@@ -1,4 +1,3 @@
-
 export class Database {
 	constructor(
 		private _host: string,
@@ -6,8 +5,7 @@ export class Database {
 		private _username: string,
 		private _password: string,
 		private _database: string
-	) {
-	}
+	) {}
 
 	get host(): string {
 		return this._host;

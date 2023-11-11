@@ -9,11 +9,15 @@ export class ApiConfigService {
 
 	get applicationMode(): ApplicationMode {
 		const application = this.configService.get('APPLICATION_MODE');
-		switch(application) {
-			case 'development': return ApplicationMode.DEVELOPMENT;
-			case 'production': return ApplicationMode.PRODUCTION;
-			case 'test': return ApplicationMode.TEST;
-			default: throw new NotImplementedException("Invalid configuration option 'APPLICATION_MODE'")
+		switch (application) {
+			case 'development':
+				return ApplicationMode.DEVELOPMENT;
+			case 'production':
+				return ApplicationMode.PRODUCTION;
+			case 'test':
+				return ApplicationMode.TEST;
+			default:
+				throw new NotImplementedException("Invalid configuration option 'APPLICATION_MODE'");
 		}
 	}
 

@@ -1,14 +1,14 @@
-import { ApiConfigService } from '../api-config.service';
-import { ApplicationMode } from '../config-options/application-mode.enum';
 import { Injectable } from '@nestjs/common';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
+import { ApiConfigService } from '../api-config.service';
+import { ApplicationMode } from '../config-options/application-mode.enum';
 
 @Injectable()
-export class TypeormConfigService implements TypeOrmOptionsFactory{
+export class TypeormConfigService implements TypeOrmOptionsFactory {
 	constructor(private apiConfigService: ApiConfigService) {}
 	createTypeOrmOptions(): TypeOrmModuleOptions {
 		return {
-			type: "postgres",
+			type: 'postgres',
 			host: this.apiConfigService.database.host,
 			port: this.apiConfigService.database.port,
 			username: this.apiConfigService.database.username,
@@ -17,7 +17,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory{
 			entities: [],
 			autoLoadEntities: true,
 			synchronize: this.apiConfigService.applicationMode !== ApplicationMode.PRODUCTION,
-			keepConnectionAlive: this.apiConfigService.applicationMode == ApplicationMode.TEST,
+			keepConnectionAlive: this.apiConfigService.applicationMode == ApplicationMode.TEST
 		};
 	}
 }
