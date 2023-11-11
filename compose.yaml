@@ -7,7 +7,8 @@ services:
   nest-js-api:
     build:
       context: .
-      dockerfile: api/docker/nest-js-dev/Dockerfile
+      dockerfile: api/docker/nest-js/Dockerfile
+      target: dev
       args:
         BASE_IMAGE: ${BASE_IMAGE_NODE}
     environment:

@@ -1,0 +1,36 @@
+default:
+  tags:
+    - shared
+
+# run pipeline only on merge request
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: always
+    - when: never
+
+stages:
+  - test
+
+cache:
+  key: npm
+  policy: pull-push
+  paths:
+    - .npm/
+
+# ---------- stages
+test-lint:
+  image: node:21-alpine3.17
+  stage: test
+  script:
+    - cd api
+    - npm ci --cache .npm --prefer-offline
+    - npm run lint:ci
+  artifacts:
+    when: always
+    paths:
+      - api/test/_output/eslint.xml
+    reports:
+      junit:
+        - api/test/_output/eslint.xml
+    expire_in: 10 minutes
