@@ -21,9 +21,10 @@ services:
     expose:
       - 3000
     volumes:
-      - ./api/src:/app/src
-      - ./api/package.json:/app/package.json
-      - ./api/package-lock.json:/app/package-lock.json
+      - ./api/src:/app/api/src
+      - ./api/config:/app/api/config
+      - ./api/package.json:/app/api/package.json
+      - ./api/package-lock.json:/app/api/package-lock.json
     depends_on:
       - postgres
     networks:
