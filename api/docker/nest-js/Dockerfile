@@ -13,8 +13,13 @@ WORKDIR /app/api
 
 ENV NODE_ENV=development
 
+# ----- copy shared modules
+COPY shared/ /app/shared
+
+# ----- copy node_modules for API
 COPY --from=node_modules /app/api/node_modules /app/api/node_modules
 
+# ---- copy API files
 COPY api/tsconfig*.json /app/api/
 COPY api/nest-cli.json /app/api
 

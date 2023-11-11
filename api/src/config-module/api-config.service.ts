@@ -1,7 +1,7 @@
 import { Injectable, NotImplementedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Database } from 'resource-manager-database';
 import { ApplicationMode } from './config-options/application-mode.enum';
-import { Database } from './database/database.config';
 
 @Injectable()
 export class ApiConfigService {
