@@ -9,6 +9,7 @@ COPY api/tsconfig*.json /app/api/
 COPY api/nest-cli.json /app/api
 COPY api/node_modules /app/api/node_modules
 
+COPY api/config /app/api/config
 COPY api/src /app/api/src
 
 ENTRYPOINT npm run start:dev
