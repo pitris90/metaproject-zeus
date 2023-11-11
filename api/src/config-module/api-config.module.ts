@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ApiConfigService } from './api-config.service';
-import { TypeormConfigService } from './database/typeorm.config';
 
 @Module({
-	providers: [ApiConfigService, TypeormConfigService],
-	exports: [ApiConfigService, TypeormConfigService]
+	providers: [ApiConfigService],
+	exports: [ApiConfigService]
 })
 export class ApiConfigModule {}

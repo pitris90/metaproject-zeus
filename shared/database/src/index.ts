@@ -1,3 +1,3 @@
-import { Database } from './database.config';
+import { TypeormConfigService } from './config/typeorm.config';
 
-export { Database };
+export { TypeormConfigService };

@@ -1,18 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { ApiConfigService } from './config-module/api-config.service';
-import { ApplicationMode } from './config-module/config-options/application-mode.enum';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
-	const configService = app.get(ApiConfigService);
+	const configService = app.get(ConfigService);
 
 	app.enableCors({
-		origin: configService.corsOrigin
+		origin: configService.get('CORS_ALLOW_ORIGIN').split(',')
 	});
 
-	if (configService.applicationMode === ApplicationMode.DEVELOPMENT) {
+	if (configService.get('APPLICATION_MODE') === 'development') {
 		const swaggerConfig = new DocumentBuilder()
 			.setTitle('Resource manager')
 			.setDescription('Resource manager backend API')
