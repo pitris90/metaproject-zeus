@@ -30,4 +30,8 @@ export class ApiConfigService {
 
 		return new Database(host, port, username, password, database);
 	}
+
+	get corsOrigin(): string[] {
+		return this.configService.get('CORS_ALLOW_ORIGIN').split(',');
+	}
 }
