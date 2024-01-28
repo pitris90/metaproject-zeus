@@ -53,7 +53,15 @@ test-e2e:
     - !reference [.build-shared, script]
     - cd api
     - npm ci --cache .npm --prefer-offline
-    - npm run test:e2e
+    - npm run test:e2e:ci
+  artifacts:
+    when: always
+    paths:
+      - api/test/_output/jest-e2e.xml
+    reports:
+      junit:
+        - api/test/_output/jest-e2e.xml
+    expire_in: 10 minutes
 
 test-unit:
   image: ${TEST_IMAGE}
@@ -62,4 +70,12 @@ test-unit:
     - !reference [.build-shared, script]
     - cd api
     - npm ci --cache .npm --prefer-offline
-    - npm run test:unit
+    - npm run test:unit:ci
+  artifacts:
+    when: always
+    paths:
+      - api/test/_output/jest-unit.xml
+    reports:
+      junit:
+        - api/test/_output/jest-unit.xml
+    expire_in: 10 minutes
