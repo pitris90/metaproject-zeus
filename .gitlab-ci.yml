@@ -18,6 +18,9 @@ workflow:
 
 variables:
   TEST_IMAGE: "node:21-alpine3.17"
+  POSTGRES_DB: "resource-manager"
+  POSTGRES_USER: "test"
+  POSTGRES_PASSWORD: "test"
 
 stages:
   - test
@@ -49,6 +52,8 @@ test-lint:
 test-e2e:
   image: ${TEST_IMAGE}
   stage: test
+  services:
+    - postgres:16.0
   script:
     - !reference [.build-shared, script]
     - cd api
