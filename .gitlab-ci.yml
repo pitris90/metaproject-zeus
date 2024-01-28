@@ -9,6 +9,19 @@ workflow:
       when: always
     - when: never
 
+# ------------ private extensions
+.build-shared:
+  script:
+    - cd shared/database
+    - npm ci --cache .npm --prefer-offline
+    - cd ../..
+
+variables:
+  TEST_IMAGE: "node:21-alpine3.17"
+  POSTGRES_DB: "resource-manager"
+  POSTGRES_USER: "test"
+  POSTGRES_PASSWORD: "test"
+
 stages:
   - test
 
@@ -20,12 +33,11 @@ cache:
 
 # ---------- stages
 test-lint:
-  image: node:21-alpine3.17
+  image: ${TEST_IMAGE}
   stage: test
   script:
-    - cd shared/database
-    - npm ci --cache .npm --prefer-offline
-    - cd ../../api
+    - !reference [.build-shared, script]
+    - cd api
     - npm ci --cache .npm --prefer-offline
     - npm run lint:ci
   artifacts:
@@ -35,4 +47,40 @@ test-lint:
     reports:
       junit:
         - api/test/_output/eslint.xml
+    expire_in: 10 minutes
+
+test-e2e:
+  image: ${TEST_IMAGE}
+  stage: test
+  services:
+    - postgres:16.0
+  script:
+    - !reference [.build-shared, script]
+    - cd api
+    - npm ci --cache .npm --prefer-offline
+    - npm run test:e2e:ci
+  artifacts:
+    when: always
+    paths:
+      - api/test/_output/jest-e2e.xml
+    reports:
+      junit:
+        - api/test/_output/jest-e2e.xml
+    expire_in: 10 minutes
+
+test-unit:
+  image: ${TEST_IMAGE}
+  stage: test
+  script:
+    - !reference [.build-shared, script]
+    - cd api
+    - npm ci --cache .npm --prefer-offline
+    - npm run test:unit:ci
+  artifacts:
+    when: always
+    paths:
+      - api/test/_output/jest-unit.xml
+    reports:
+      junit:
+        - api/test/_output/jest-unit.xml
     expire_in: 10 minutes

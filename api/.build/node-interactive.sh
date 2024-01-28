@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/../../.build/includes/npm.sh"
 
 COMPOSER_DOCKER_ARGS=(
   --volume "${SCRIPT_DIR}/..:/app/api"
+  --volume "${SCRIPT_DIR}/../../shared:/app/shared"
   --workdir /app/api
 )
 
