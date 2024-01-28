@@ -1,7 +1,6 @@
 import { Injectable, NotImplementedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApplicationMode } from './config-options/application-mode.enum';
-import { Database } from './database/database.config';
 
 @Injectable()
 export class ApiConfigService {
@@ -19,20 +18,6 @@ export class ApiConfigService {
 			default:
 				throw new NotImplementedException("Invalid configuration option 'APPLICATION_MODE'");
 		}
-	}
-
-	get database(): Database {
-		const host = this.configService.get('POSTGRES_HOST');
-		const port = this.configService.get('POSTGRES_PORT');
-		const username = this.configService.get('POSTGRES_USER');
-		const password = this.configService.get('POSTGRES_PASSWORD');
-		const database = this.configService.get('POSTGRES_DATABASE');
-
-		if (!host || !port || !username || !database || !password) {
-			throw new Error(`Invalid database configuration: postgresql://${username}@${host}:${port}/${database}`);
-		}
-
-		return new Database(host, port, username, password, database);
 	}
 
 	get corsOrigin(): string[] {
