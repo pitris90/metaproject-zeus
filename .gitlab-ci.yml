@@ -23,7 +23,9 @@ test-lint:
   image: node:21-alpine3.17
   stage: test
   script:
-    - cd api
+    - cd shared/database
+    - npm ci --cache .npm --prefer-offline
+    - cd ../../api
     - npm ci --cache .npm --prefer-offline
     - npm run lint:ci
   artifacts:
