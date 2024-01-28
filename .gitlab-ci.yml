@@ -9,6 +9,16 @@ workflow:
       when: always
     - when: never
 
+# ------------ private extensions
+.build-shared:
+  script:
+    - cd shared/database
+    - npm ci --cache .npm --prefer-offline
+    - cd ../..
+
+variables:
+  TEST_IMAGE: "node:21-alpine3.17"
+
 stages:
   - test
 
@@ -20,12 +30,11 @@ cache:
 
 # ---------- stages
 test-lint:
-  image: node:21-alpine3.17
+  image: ${TEST_IMAGE}
   stage: test
   script:
-    - cd shared/database
-    - npm ci --cache .npm --prefer-offline
-    - cd ../../api
+    - !reference [.build-shared, script]
+    - cd api
     - npm ci --cache .npm --prefer-offline
     - npm run lint:ci
   artifacts:
@@ -36,3 +45,21 @@ test-lint:
       junit:
         - api/test/_output/eslint.xml
     expire_in: 10 minutes
+
+test-e2e:
+  image: ${TEST_IMAGE}
+  stage: test
+  script:
+    - !reference [.build-shared, script]
+    - cd api
+    - npm ci --cache .npm --prefer-offline
+    - npm run test:e2e
+
+test-unit:
+  image: ${TEST_IMAGE}
+  stage: test
+  script:
+    - !reference [.build-shared, script]
+    - cd api
+    - npm ci --cache .npm --prefer-offline
+    - npm run test:unit
