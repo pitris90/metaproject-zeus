@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 import { DatabaseFactory } from './database.factory';
+import { Permission } from '../models/user/permission';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -14,7 +15,10 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 			username: database.username,
 			password: database.password,
 			database: database.database,
-			entities: [],
+			entities: [
+				// user
+				Permission
+			],
 			autoLoadEntities: true,
 			synchronize: process.env['APPLICATION_MODE'] === 'development',
 			keepConnectionAlive: process.env['APPLICATION_MODE'] == 'test'
