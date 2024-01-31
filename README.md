@@ -5,34 +5,12 @@
 
 Resource manager BE.
 
-## Installation
-
-```bash
-$ npm install
-```
-
 ## Running the app
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
+1. Run bash script `./.build/prepare-dev.sh`
+2. Run `docker compose up`
 
 ## Test
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
+Unit tests: `./.build/tests-unit.sh` or `npm run test:unit` from `api/` folder
+E2E tests: `./.build/test-e2e.sh` or `npm run test:e2e` from `api/` folder
