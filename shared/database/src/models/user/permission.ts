@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Role } from './role';
 
 
 @Entity()
@@ -11,6 +12,9 @@ export class Permission {
 
 	@Column("text")
 	description: string;
+
+	@ManyToMany(() => Role, role => role.permissions)
+	roles: Role[];
 
 	@Column({
 		type: "timestamptz",
