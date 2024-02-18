@@ -5,6 +5,7 @@ import { TypeormConfigService } from 'resource-manager-database';
 import { validationSchema } from '../config/validationSchema.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PermissionModule } from './permission-module/permission.module';
 
 @Module({
 	imports: [
@@ -15,7 +16,8 @@ import { AppService } from './app.service';
 		TypeOrmModule.forRootAsync({
 			name: 'resourceBackendConnection',
 			useClass: TypeormConfigService
-		})
+		}),
+		PermissionModule
 	],
 	controllers: [AppController],
 	providers: [AppService]
