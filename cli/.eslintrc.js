@@ -8,7 +8,6 @@ module.exports = {
 		'plugin:import/typescript',
 		'prettier'
 	],
-	root: true,
 	env: {
 		node: true,
 		jest: true

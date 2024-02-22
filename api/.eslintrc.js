@@ -28,8 +28,7 @@ module.exports = {
 		'import/no-dynamic-require': ['warn'],
 		'import/no-unused-modules': ['warn'],
 		'import/order': ['warn'],
-		// TODO add back when logger works
-		// 'no-console': 'warn',
+		'no-console': 'warn',
 		'unused-imports/no-unused-imports': 'error'
 	}
 };
