@@ -34,6 +34,34 @@ services:
         aliases:
           - nestjs.resource-manager
 
+  nest-js-cli:
+    profiles:
+      - cli
+    build:
+      context: .
+      dockerfile: cli/docker/nest-js/Dockerfile
+      target: dev
+      args:
+        BASE_IMAGE: ${BASE_IMAGE_NODE}
+    environment:
+      - APPLICATION_MODE=development
+      - POSTGRES_HOST
+      - POSTGRES_PORT
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DATABASE
+    volumes:
+      - ./shared:/app/shared
+      - ./cli/src:/app/cli/src
+    depends_on:
+      - postgres
+    entrypoint: tail -f
+    networks:
+      common:
+        aliases:
+          - nestjs-cli.resource-manager
+
+
   postgres:
     image: ${BASE_IMAGE_POSTGRES}
     ports:

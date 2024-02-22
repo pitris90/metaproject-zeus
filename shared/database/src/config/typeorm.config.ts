@@ -24,6 +24,6 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 			autoLoadEntities: true,
 			synchronize: process.env['APPLICATION_MODE'] === 'development',
 			keepConnectionAlive: process.env['APPLICATION_MODE'] == 'test'
-		};
+		} as TypeOrmModuleOptions;
 	}
 }

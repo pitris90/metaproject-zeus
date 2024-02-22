@@ -9,4 +9,5 @@ export PROJECT_NAME
 mkdir -p "${SCRIPT_DIR}/../temp/bash_history"
 
 "${SCRIPT_DIR}/../api/.build/npm-install.sh"
+"${SCRIPT_DIR}/../cli/.build/npm-install.sh"
 "${SCRIPT_DIR}/../shared/.build/prepare-dev.sh"
