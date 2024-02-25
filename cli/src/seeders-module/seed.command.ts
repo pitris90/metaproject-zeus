@@ -2,6 +2,7 @@ import { DataSource, QueryFailedError } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { EntitySeederInterface } from './entity-seeders/entity-seeder.interface';
 import { PermissionSeeder } from './entity-seeders/permission-seeder.service';
+import { RoleSeeder } from './entity-seeders/role-seeder.service';
 
 @Injectable()
 export class SeedCommand {
@@ -9,9 +10,10 @@ export class SeedCommand {
 
 	constructor(
 		private readonly dataSource: DataSource,
-		readonly permissionSeeder: PermissionSeeder
+		readonly permissionSeeder: PermissionSeeder,
+		readonly roleSeeder: RoleSeeder
 	) {
-		this.seeders = [permissionSeeder];
+		this.seeders = [permissionSeeder, roleSeeder];
 	}
 
 	async run(): Promise<void> {
