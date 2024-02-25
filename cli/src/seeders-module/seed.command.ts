@@ -2,6 +2,8 @@ import { DataSource, QueryFailedError } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { EntitySeederInterface } from './entity-seeders/entity-seeder.interface';
 import { PermissionSeeder } from './entity-seeders/permission-seeder.service';
+import { RoleSeeder } from './entity-seeders/role-seeder.service';
+import { RolePermissionSeeder } from './entity-seeders/role-permission-seeder.service';
 
 @Injectable()
 export class SeedCommand {
@@ -9,22 +11,20 @@ export class SeedCommand {
 
 	constructor(
 		private readonly dataSource: DataSource,
-		readonly permissionSeeder: PermissionSeeder
+		readonly permissionSeeder: PermissionSeeder,
+		readonly roleSeeder: RoleSeeder,
+		readonly rolePermissionSeeder: RolePermissionSeeder
 	) {
-		this.seeders = [permissionSeeder];
+		this.seeders = [permissionSeeder, roleSeeder, rolePermissionSeeder];
 	}
 
 	async run(): Promise<void> {
 		for (const seeder of this.seeders) {
 			try {
 				const entity = seeder.getInsertEntity();
+				const insertElements = await seeder.getInsertElements();
 				console.log(`Seeding data for ${this.getClassName(entity.toString())}...`);
-				await this.dataSource
-					.createQueryBuilder()
-					.insert()
-					.into(entity)
-					.values(seeder.getInsertElements())
-					.execute();
+				await this.dataSource.createQueryBuilder().insert().into(entity).values(insertElements).execute();
 				console.log(`-- Done.`);
 			} catch (e) {
 				// error is because of duplicate value, we want to continue because seed arealy ran

@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { UsersModule } from '../users-module/users.module';
-import { CheckPermissionGuard } from './guards/check-permission.guard';
+import { AuthGuard } from './guards/auth.guard';
 
 @Module({
 	providers: [
 		{
 			provide: APP_GUARD,
-			useClass: CheckPermissionGuard
+			useClass: AuthGuard
 		}
 	],
-	exports: [],
 	imports: [UsersModule]
 })
-export class PermissionModule {}
+export class AuthModule {}

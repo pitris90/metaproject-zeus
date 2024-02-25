@@ -1,5 +1,7 @@
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Permission } from './permission';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { TimeEntity } from '../time-entity';
+import { User } from './user';
+import { RolePermission } from './role-permission';
 
 
 @Entity()
@@ -13,19 +15,12 @@ export class Role {
 	@Column()
 	name: string;
 
-	@ManyToMany(() => Permission, permission => permission.roles)
-	@JoinTable({name: 'role_permissions'})
-	permissions: Permission[];
+	@OneToMany(() => User, user => user.role)
+	users: User[];
 
-	@Column({
-		type: "timestamptz",
-		default: () => 'CURRENT_TIMESTAMP'
-	})
-	createdAt: string;
+	@OneToMany(() => RolePermission, rolePermission => rolePermission.role)
+	permissionsToRole: RolePermission[];
 
-	@Column({
-		type: "timestamptz",
-		default: () => 'CURRENT_TIMESTAMP',
-	})
-	updatedAt: string;
+	@Column(() => TimeEntity)
+	time: TimeEntity;
 }

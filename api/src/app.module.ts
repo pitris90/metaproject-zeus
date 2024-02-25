@@ -6,6 +6,8 @@ import { validationSchema } from '../config/validationSchema.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PermissionModule } from './permission-module/permission.module';
+import { UsersModule } from './users-module/users.module';
+import { AuthModule } from './auth-module/auth.module';
 
 @Module({
 	imports: [
@@ -16,7 +18,9 @@ import { PermissionModule } from './permission-module/permission.module';
 		TypeOrmModule.forRootAsync({
 			useClass: TypeormConfigService
 		} as TypeOrmModuleAsyncOptions),
-		PermissionModule
+		AuthModule,
+		PermissionModule,
+		UsersModule
 	],
 	controllers: [AppController],
 	providers: [AppService]
