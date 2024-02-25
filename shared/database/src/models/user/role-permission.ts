@@ -4,7 +4,7 @@ import { TimeEntity } from '../time-entity';
 import { Role } from './role';
 
 @Entity()
-export class RolePermission extends TimeEntity {
+export class RolePermission {
 	@PrimaryGeneratedColumn()
 	id: number;
 
@@ -19,4 +19,7 @@ export class RolePermission extends TimeEntity {
 
 	@ManyToOne(() => Role, role => role.permissionsToRole)
 	role: Role;
+
+	@Column(() => TimeEntity)
+	time: TimeEntity;
 }

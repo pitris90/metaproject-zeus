@@ -4,7 +4,7 @@ import { Role } from './role';
 
 @Entity()
 @Unique("externalLogin", ["source", "externalId"])
-export class User extends TimeEntity {
+export class User {
 	@PrimaryGeneratedColumn()
 	id: number;
 
@@ -19,4 +19,7 @@ export class User extends TimeEntity {
 
 	@ManyToOne(() => Role, role => role.users)
 	role: Role;
+
+	@Column(() => TimeEntity)
+	time: TimeEntity;
 }

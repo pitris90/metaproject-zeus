@@ -1,10 +1,10 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { TimeEntity } from '../time-entity';
 import { RolePermission } from './role-permission';
+import { TimeEntity } from '../time-entity';
 
 
 @Entity()
-export class Permission extends TimeEntity {
+export class Permission {
 	@PrimaryGeneratedColumn()
 	id: number;
 
@@ -16,4 +16,7 @@ export class Permission extends TimeEntity {
 
 	@OneToMany(() => RolePermission, rolePermission => rolePermission.permission)
 	permissionsToRole: RolePermission[];
+
+	@Column(() => TimeEntity)
+	time: TimeEntity;
 }
