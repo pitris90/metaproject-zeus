@@ -4,6 +4,7 @@ import { Permission } from '../models/user/permission';
 import { Injectable } from '@nestjs/common';
 import { Role } from '../models/user/role';
 import { User } from '../models/user/user';
+import { RolePermission } from '../models/user/role-permission';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -21,6 +22,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				// user
 				Permission,
 				Role,
+				RolePermission,
 				User
 			],
 			autoLoadEntities: true,
