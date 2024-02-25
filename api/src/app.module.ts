@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { PermissionModule } from './permission-module/permission.module';
 import { UsersModule } from './users-module/users.module';
 import { AuthModule } from './auth-module/auth.module';
+import { ProjectModule } from './project-module/project.module';
 
 @Module({
 	imports: [
@@ -20,7 +21,8 @@ import { AuthModule } from './auth-module/auth.module';
 		} as TypeOrmModuleAsyncOptions),
 		AuthModule,
 		PermissionModule,
-		UsersModule
+		UsersModule,
+		ProjectModule
 	],
 	controllers: [AppController],
 	providers: [AppService]
