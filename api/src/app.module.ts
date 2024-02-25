@@ -18,9 +18,9 @@ import { AuthModule } from './auth-module/auth.module';
 		TypeOrmModule.forRootAsync({
 			useClass: TypeormConfigService
 		} as TypeOrmModuleAsyncOptions),
+		AuthModule,
 		PermissionModule,
-		UsersModule,
-		AuthModule
+		UsersModule
 	],
 	controllers: [AppController],
 	providers: [AppService]

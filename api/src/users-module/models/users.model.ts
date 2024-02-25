@@ -11,4 +11,13 @@ export class UsersModel {
 			id
 		});
 	}
+
+	async getUserRole(id: number) {
+		return this.dataSource.getRepository(User).findOne({
+			where: {
+				id
+			},
+			relations: ['role', 'role.permissionsToRole.permission']
+		});
+	}
 }
