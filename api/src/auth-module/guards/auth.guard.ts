@@ -1,10 +1,14 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { UsersModel } from '../../users-module/models/users.model';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-	constructor(private readonly reflector: Reflector) {}
+	constructor(
+		private readonly usersModel: UsersModel,
+		private readonly reflector: Reflector
+	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
 		const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -24,6 +28,12 @@ export class AuthGuard implements CanActivate {
 			throw new UnauthorizedException();
 		}
 
+		const user = await this.usersModel.findUserById(userId);
+		if (!user) {
+			throw new UnauthorizedException();
+		}
+
+		request.user = user;
 		return true;
 	}
 }
