@@ -1,9 +1,10 @@
 import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Permission } from './permission';
+import { TimeEntity } from '../time-entity';
 
 
 @Entity()
-export class Role {
+export class Role extends TimeEntity {
 	@PrimaryGeneratedColumn()
 	id: number;
 
@@ -16,16 +17,4 @@ export class Role {
 	@ManyToMany(() => Permission, permission => permission.roles)
 	@JoinTable({name: 'role_permissions'})
 	permissions: Permission[];
-
-	@Column({
-		type: "timestamptz",
-		default: () => 'CURRENT_TIMESTAMP'
-	})
-	createdAt: string;
-
-	@Column({
-		type: "timestamptz",
-		default: () => 'CURRENT_TIMESTAMP',
-	})
-	updatedAt: string;
 }

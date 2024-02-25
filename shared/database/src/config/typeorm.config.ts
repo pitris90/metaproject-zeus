@@ -3,6 +3,7 @@ import { DatabaseFactory } from './database.factory';
 import { Permission } from '../models/user/permission';
 import { Injectable } from '@nestjs/common';
 import { Role } from '../models/user/role';
+import { User } from '../models/user/user';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -19,7 +20,8 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 			entities: [
 				// user
 				Permission,
-				Role
+				Role,
+				User
 			],
 			autoLoadEntities: true,
 			synchronize: process.env['APPLICATION_MODE'] === 'development',
