@@ -12,6 +12,18 @@ export class ProjectService {
 		private readonly projectMapper: ProjectMapper
 	) {}
 
+	async getUserProjects(piId: number): Promise<ProjectDto[]> {
+		const projects = await this.dataSource
+			.createQueryBuilder(Project, 'project')
+			.innerJoinAndSelect('project.pi', 'pi')
+			.where('pi.id = :piId', { piId })
+			.getMany();
+
+		return projects.map((project) =>
+			this.projectMapper.toProjectDto(project.id, project.title, project.description, project.status, project.pi)
+		);
+	}
+
 	async requestProject(requestProjectDto: RequestProjectDto, piId: number): Promise<ProjectDto> {
 		return this.dataSource.transaction(async (manager) => {
 			const userRepository = manager.getRepository(User);
