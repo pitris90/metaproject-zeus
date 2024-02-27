@@ -1,5 +1,4 @@
-import { ProjectStatus } from 'resource-manager-database/dist/models/project/project';
-import { User } from 'resource-manager-database/dist/models/user/user';
+import { ProjectStatus, User } from 'resource-manager-database';
 import { ProjectDto } from '../dtos/project.dto';
 
 export class ProjectMapper {

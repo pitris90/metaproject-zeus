@@ -1,7 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
-import { Project, ProjectStatus } from 'resource-manager-database/dist/models/project/project';
-import { User } from 'resource-manager-database/dist/models/user/user';
+import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { RequestProjectDto } from '../dtos/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectMapper } from './project.mapper';

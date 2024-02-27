@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { User } from 'resource-manager-database/dist/models/user/user';
 import { Injectable } from '@nestjs/common';
+import { User } from 'resource-manager-database';
 
 @Injectable()
 export class UsersModel {

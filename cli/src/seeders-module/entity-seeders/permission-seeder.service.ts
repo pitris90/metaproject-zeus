@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EntityTarget } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import { Permission } from 'resource-manager-database/dist/models/user/permission';
+import { Permission } from 'resource-manager-database';
 import { EntitySeederInterface } from './entity-seeder.interface';
 
 @Injectable()

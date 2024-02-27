@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { User } from 'resource-manager-database/dist/models/user/user';
+import { User } from 'resource-manager-database';
 import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { RequestProjectDto } from '../dtos/request-project.dto';
