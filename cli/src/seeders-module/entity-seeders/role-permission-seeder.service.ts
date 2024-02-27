@@ -10,7 +10,7 @@ import { EntitySeederInterface } from './entity-seeder.interface';
 export class RolePermissionSeeder implements EntitySeederInterface<RolePermission> {
 	// role code_name -> list of permission code_name
 	private readonly rolePermissionMapping: Record<string, string[]> = {
-		user: ['request_project']
+		user: ['request_project', 'get_owned_projects']
 	};
 
 	constructor(private readonly dataSource: DataSource) {}

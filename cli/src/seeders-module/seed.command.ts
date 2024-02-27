@@ -20,25 +20,29 @@ export class SeedCommand {
 
 	async run(): Promise<void> {
 		for (const seeder of this.seeders) {
-			try {
-				const entity = seeder.getInsertEntity();
-				const insertElements = await seeder.getInsertElements();
-				console.log(`Seeding data for ${this.getClassName(entity.toString())}...`);
-				await this.dataSource.createQueryBuilder().insert().into(entity).values(insertElements).execute();
-				console.log(`-- Done.`);
-			} catch (e) {
-				// error is because of duplicate value, we want to continue because seed arealy ran
-				if (
-					e instanceof QueryFailedError &&
-					e.message.includes('duplicate key value violates unique constraint')
-				) {
-					console.log(`-- Table already contains data. Skipping...`);
-					continue;
-				}
+			const entity = seeder.getInsertEntity();
+			const insertElements = await seeder.getInsertElements();
+			console.log(`Seeding data for ${this.getClassName(entity.toString())}...`);
+			for (const element of insertElements) {
+				try {
+					console.log(`-- Inserting ${JSON.stringify(element)}...`);
+					await this.dataSource.createQueryBuilder().insert().into(entity).values(element).execute();
+				} catch (e) {
+					// error is because of duplicate value, we want to continue because seed arealy ran
+					if (
+						e instanceof QueryFailedError &&
+						e.message.includes('duplicate key value violates unique constraint')
+					) {
+						console.log(`---- Table already contains ${JSON.stringify(element)} data. Skipping...`);
+						continue;
+					}
 
-				throw e;
+					throw e;
+				}
 			}
 		}
+
+		console.log(`-- Done.`);
 	}
 
 	private getClassName(entity: string): string {
