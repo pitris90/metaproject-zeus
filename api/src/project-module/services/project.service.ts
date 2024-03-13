@@ -1,8 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { RequestProjectDto } from '../dtos/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
+import { ProjectRequestExistsException } from '../../error-module/errors/projects/project-request-exists.exception';
 import { ProjectMapper } from './project.mapper';
 
 @Injectable()
@@ -58,8 +59,7 @@ export class ProjectService {
 					e instanceof QueryFailedError &&
 					e.message.includes('duplicate key value violates unique constraint')
 				) {
-					// TODO edit when error module is created
-					throw new ConflictException('Project request exists');
+					throw new ProjectRequestExistsException();
 				}
 
 				throw e;
