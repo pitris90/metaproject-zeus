@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { User } from 'resource-manager-database';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { ProjectStatus, User } from 'resource-manager-database';
 import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { RequestProjectDto } from '../dtos/request-project.dto';
@@ -13,9 +13,12 @@ export class ProjectController {
 
 	@Get()
 	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
-	async getMyProjects(@RequestUser() user: User): Promise<{ projects: ProjectDto[] }> {
+	async getMyProjects(
+		@RequestUser() user: User,
+		@Query('status') status: string | null
+	): Promise<{ projects: ProjectDto[] }> {
 		return {
-			projects: await this.projectService.getUserProjects(user.id)
+			projects: await this.projectService.getUserProjects(user.id, this.getProjectStatus(status))
 		};
 	}
 
@@ -23,5 +26,16 @@ export class ProjectController {
 	@PermissionsCheck([PermissionEnum.REQUEST_PROJECT])
 	async requestProject(@Body() requestProjectDto: RequestProjectDto, @RequestUser() user: User): Promise<ProjectDto> {
 		return this.projectService.requestProject(requestProjectDto, user.id);
+	}
+
+	private getProjectStatus(status: string | null): ProjectStatus | null {
+		switch (status) {
+			case 'new':
+				return ProjectStatus.NEW;
+			case 'active':
+				return ProjectStatus.ACTIVE;
+			default:
+				return null;
+		}
 	}
 }

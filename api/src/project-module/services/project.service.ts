@@ -13,12 +13,17 @@ export class ProjectService {
 		private readonly projectMapper: ProjectMapper
 	) {}
 
-	async getUserProjects(piId: number): Promise<ProjectDto[]> {
-		const projects = await this.dataSource
+	async getUserProjects(piId: number, projectStatus: ProjectStatus | null): Promise<ProjectDto[]> {
+		const projectBuilder = this.dataSource
 			.createQueryBuilder(Project, 'project')
 			.innerJoinAndSelect('project.pi', 'pi')
-			.where('pi.id = :piId', { piId })
-			.getMany();
+			.where('pi.id = :piId', { piId });
+
+		if (projectStatus) {
+			projectBuilder.andWhere('project.status = :projectStatus', { projectStatus });
+		}
+
+		const projects = await projectBuilder.getMany();
 
 		return projects.map((project) =>
 			this.projectMapper.toProjectDto(project.id, project.title, project.description, project.status, project.pi)
