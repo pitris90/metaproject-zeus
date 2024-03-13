@@ -13,8 +13,10 @@ export class ProjectController {
 
 	@Get()
 	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
-	async getMyProjects(@RequestUser() user: User): Promise<ProjectDto[]> {
-		return this.projectService.getUserProjects(user.id);
+	async getMyProjects(@RequestUser() user: User): Promise<{ projects: ProjectDto[] }> {
+		return {
+			projects: await this.projectService.getUserProjects(user.id)
+		};
 	}
 
 	@Post()
