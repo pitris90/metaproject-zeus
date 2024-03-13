@@ -1,9 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { Permission } from './permission';
 import { TimeEntity } from '../time-entity';
 import { Role } from './role';
 
 @Entity()
+@Unique(['roleId', 'permissionId'])
 export class RolePermission {
 	@PrimaryGeneratedColumn()
 	id: number;

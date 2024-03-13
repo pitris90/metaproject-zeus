@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityTarget } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import { Permission } from 'resource-manager-database/dist/models/user/permission';
-import { RolePermission } from 'resource-manager-database/dist/models/user/role-permission';
-import { Role } from 'resource-manager-database/dist/models/user/role';
+import { Permission, Role, RolePermission } from 'resource-manager-database';
 import { EntitySeederInterface } from './entity-seeder.interface';
 
 @Injectable()
 export class RolePermissionSeeder implements EntitySeederInterface<RolePermission> {
 	// role code_name -> list of permission code_name
 	private readonly rolePermissionMapping: Record<string, string[]> = {
-		user: ['request_project']
+		user: ['request_project', 'get_owned_projects']
 	};
 
 	constructor(private readonly dataSource: DataSource) {}
@@ -50,8 +48,8 @@ export class RolePermissionSeeder implements EntitySeederInterface<RolePermissio
 				}
 
 				toInsert.push({
-					roleId: role.id,
-					permissionId: permission.id
+					roleId: role['id'],
+					permissionId: permission['id']
 				});
 			}
 		}
