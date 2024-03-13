@@ -6,6 +6,9 @@ This application provides REST API interface for resource manager.
 
 Resource manager BE.
 
+## First setup
+1. Create `.env` file in root of the folder with default values from `.env.example`. Change your values accordingly.
+
 ## Running the API
 
 1. Run bash script `./.build/prepare-dev.sh`
