@@ -25,4 +25,13 @@ export class ProjectModel {
 
 		return result.identifiers[0]['id'];
 	}
+
+	public async updateProject(manager: EntityManager, projectId: number, updatedValues: object): Promise<void> {
+		await manager
+			.createQueryBuilder()
+			.update(Project)
+			.set(updatedValues)
+			.where('id = :projectId', { projectId })
+			.execute();
+	}
 }
