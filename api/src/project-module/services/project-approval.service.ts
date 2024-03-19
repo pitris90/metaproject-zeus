@@ -30,13 +30,8 @@ export class ProjectApprovalService {
 				.values({ project: project, reviewerId: userId, status: ApprovalStatus.APPROVED })
 				.execute();
 
-			return this.projectMapper.toProjectDto(
-				project.id,
-				project.title,
-				project.description,
-				ProjectStatus.ACTIVE,
-				project.pi
-			);
+			project.status = ProjectStatus.ACTIVE;
+			return this.projectMapper.toProjectDto(project);
 		});
 	}
 
@@ -55,13 +50,8 @@ export class ProjectApprovalService {
 				.values({ project: project, reviewerId: userId, status: ApprovalStatus.REJECTED, description: reason })
 				.execute();
 
-			return this.projectMapper.toProjectDto(
-				project.id,
-				project.title,
-				project.description,
-				ProjectStatus.INACTIVE,
-				project.pi
-			);
+			project.status = ProjectStatus.INACTIVE;
+			return this.projectMapper.toProjectDto(project);
 		});
 	}
 

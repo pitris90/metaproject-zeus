@@ -25,7 +25,7 @@ export class ProjectDto {
 	 *
 	 * @example "new"
 	 */
-	status: string;
+	status: 'new' | 'active' | 'inactive';
 
 	@ApiProperty({ type: UserDto, description: 'The user who created the project' })
 	user: UserDto;

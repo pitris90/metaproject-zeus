@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { ProjectStatus, User } from 'resource-manager-database';
+import { User } from 'resource-manager-database';
 import { ApiBody, ApiConflictResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
@@ -9,6 +9,7 @@ import { ProjectService } from '../services/project.service';
 import { ProjectDto } from '../dtos/project.dto';
 import { MyProjectsDto } from '../dtos/my-projects.dto';
 import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
+import { ProjectMapper } from '../services/project.mapper';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -16,7 +17,10 @@ import { ProjectRequestExistsApiException } from '../../error-module/errors/proj
 @ApiTags('Project')
 @Controller('/project')
 export class ProjectController {
-	constructor(private readonly projectService: ProjectService) {}
+	constructor(
+		private readonly projectService: ProjectService,
+		private readonly projectMapper: ProjectMapper
+	) {}
 
 	@Get()
 	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
@@ -38,8 +42,9 @@ export class ProjectController {
 		@RequestUser() user: User,
 		@Query('status') status: 'new' | 'active' | 'inactive' | null
 	): Promise<MyProjectsDto> {
+		const projectStatus = this.projectMapper.toProjectStatus(status);
 		return {
-			projects: await this.projectService.getUserProjects(user.id, this.getProjectStatus(status))
+			projects: await this.projectService.getUserProjects(user.id, projectStatus)
 		};
 	}
 
@@ -62,16 +67,5 @@ export class ProjectController {
 	})
 	async requestProject(@Body() requestProjectDto: RequestProjectDto, @RequestUser() user: User): Promise<ProjectDto> {
 		return this.projectService.requestProject(requestProjectDto, user.id);
-	}
-
-	private getProjectStatus(status: string | null): ProjectStatus | null {
-		switch (status) {
-			case 'new':
-				return ProjectStatus.NEW;
-			case 'active':
-				return ProjectStatus.ACTIVE;
-			default:
-				return null;
-		}
 	}
 }
