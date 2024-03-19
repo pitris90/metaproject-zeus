@@ -3,8 +3,8 @@ import { DataSource, EntityManager } from 'typeorm';
 import { ApprovalStatus, Project, ProjectApproval, ProjectStatus } from 'resource-manager-database';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectModel } from '../models/project.model';
-import { ProjectNotFoundException } from '../../error-module/errors/projects/project-not-found.exception';
-import { ProjectHasApprovalException } from '../../error-module/errors/projects/project-has-approval.exception';
+import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
+import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
 import { ProjectMapper } from './project.mapper';
 
 @Injectable()
@@ -30,13 +30,8 @@ export class ProjectApprovalService {
 				.values({ project: project, reviewerId: userId, status: ApprovalStatus.APPROVED })
 				.execute();
 
-			return this.projectMapper.toProjectDto(
-				project.id,
-				project.title,
-				project.description,
-				ProjectStatus.ACTIVE,
-				project.pi
-			);
+			project.status = ProjectStatus.ACTIVE;
+			return this.projectMapper.toProjectDto(project);
 		});
 	}
 
@@ -55,13 +50,8 @@ export class ProjectApprovalService {
 				.values({ project: project, reviewerId: userId, status: ApprovalStatus.REJECTED, description: reason })
 				.execute();
 
-			return this.projectMapper.toProjectDto(
-				project.id,
-				project.title,
-				project.description,
-				ProjectStatus.INACTIVE,
-				project.pi
-			);
+			project.status = ProjectStatus.INACTIVE;
+			return this.projectMapper.toProjectDto(project);
 		});
 	}
 
@@ -77,11 +67,11 @@ export class ProjectApprovalService {
 			.getOne();
 
 		if (!project) {
-			throw new ProjectNotFoundException();
+			throw new ProjectNotFoundApiException();
 		}
 
 		if (project.status !== ProjectStatus.NEW) {
-			throw new ProjectHasApprovalException();
+			throw new ProjectHasApprovalApiException();
 		}
 
 		return project;

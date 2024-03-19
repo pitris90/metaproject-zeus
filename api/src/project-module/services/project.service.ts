@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
-import { RequestProjectDto } from '../dtos/request-project.dto';
+import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
-import { ProjectRequestExistsException } from '../../error-module/errors/projects/project-request-exists.exception';
+import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
 import { ProjectModel } from '../models/project.model';
 import { ProjectMapper } from './project.mapper';
 
@@ -27,9 +27,7 @@ export class ProjectService {
 
 		const projects = await projectBuilder.getMany();
 
-		return projects.map((project) =>
-			this.projectMapper.toProjectDto(project.id, project.title, project.description, project.status, project.pi)
-		);
+		return projects.map((project) => this.projectMapper.toProjectDto(project));
 	}
 
 	async requestProject(requestProjectDto: RequestProjectDto, piId: number): Promise<ProjectDto> {
@@ -42,20 +40,20 @@ export class ProjectService {
 
 			try {
 				const projectId = await this.projectModel.createProject(manager, requestProjectDto, user);
+				const project = await manager.getRepository(Project).findOneOrFail({
+					relations: ['pi'],
+					where: {
+						id: projectId
+					}
+				});
 
-				return this.projectMapper.toProjectDto(
-					projectId,
-					requestProjectDto.title,
-					requestProjectDto.description,
-					ProjectStatus.NEW,
-					user
-				);
+				return this.projectMapper.toProjectDto(project);
 			} catch (e) {
 				if (
 					e instanceof QueryFailedError &&
 					e.message.includes('duplicate key value violates unique constraint')
 				) {
-					throw new ProjectRequestExistsException();
+					throw new ProjectRequestExistsApiException();
 				}
 
 				throw e;
