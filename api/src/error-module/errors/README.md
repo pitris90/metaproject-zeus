@@ -1,3 +1,6 @@
+* Every exception in this folder has to override `code`, `httpMessage` and `httpStatus` for `Swagger` documentation and then send them to constructor for processing in exception filter.
+* Every exception in `errors` folder has to have suffix `.api-exception.ts` to be picked up by Swagger CLI Plugin.
+
 ## Projects
 
 * 10001 - Project already exists

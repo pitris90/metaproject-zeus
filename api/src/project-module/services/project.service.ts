@@ -3,7 +3,7 @@ import { DataSource, QueryFailedError } from 'typeorm';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { RequestProjectDto } from '../dtos/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
-import { ProjectRequestExistsException } from '../../error-module/errors/projects/project-request-exists.exception';
+import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
 import { ProjectModel } from '../models/project.model';
 import { ProjectMapper } from './project.mapper';
 
@@ -55,7 +55,7 @@ export class ProjectService {
 					e instanceof QueryFailedError &&
 					e.message.includes('duplicate key value violates unique constraint')
 				) {
-					throw new ProjectRequestExistsException();
+					throw new ProjectRequestExistsApiException();
 				}
 
 				throw e;

@@ -8,7 +8,7 @@ import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { ProjectService } from '../services/project.service';
 import { ProjectDto } from '../dtos/project.dto';
 import { MyProjectsDto } from '../dtos/my-projects.dto';
-import { ProjectRequestExistsException } from '../../error-module/errors/projects/project-request-exists.exception';
+import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -55,7 +55,7 @@ export class ProjectController {
 	})
 	@ApiConflictResponse({
 		description: 'A project request already exists.',
-		type: ProjectRequestExistsException
+		type: ProjectRequestExistsApiException
 	})
 	@ApiBody({
 		type: RequestProjectDto

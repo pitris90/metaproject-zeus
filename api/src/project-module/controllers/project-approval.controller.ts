@@ -15,8 +15,8 @@ import { ProjectRejectDto } from '../dtos/project-reject.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
-import { ProjectNotFoundException } from '../../error-module/errors/projects/project-not-found.exception';
-import { ProjectHasApprovalException } from '../../error-module/errors/projects/project-has-approval.exception';
+import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
+import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
 
 @ApiTags('Project')
 @Controller('/project/approval')
@@ -34,16 +34,12 @@ export class ProjectApprovalController {
 		type: ProjectDto
 	})
 	@ApiForbiddenResponse({
-		description: 'User does not have permission to approve projects.',
-		type: ForbiddenException
-	})
-	@ApiForbiddenResponse({
 		description: 'Project is already rejected or approved.',
-		type: ProjectHasApprovalException
+		type: ProjectHasApprovalApiException
 	})
 	@ApiNotFoundResponse({
 		description: 'Project does not exist.',
-		type: ProjectNotFoundException
+		type: ProjectNotFoundApiException
 	})
 	@ApiBody({
 		type: ProjectApproveDto,
@@ -72,11 +68,11 @@ export class ProjectApprovalController {
 	})
 	@ApiForbiddenResponse({
 		description: 'Project is already rejected or approved.',
-		type: ProjectHasApprovalException
+		type: ProjectHasApprovalApiException
 	})
 	@ApiNotFoundResponse({
 		description: 'Project does not exist.',
-		type: ProjectNotFoundException
+		type: ProjectNotFoundApiException
 	})
 	@ApiBody({
 		type: ProjectApproveDto,
