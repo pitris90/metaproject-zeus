@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { EntityManager } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { RequestProjectDto } from '../dtos/request-project.dto';
 
 @Injectable()
@@ -26,7 +27,11 @@ export class ProjectModel {
 		return result.identifiers[0]['id'];
 	}
 
-	public async updateProject(manager: EntityManager, projectId: number, updatedValues: object): Promise<void> {
+	public async updateProject(
+		manager: EntityManager,
+		projectId: number,
+		updatedValues: QueryDeepPartialEntity<Project>
+	): Promise<void> {
 		await manager
 			.createQueryBuilder()
 			.update(Project)
