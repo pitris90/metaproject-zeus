@@ -1,5 +1,4 @@
 import { Body, Controller, ForbiddenException, Post } from '@nestjs/common';
-import { User } from 'resource-manager-database';
 import {
 	ApiBody,
 	ApiForbiddenResponse,
@@ -17,6 +16,7 @@ import { PermissionsCheck } from '../../permission-module/decorators/permissions
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
+import { UserDto } from '../../users-module/dtos/user.dto';
 
 @ApiTags('Project')
 @Controller('/project/approval')
@@ -46,7 +46,7 @@ export class ProjectApprovalController {
 		description: 'The project to approve'
 	})
 	public async approveProject(
-		@RequestUser() user: User,
+		@RequestUser() user: UserDto,
 		@Body() projectApprovalDto: ProjectApproveDto
 	): Promise<ProjectDto> {
 		return this.projectApprovalService.approveProject(user.id, projectApprovalDto.projectId);
@@ -79,7 +79,7 @@ export class ProjectApprovalController {
 		description: 'The project to reject'
 	})
 	public async rejectProject(
-		@RequestUser() user: User,
+		@RequestUser() user: UserDto,
 		@Body() projectRejectDto: ProjectRejectDto
 	): Promise<ProjectDto> {
 		return this.projectApprovalService.rejectProject(user.id, projectRejectDto.projectId, projectRejectDto.reason);
