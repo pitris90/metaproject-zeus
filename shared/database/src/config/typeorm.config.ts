@@ -6,6 +6,7 @@ import { Role } from '../models/user/role';
 import { User } from '../models/user/user';
 import { RolePermission } from '../models/user/role-permission';
 import { Project } from '../models/project/project';
+import { ProjectApproval } from '../models/project/project-approval';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -26,7 +27,8 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				RolePermission,
 				User,
 				// project
-				Project
+				Project,
+				ProjectApproval
 			],
 			autoLoadEntities: true,
 			synchronize: process.env['APPLICATION_MODE'] === 'development',

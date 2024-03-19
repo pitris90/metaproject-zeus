@@ -4,7 +4,9 @@ import { Role } from './models/user/role';
 import { RolePermission } from './models/user/role-permission';
 import { User } from './models/user/user';
 import { Project } from './models/project/project';
-import {ProjectStatus} from './models/project/project';
+import { ProjectStatus } from './models/project/project';
+import { ProjectApproval } from './models/project/project-approval';
+import { ApprovalStatus } from './models/project/project-approval';
 
 export { TypeormConfigService };
-export { Permission, Role, RolePermission, User, Project, ProjectStatus };
+export { Permission, Role, RolePermission, User, Project, ProjectStatus, ProjectApproval, ApprovalStatus };
