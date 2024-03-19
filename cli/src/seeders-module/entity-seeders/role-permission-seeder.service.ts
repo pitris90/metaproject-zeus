@@ -4,11 +4,14 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
 import { Permission, Role, RolePermission } from 'resource-manager-database';
 import { EntitySeederInterface } from './entity-seeder.interface';
 
+const USER_PERMISSIONS = ['request_project', 'get_owned_projects'];
+
 @Injectable()
 export class RolePermissionSeeder implements EntitySeederInterface<RolePermission> {
 	// role code_name -> list of permission code_name
 	private readonly rolePermissionMapping: Record<string, string[]> = {
-		user: ['request_project', 'get_owned_projects']
+		user: USER_PERMISSIONS,
+		admin: [...USER_PERMISSIONS, 'project_approval']
 	};
 
 	constructor(private readonly dataSource: DataSource) {}

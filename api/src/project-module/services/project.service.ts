@@ -4,21 +4,28 @@ import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { RequestProjectDto } from '../dtos/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectRequestExistsException } from '../../error-module/errors/projects/project-request-exists.exception';
+import { ProjectModel } from '../models/project.model';
 import { ProjectMapper } from './project.mapper';
 
 @Injectable()
 export class ProjectService {
 	constructor(
 		private readonly dataSource: DataSource,
-		private readonly projectMapper: ProjectMapper
+		private readonly projectMapper: ProjectMapper,
+		private readonly projectModel: ProjectModel
 	) {}
 
-	async getUserProjects(piId: number): Promise<ProjectDto[]> {
-		const projects = await this.dataSource
+	async getUserProjects(piId: number, projectStatus: ProjectStatus | null): Promise<ProjectDto[]> {
+		const projectBuilder = this.dataSource
 			.createQueryBuilder(Project, 'project')
 			.innerJoinAndSelect('project.pi', 'pi')
-			.where('pi.id = :piId', { piId })
-			.getMany();
+			.where('pi.id = :piId', { piId });
+
+		if (projectStatus) {
+			projectBuilder.andWhere('project.status = :projectStatus', { projectStatus });
+		}
+
+		const projects = await projectBuilder.getMany();
 
 		return projects.map((project) =>
 			this.projectMapper.toProjectDto(project.id, project.title, project.description, project.status, project.pi)
@@ -33,25 +40,14 @@ export class ProjectService {
 				id: piId
 			});
 
-			const status = ProjectStatus.NEW;
 			try {
-				const result = await manager
-					.createQueryBuilder()
-					.insert()
-					.into(Project)
-					.values({
-						title: requestProjectDto.title,
-						description: requestProjectDto.description,
-						status,
-						pi: user
-					})
-					.execute();
+				const projectId = await this.projectModel.createProject(manager, requestProjectDto, user);
 
 				return this.projectMapper.toProjectDto(
-					result.identifiers[0]['id'],
+					projectId,
 					requestProjectDto.title,
 					requestProjectDto.description,
-					status,
+					ProjectStatus.NEW,
 					user
 				);
 			} catch (e) {
