@@ -11,6 +11,9 @@ export class RoleSeeder implements EntitySeederInterface<Role> {
 	}
 
 	public async getInsertElements(): Promise<QueryDeepPartialEntity<Role>[]> {
-		return [{ codeName: 'user', name: 'User' }];
+		return [
+			{ codeName: 'user', name: 'User' },
+			{ codeName: 'admin', name: 'Admin' }
+		];
 	}
 }
