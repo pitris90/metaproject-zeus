@@ -8,9 +8,9 @@ import {
 	ApiTags
 } from '@nestjs/swagger';
 import { ProjectApprovalService } from '../services/project-approval.service';
-import { ProjectApproveDto } from '../dtos/project-approve.dto';
+import { ProjectApproveDto } from '../dtos/input/project-approve.dto';
 import { ProjectDto } from '../dtos/project.dto';
-import { ProjectRejectDto } from '../dtos/project-reject.dto';
+import { ProjectRejectDto } from '../dtos/input/project-reject.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
 import { PermissionEnum } from '../../permission-module/models/permission.enum';

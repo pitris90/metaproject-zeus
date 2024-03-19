@@ -3,7 +3,7 @@ import { ProjectStatus, User } from 'resource-manager-database';
 import { ApiBody, ApiConflictResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
-import { RequestProjectDto } from '../dtos/request-project.dto';
+import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { ProjectService } from '../services/project.service';
 import { ProjectDto } from '../dtos/project.dto';

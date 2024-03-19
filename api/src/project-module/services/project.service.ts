@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
-import { RequestProjectDto } from '../dtos/request-project.dto';
+import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
 import { ProjectModel } from '../models/project.model';

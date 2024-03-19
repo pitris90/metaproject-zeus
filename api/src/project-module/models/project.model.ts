@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { EntityManager } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import { RequestProjectDto } from '../dtos/request-project.dto';
+import { RequestProjectDto } from '../dtos/input/request-project.dto';
 
 @Injectable()
 export class ProjectModel {
