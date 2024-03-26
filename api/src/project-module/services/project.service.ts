@@ -5,6 +5,7 @@ import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
 import { ProjectModel } from '../models/project.model';
+import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectMapper } from './project.mapper';
 
 @Injectable()
@@ -28,6 +29,21 @@ export class ProjectService {
 		const projects = await projectBuilder.getMany();
 
 		return projects.map((project) => this.projectMapper.toProjectDto(project));
+	}
+
+	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDto> {
+		const project = await this.dataSource
+			.createQueryBuilder(Project, 'project')
+			.innerJoinAndSelect('project.pi', 'pi')
+			.where('project.id = :projectId', { projectId })
+			.where('pi.id = :piId', { piId: userId })
+			.getOne();
+
+		if (!project) {
+			throw new ProjectNotFoundApiException();
+		}
+
+		return this.projectMapper.toProjectDto(project);
 	}
 
 	async requestProject(requestProjectDto: RequestProjectDto, piId: number): Promise<ProjectDto> {
