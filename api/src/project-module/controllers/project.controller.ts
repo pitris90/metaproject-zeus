@@ -17,7 +17,7 @@ import { ProjectService } from '../services/project.service';
 import { ProjectDto } from '../dtos/project.dto';
 import { MyProjectsDto } from '../dtos/my-projects.dto';
 import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
-import { ProjectMapper } from '../services/project.mapper';
+import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 
 /**

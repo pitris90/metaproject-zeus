@@ -6,7 +6,7 @@ import { ProjectDto } from '../dtos/project.dto';
 import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
 import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
-import { ProjectMapper } from './project.mapper';
+import { ProjectMapper } from '../mappers/project.mapper';
 
 @Injectable()
 export class ProjectService {

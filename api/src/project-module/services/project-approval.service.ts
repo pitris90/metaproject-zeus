@@ -5,7 +5,7 @@ import { ProjectDto } from '../dtos/project.dto';
 import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
-import { ProjectMapper } from './project.mapper';
+import { ProjectMapper } from '../mappers/project.mapper';
 
 @Injectable()
 export class ProjectApprovalService {
