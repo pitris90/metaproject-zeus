@@ -6,7 +6,7 @@ import { PermissionsCheck } from '../../permission-module/decorators/permissions
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { MemberService } from '../services/member.service';
-import { MemberDto } from '../dtos/member.dto';
+import { MemberListDto } from '../dtos/member-list.dto';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -21,13 +21,16 @@ export class MembersController {
 	})
 	@ApiOkResponse({
 		description: 'Members of the project.',
-		type: [MemberDto]
+		type: [MemberListDto]
 	})
 	@ApiConflictResponse({
 		description: 'Project not found or user has no access to this project.',
 		type: ProjectNotFoundApiException
 	})
-	async getProjectMembers(@Param('id') id: number, @RequestUser() user: UserDto) {
-		return this.memberService.getProjectMembers(id, user);
+	async getProjectMembers(@Param('id') id: number, @RequestUser() user: UserDto): Promise<MemberListDto> {
+		const members = await this.memberService.getProjectMembers(id, user);
+		return {
+			members
+		};
 	}
 }
