@@ -35,8 +35,7 @@ export class ProjectService {
 		const project = await this.dataSource
 			.createQueryBuilder(Project, 'project')
 			.innerJoinAndSelect('project.pi', 'pi')
-			.where('project.id = :projectId', { projectId })
-			.where('pi.id = :piId', { piId: userId })
+			.where('project.id = :projectId AND pi.id = :piId', { projectId, piId: userId })
 			.getOne();
 
 		if (!project) {
