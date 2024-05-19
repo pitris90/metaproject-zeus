@@ -16,27 +16,13 @@ export class ProjectService {
 		private readonly projectModel: ProjectModel
 	) {}
 
-	async getUserProjects(piId: number, projectStatus: ProjectStatus | null): Promise<ProjectDto[]> {
-		const projectBuilder = this.dataSource
-			.createQueryBuilder(Project, 'project')
-			.innerJoinAndSelect('project.pi', 'pi')
-			.where('pi.id = :piId', { piId });
-
-		if (projectStatus) {
-			projectBuilder.andWhere('project.status = :projectStatus', { projectStatus });
-		}
-
-		const projects = await projectBuilder.getMany();
-
+	async getUserProjects(userId: number, projectStatus: ProjectStatus | null): Promise<ProjectDto[]> {
+		const projects = await this.projectModel.getUserProjects(userId, projectStatus, false);
 		return projects.map((project) => this.projectMapper.toProjectDto(project));
 	}
 
 	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDto> {
-		const project = await this.dataSource
-			.createQueryBuilder(Project, 'project')
-			.innerJoinAndSelect('project.pi', 'pi')
-			.where('project.id = :projectId AND pi.id = :piId', { projectId, piId: userId })
-			.getOne();
+		const project = await this.projectModel.getUserProject(projectId, userId, null, false);
 
 		if (!project) {
 			throw new ProjectNotFoundApiException();
