@@ -38,7 +38,6 @@ export class MembersController {
 	})
 	async getProjectMembers(@Param('id') id: number, @RequestUser() user: UserDto): Promise<MemberListDto> {
 		const members = await this.memberService.getProjectMembers(id, user);
-		console.log(members);
 		return {
 			members
 		};
