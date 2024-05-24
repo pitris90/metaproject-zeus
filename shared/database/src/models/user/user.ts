@@ -16,8 +16,11 @@ export class User {
 	@Column({unsigned: true})
 	externalId: number;
 
-	@Column({ nullable: true })
+	@Column()
 	username: string;
+
+	@Column()
+	name: string;
 
 	@ManyToOne(() => Role, role => role.users)
 	role: Role;
@@ -28,6 +31,6 @@ export class User {
 	@Column(() => TimeEntity)
 	time: TimeEntity;
 
-	@ManyToOne(() => ProjectUser, projectUser => projectUser.user)
+	@OneToMany(() => ProjectUser, projectUser => projectUser.user)
 	memberships: ProjectUser[];
 }

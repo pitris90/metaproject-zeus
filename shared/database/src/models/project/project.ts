@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { User } from '../user/user';
 import { ProjectUser } from './project-user';
@@ -30,6 +30,6 @@ export class Project {
 	@Column(() => TimeEntity)
 	time: TimeEntity;
 
-	@ManyToOne(() => ProjectUser, projectUser => projectUser.project)
+	@OneToMany(() => ProjectUser, projectUser => projectUser.project)
 	members: ProjectUser[];
 }
