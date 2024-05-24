@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { Project, ProjectStatus, ProjectUserRole, User } from 'resource-manager-database';
-import { DataSource, EntityManager } from 'typeorm';
+import {
+	Project,
+	ProjectStatus,
+	ProjectUser,
+	ProjectUserRole,
+	ProjectUserStatus,
+	User
+} from 'resource-manager-database';
+import { Brackets, DataSource, EntityManager } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
 
@@ -73,11 +80,25 @@ export class ProjectModel {
 		projectStatus: ProjectStatus | null,
 		requireManagerPosition: boolean
 	) {
+		const existsQuery = this.dataSource
+			.createQueryBuilder()
+			.select('1')
+			.from(ProjectUser, 'pu')
+			.where('pu.projectId = :subProjectId AND pu.userId = :subUserId AND pu.status != :subStatus')
+			.getQuery();
+
 		const projectQuery = this.dataSource
 			.createQueryBuilder(Project, 'project')
 			.innerJoinAndSelect('project.pi', 'pi')
-			.leftJoinAndSelect('project.members', 'members')
-			.where('(pi.id = :piId OR members.user = :userId)', { piId: userId, userId: userId });
+			.where(
+				new Brackets((qb) => {
+					qb.where('pi.id = :piId', { piId: userId }).orWhere(`EXISTS (${existsQuery})`, {
+						subProjectId: projectId,
+						subUserId: userId,
+						subStatus: ProjectUserStatus.DENIED
+					});
+				})
+			);
 
 		if (requireManagerPosition) {
 			projectQuery.andWhere('pi.id = :userId OR members.role = :managerPosition', {

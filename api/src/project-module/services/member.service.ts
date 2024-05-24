@@ -26,13 +26,8 @@ export class MemberService {
 			throw new ProjectNotFoundApiException();
 		}
 
-		if (!project.members) {
-			return [];
-		}
-
-		// TODO user with user role and basic role in project can see only active members
-
-		return project.members.map(this.memberMapper.toMemberDto);
+		const members = await this.memberModel.getProjectMembers(projectId, user.id);
+		return members.map((member) => this.memberMapper.toMemberDto(member));
 	}
 
 	async addProjectMembers(projectId: number, userId: number, members: MemberRequestDto[]) {
