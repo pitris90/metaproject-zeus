@@ -16,7 +16,7 @@ export class User {
 	@Column({unsigned: true})
 	externalId: number;
 
-	@Column()
+	@Column({ nullable: true })
 	username: string;
 
 	@ManyToOne(() => Role, role => role.users)

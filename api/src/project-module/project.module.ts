@@ -9,10 +9,19 @@ import { ProjectApprovalService } from './services/project-approval.service';
 import { MembersController } from './controllers/members.controller';
 import { MemberMapper } from './mappers/member.mapper';
 import { MemberService } from './services/member.service';
+import { MemberModel } from './models/member.model';
 
 @Module({
 	imports: [UsersModule],
 	controllers: [ProjectController, ProjectApprovalController, MembersController],
-	providers: [ProjectService, ProjectMapper, ProjectModel, ProjectApprovalService, MemberMapper, MemberService]
+	providers: [
+		ProjectService,
+		ProjectMapper,
+		ProjectModel,
+		MemberModel,
+		ProjectApprovalService,
+		MemberMapper,
+		MemberService
+	]
 })
 export class ProjectModule {}

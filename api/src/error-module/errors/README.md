@@ -6,3 +6,4 @@
 * 10001 - Project already exists
 * 10002 - Project not found
 * 10003 - Project is already approved or denied
+* 10004 - Project has invalid status for this action

@@ -54,6 +54,19 @@ export class ProjectModel {
 		return projectBuilder.getMany();
 	}
 
+	public async updateProject(
+		manager: EntityManager,
+		projectId: number,
+		updatedValues: QueryDeepPartialEntity<Project>
+	): Promise<void> {
+		await manager
+			.createQueryBuilder()
+			.update(Project)
+			.set(updatedValues)
+			.where('id = :projectId', { projectId })
+			.execute();
+	}
+
 	private async getUserProjectBuilder(
 		projectId: number | null,
 		userId: number,
@@ -82,18 +95,5 @@ export class ProjectModel {
 		}
 
 		return projectQuery;
-	}
-
-	public async updateProject(
-		manager: EntityManager,
-		projectId: number,
-		updatedValues: QueryDeepPartialEntity<Project>
-	): Promise<void> {
-		await manager
-			.createQueryBuilder()
-			.update(Project)
-			.set(updatedValues)
-			.where('id = :projectId', { projectId })
-			.execute();
 	}
 }

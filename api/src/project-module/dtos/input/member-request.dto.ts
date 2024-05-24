@@ -6,7 +6,7 @@ export class MemberRequestDto {
 	/**
 	 * User role.
 	 */
-	role: string;
+	role: 'user' | 'manager';
 }
 
 export class MemberRequestListDto {
