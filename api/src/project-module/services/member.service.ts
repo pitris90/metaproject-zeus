@@ -9,6 +9,7 @@ import { ProjectModel } from '../models/project.model';
 import { MemberRequestDto } from '../dtos/input/member-request.dto';
 import { ProjectInvalidStatusApiException } from '../../error-module/errors/projects/project-invalid-status.api-exception';
 import { MemberModel } from '../models/member.model';
+import { PerunUserService } from '../../perun-module/services/perun-user.service';
 
 @Injectable()
 export class MemberService {
@@ -16,7 +17,8 @@ export class MemberService {
 		private readonly projectModel: ProjectModel,
 		private readonly memberModel: MemberModel,
 		private readonly memberMapper: MemberMapper,
-		private readonly dataSource: DataSource
+		private readonly dataSource: DataSource,
+		private readonly perunUserService: PerunUserService
 	) {}
 
 	async getProjectMembers(projectId: number, user: UserDto): Promise<MemberDto[]> {
@@ -43,7 +45,13 @@ export class MemberService {
 
 		await this.dataSource.transaction(async (manager) => {
 			for (const member of members) {
-				await this.memberModel.addMember(manager, projectId, member);
+				const perunUser = this.perunUserService.getUserById(member.id);
+
+				if (!perunUser) {
+					throw new Error(`User with id ${member.id} not found`);
+				}
+
+				await this.memberModel.addMember(manager, projectId, perunUser, member.role);
 			}
 		});
 	}

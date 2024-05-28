@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Brackets, DataSource, EntityManager } from 'typeorm';
 import { ProjectUser, ProjectUserRole, ProjectUserStatus, User } from 'resource-manager-database';
-import { MemberRequestDto } from '../dtos/input/member-request.dto';
+import { PerunUser } from '../../perun-module/entities/perun-user.entity';
 
 @Injectable()
 export class MemberModel {
@@ -31,14 +31,17 @@ export class MemberModel {
 			.getMany();
 	}
 
-	public async addMember(manager: EntityManager, projectId: number, member: MemberRequestDto) {
+	public async addMember(manager: EntityManager, projectId: number, member: PerunUser, role: string) {
 		await manager
 			.createQueryBuilder()
 			.insert()
 			.into(User)
 			.values({
 				externalId: member.id,
-				source: 'perun'
+				source: 'perun',
+				username: member.username,
+				name: member.name
+				// TODO load role from Perun
 			})
 			.orIgnore()
 			.execute();
@@ -50,7 +53,7 @@ export class MemberModel {
 			}
 		});
 
-		const projectRole = member.role === 'manager' ? ProjectUserRole.MANAGER : ProjectUserRole.USER;
+		const projectRole = role === 'manager' ? ProjectUserRole.MANAGER : ProjectUserRole.USER;
 
 		await manager
 			.createQueryBuilder()

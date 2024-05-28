@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PerunUser } from '../entities/perun-user.entity';
 
 // TODO will load users from perun
 const USERS = [
@@ -36,7 +37,11 @@ const USERS = [
 
 @Injectable()
 export class PerunUserService {
-	public getUsersByCriteria(query: string) {
+	public getUsersByCriteria(query: string): PerunUser[] {
 		return USERS.filter((user) => user.username.startsWith(query));
+	}
+
+	public getUserById(id: number): PerunUser | undefined {
+		return USERS.find((user) => user.id === id);
 	}
 }

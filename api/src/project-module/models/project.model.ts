@@ -80,11 +80,13 @@ export class ProjectModel {
 		projectStatus: ProjectStatus | null,
 		requireManagerPosition: boolean
 	) {
-		const existsQuery = this.dataSource
+		const existsInProjectQuery = this.dataSource
 			.createQueryBuilder()
 			.select('1')
 			.from(ProjectUser, 'pu')
-			.where('pu.projectId = :subProjectId AND pu.userId = :subUserId AND pu.status != :subStatus')
+			.where(
+				'pu.projectId = :subProjectId AND pu.userId = :subUserId AND pu.status != :subStatus AND pu.role IN (:...allowedRoles)'
+			)
 			.getQuery();
 
 		const projectQuery = this.dataSource
@@ -92,20 +94,16 @@ export class ProjectModel {
 			.innerJoinAndSelect('project.pi', 'pi')
 			.where(
 				new Brackets((qb) => {
-					qb.where('pi.id = :piId', { piId: userId }).orWhere(`EXISTS (${existsQuery})`, {
+					qb.where('pi.id = :piId', { piId: userId }).orWhere(`EXISTS (${existsInProjectQuery})`, {
 						subProjectId: projectId,
 						subUserId: userId,
-						subStatus: ProjectUserStatus.DENIED
+						subStatus: ProjectUserStatus.DENIED,
+						allowedRoles: requireManagerPosition
+							? [ProjectUserRole.MANAGER]
+							: [ProjectUserRole.MANAGER, ProjectUserRole.USER]
 					});
 				})
 			);
-
-		if (requireManagerPosition) {
-			projectQuery.andWhere('pi.id = :userId OR members.role = :managerPosition', {
-				userId,
-				managerPosition: ProjectUserRole.MANAGER
-			});
-		}
 
 		if (projectStatus) {
 			projectQuery.andWhere('project.status = :projectStatus', { projectStatus });

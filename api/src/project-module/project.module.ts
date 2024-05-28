@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { UsersModule } from '../users-module/users.module';
+import { PerunModule } from '../perun-module/perun.module';
 import { ProjectService } from './services/project.service';
 import { ProjectController } from './controllers/project.controller';
 import { ProjectMapper } from './mappers/project.mapper';
@@ -12,7 +13,7 @@ import { MemberService } from './services/member.service';
 import { MemberModel } from './models/member.model';
 
 @Module({
-	imports: [UsersModule],
+	imports: [UsersModule, PerunModule],
 	controllers: [ProjectController, ProjectApprovalController, MembersController],
 	providers: [
 		ProjectService,

@@ -23,4 +23,10 @@ export class UserDto {
 	 * @example "johndoe"
 	 */
 	username: string;
+	/**
+	 * User's full name
+	 *
+	 * @example "John Doe"
+	 */
+	name: string;
 }
