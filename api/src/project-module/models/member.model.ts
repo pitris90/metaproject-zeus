@@ -67,4 +67,13 @@ export class MemberModel {
 			})
 			.execute();
 	}
+
+	public async deleteMember(projectId: number, userId: number) {
+		await this.dataSource
+			.createQueryBuilder()
+			.delete()
+			.from(ProjectUser)
+			.where('projectId = :projectId AND id = :userId', { projectId, userId })
+			.execute();
+	}
 }

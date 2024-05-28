@@ -55,4 +55,18 @@ export class MemberService {
 			}
 		});
 	}
+
+	async deleteProjectMember(projectId: number, userId: number, memberId: number) {
+		const project = await this.projectModel.getUserProject(projectId, userId, null, true);
+
+		if (!project) {
+			throw new ProjectNotFoundApiException();
+		}
+
+		if (project.status !== ProjectStatus.ACTIVE && project.status !== ProjectStatus.NEW) {
+			throw new ProjectInvalidStatusApiException();
+		}
+
+		await this.memberModel.deleteMember(projectId, memberId);
+	}
 }

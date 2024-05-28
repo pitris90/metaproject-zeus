@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import {
 	ApiCreatedResponse,
 	ApiForbiddenResponse,
+	ApiNoContentResponse,
 	ApiNotFoundResponse,
 	ApiOkResponse,
 	ApiOperation,
@@ -67,5 +68,30 @@ export class MembersController {
 	) {
 		const membersToAdd = membersBody.members;
 		await this.memberService.addProjectMembers(id, user.id, membersToAdd);
+	}
+
+	@Delete(':projectId/members/:userId')
+	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
+	@ApiOperation({
+		summary: 'Deletes member from specific project',
+		description: 'Deletes member from specific project.'
+	})
+	@ApiNoContentResponse({
+		description: 'Member deleted from project.'
+	})
+	@ApiForbiddenResponse({
+		description: 'Project status is not valid for adding members.',
+		type: ProjectInvalidStatusApiException
+	})
+	@ApiNotFoundResponse({
+		description: 'Project not found or user has no access to this project.',
+		type: ProjectNotFoundApiException
+	})
+	async removeProjectMember(
+		@Param('projectId') projectId: number,
+		@Param('userId') memberId: number,
+		@RequestUser() user: UserDto
+	) {
+		await this.memberService.deleteProjectMember(projectId, user.id, memberId);
 	}
 }
