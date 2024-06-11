@@ -19,6 +19,8 @@ import { MyProjectsDto } from '../dtos/my-projects.dto';
 import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
+import { ProjectDetailDto } from '../dtos/project-detail.dto';
+import { ProjectPermissionService } from '../services/project-permission.service';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -28,6 +30,7 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 export class ProjectController {
 	constructor(
 		private readonly projectService: ProjectService,
+		private readonly projectPermissionService: ProjectPermissionService,
 		private readonly projectMapper: ProjectMapper
 	) {}
 
@@ -65,14 +68,20 @@ export class ProjectController {
 	})
 	@ApiOkResponse({
 		description: 'The project detail was successfully retrieved.',
-		type: ProjectDto
+		type: ProjectDetailDto
 	})
 	@ApiNotFoundResponse({
 		description: 'Project not found or user has no access to a project.',
 		type: ProjectNotFoundApiException
 	})
-	async projectDetail(@Param('id') id: number, @RequestUser() user: User): Promise<ProjectDto> {
-		return this.projectService.getProjectDetail(id, user.id);
+	async projectDetail(@Param('id') id: number, @RequestUser() user: User): Promise<ProjectDetailDto> {
+		const project = await this.projectService.getProjectDetail(id, user.id);
+		const permissions = await this.projectPermissionService.getUserPermissions(id, user.id);
+
+		return {
+			project,
+			permissions
+		};
 	}
 
 	@Post()

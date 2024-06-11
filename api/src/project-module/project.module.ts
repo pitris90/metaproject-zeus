@@ -11,6 +11,8 @@ import { MembersController } from './controllers/members.controller';
 import { MemberMapper } from './mappers/member.mapper';
 import { MemberService } from './services/member.service';
 import { MemberModel } from './models/member.model';
+import { ProjectPermissionService } from './services/project-permission.service';
+import { ProjectLockService } from './services/project-lock.service';
 
 @Module({
 	imports: [UsersModule, PerunModule],
@@ -20,6 +22,8 @@ import { MemberModel } from './models/member.model';
 		ProjectMapper,
 		ProjectModel,
 		MemberModel,
+		ProjectLockService,
+		ProjectPermissionService,
 		ProjectApprovalService,
 		MemberMapper,
 		MemberService

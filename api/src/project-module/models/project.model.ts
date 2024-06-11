@@ -15,6 +15,17 @@ import { RequestProjectDto } from '../dtos/input/request-project.dto';
 export class ProjectModel {
 	constructor(private readonly dataSource: DataSource) {}
 
+	public async getProject(projectId: number): Promise<Project | null> {
+		return this.dataSource.getRepository(Project).findOne({
+			relations: {
+				pi: true
+			},
+			where: {
+				id: projectId
+			}
+		});
+	}
+
 	public async createProject(
 		manager: EntityManager,
 		requestProjectDto: RequestProjectDto,

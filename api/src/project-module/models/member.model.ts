@@ -31,6 +31,18 @@ export class MemberModel {
 			.getMany();
 	}
 
+	public async isUserManager(projectId: number, userId: number) {
+		return this.dataSource
+			.createQueryBuilder()
+			.from(ProjectUser, 'pu')
+			.where('pu.projectId = :projectId AND pu.userId = :userId AND pu.role = :role', {
+				projectId,
+				userId,
+				role: ProjectUserRole.MANAGER
+			})
+			.getExists();
+	}
+
 	public async addMember(manager: EntityManager, projectId: number, member: PerunUser, role: string) {
 		await manager
 			.createQueryBuilder()
