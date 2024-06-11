@@ -80,7 +80,7 @@ export class ProjectController {
 
 		return {
 			project,
-			permissions
+			permissions: [...permissions]
 		};
 	}
 

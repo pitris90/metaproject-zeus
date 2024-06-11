@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Brackets, DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { ProjectUser, ProjectUserRole, ProjectUserStatus, User } from 'resource-manager-database';
 import { PerunUser } from '../../perun-module/entities/perun-user.entity';
 
@@ -7,40 +7,21 @@ import { PerunUser } from '../../perun-module/entities/perun-user.entity';
 export class MemberModel {
 	public constructor(private readonly dataSource: DataSource) {}
 
-	public async getProjectMembers(projectId: number, userId: number) {
-		return this.dataSource
+	public async getProjectMembers(projectId: number, userId: number, showAllMembers: boolean) {
+		const projectMemberBuilder = this.dataSource
 			.createQueryBuilder()
 			.select(['pu.id', 'pu.role', 'pu.status'])
 			.from(ProjectUser, 'pu')
 			.innerJoinAndSelect('pu.user', 'user')
 			.innerJoin('pu.project', 'project')
-			.where('pu.projectId = :projectId', { projectId })
-			.andWhere(
-				new Brackets((qb) => {
-					// is manager of current project
-					qb.where('(pu.role = :managerRole AND pu.userId = :puUserId)', {
-						managerRole: ProjectUserRole.MANAGER,
-						puUserId: userId
-					})
-						// is pi of current project
-						.orWhere('project.piId = :piId', { piId: userId })
-						// is neither - show only active members
-						.orWhere('pu.status = :activeStatus', { activeStatus: ProjectUserStatus.ACTIVE });
-				})
-			)
-			.getMany();
-	}
+			.where('pu.projectId = :projectId', { projectId });
 
-	public async isUserManager(projectId: number, userId: number) {
-		return this.dataSource
-			.createQueryBuilder()
-			.from(ProjectUser, 'pu')
-			.where('pu.projectId = :projectId AND pu.userId = :userId AND pu.role = :role', {
-				projectId,
-				userId,
-				role: ProjectUserRole.MANAGER
-			})
-			.getExists();
+		if (!showAllMembers) {
+			// show only active members
+			projectMemberBuilder.andWhere('pu.status = :status', { status: ProjectUserStatus.ACTIVE });
+		}
+
+		return projectMemberBuilder.getMany();
 	}
 
 	public async addMember(manager: EntityManager, projectId: number, member: PerunUser, role: string) {

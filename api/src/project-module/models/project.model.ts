@@ -47,22 +47,6 @@ export class ProjectModel {
 		return result.identifiers[0]['id'];
 	}
 
-	public async getUserProject(
-		projectId: number,
-		userId: number,
-		projectStatus: ProjectStatus | null,
-		requireManagerPosition: boolean
-	): Promise<Project | null> {
-		const projectBuilder = await this.getUserProjectBuilder(
-			projectId,
-			userId,
-			projectStatus,
-			requireManagerPosition
-		);
-
-		return projectBuilder.getOne();
-	}
-
 	public async getUserProjects(
 		userId: number,
 		projectStatus: ProjectStatus | null,

@@ -7,13 +7,16 @@ import { ProjectRequestExistsApiException } from '../../error-module/errors/proj
 import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
+import { ProjectPermissionEnum } from '../enums/project-permission.enum';
+import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
 export class ProjectService {
 	constructor(
 		private readonly dataSource: DataSource,
 		private readonly projectMapper: ProjectMapper,
-		private readonly projectModel: ProjectModel
+		private readonly projectModel: ProjectModel,
+		private readonly projectPermissionService: ProjectPermissionService
 	) {}
 
 	async getUserProjects(userId: number, projectStatus: ProjectStatus | null): Promise<ProjectDto[]> {
@@ -22,9 +25,10 @@ export class ProjectService {
 	}
 
 	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDto> {
-		const project = await this.projectModel.getUserProject(projectId, userId, null, false);
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+		const project = await this.projectModel.getProject(projectId);
 
-		if (!project) {
+		if (!userPermissions.has(ProjectPermissionEnum.VIEW_PROJECT) || !project) {
 			throw new ProjectNotFoundApiException();
 		}
 
