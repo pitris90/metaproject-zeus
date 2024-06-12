@@ -17,11 +17,16 @@ import { MemberService } from '../services/member.service';
 import { MemberListDto } from '../dtos/member-list.dto';
 import { MemberRequestListDto } from '../dtos/input/member-request.dto';
 import { ProjectInvalidStatusApiException } from '../../error-module/errors/projects/project-invalid-status.api-exception';
+import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
+import { MemberMapper } from '../mappers/member.mapper';
 
 @ApiTags('Project')
 @Controller('/project')
 export class MembersController {
-	public constructor(private readonly memberService: MemberService) {}
+	public constructor(
+		private readonly memberService: MemberService,
+		private readonly memberMapper: MemberMapper
+	) {}
 
 	@Get(':id/members')
 	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
@@ -37,10 +42,19 @@ export class MembersController {
 		description: 'Project not found or user has no access to this project.',
 		type: ProjectNotFoundApiException
 	})
-	async getProjectMembers(@Param('id') id: number, @RequestUser() user: UserDto): Promise<MemberListDto> {
-		const members = await this.memberService.getProjectMembers(id, user);
+	async getProjectMembers(
+		@Param('id') id: number,
+		@RequestUser() user: UserDto,
+		@GetPagination() pagination: Pagination
+	): Promise<MemberListDto> {
+		const [members, count] = await this.memberService.getProjectMembers(id, user, pagination);
 		return {
-			members
+			metadata: {
+				page: pagination.page,
+				recordsPerPage: members.length,
+				totalRecords: count
+			},
+			members: members.map((member) => this.memberMapper.toMemberDto(member))
 		};
 	}
 

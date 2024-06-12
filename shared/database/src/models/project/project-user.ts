@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from './project';
 import { User } from '../user/user';
+import { Unique } from 'typeorm/browser';
 
 export enum ProjectUserRole {
 	USER = "user",
@@ -15,6 +16,7 @@ export enum ProjectUserStatus {
 }
 
 @Entity()
+@Unique(["projectId", "userId"])
 export class ProjectUser {
 	@PrimaryGeneratedColumn()
 	id: number;

@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { ProjectUser, ProjectUserRole, ProjectUserStatus, User } from 'resource-manager-database';
 import { PerunUser } from '../../perun-module/entities/perun-user.entity';
+import { Pagination } from '../../config-module/decorators/get-pagination';
 
 @Injectable()
 export class MemberModel {
 	public constructor(private readonly dataSource: DataSource) {}
 
-	public async getProjectMembers(projectId: number, userId: number, showAllMembers: boolean) {
+	public async getProjectMembers(projectId: number, showAllMembers: boolean, pagination: Pagination) {
 		const projectMemberBuilder = this.dataSource
 			.createQueryBuilder()
 			.select(['pu.id', 'pu.role', 'pu.status'])
@@ -21,7 +22,9 @@ export class MemberModel {
 			projectMemberBuilder.andWhere('pu.status = :status', { status: ProjectUserStatus.ACTIVE });
 		}
 
-		return projectMemberBuilder.getMany();
+		projectMemberBuilder.offset(pagination.offset).limit(pagination.limit);
+
+		return projectMemberBuilder.getManyAndCount();
 	}
 
 	public async addMember(manager: EntityManager, projectId: number, member: PerunUser, role: string) {

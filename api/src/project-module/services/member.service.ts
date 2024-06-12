@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { ProjectUser } from 'resource-manager-database';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { UserDto } from '../../users-module/dtos/user.dto';
-import { MemberDto } from '../dtos/member.dto';
-import { MemberMapper } from '../mappers/member.mapper';
 import { ProjectModel } from '../models/project.model';
 import { MemberRequestDto } from '../dtos/input/member-request.dto';
 import { MemberModel } from '../models/member.model';
 import { PerunUserService } from '../../perun-module/services/perun-user.service';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
+import { Pagination } from '../../config-module/decorators/get-pagination';
 import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
@@ -16,13 +16,16 @@ export class MemberService {
 	constructor(
 		private readonly projectModel: ProjectModel,
 		private readonly memberModel: MemberModel,
-		private readonly memberMapper: MemberMapper,
 		private readonly dataSource: DataSource,
 		private readonly perunUserService: PerunUserService,
 		private readonly projectPermissionService: ProjectPermissionService
 	) {}
 
-	async getProjectMembers(projectId: number, user: UserDto): Promise<MemberDto[]> {
+	async getProjectMembers(
+		projectId: number,
+		user: UserDto,
+		pagination: Pagination
+	): Promise<[ProjectUser[], number]> {
 		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, user.id);
 		const project = await this.projectModel.getProject(projectId);
 
@@ -30,12 +33,11 @@ export class MemberService {
 			throw new ProjectNotFoundApiException();
 		}
 
-		const members = await this.memberModel.getProjectMembers(
+		return this.memberModel.getProjectMembers(
 			projectId,
-			user.id,
-			userPermissions.has(ProjectPermissionEnum.VIEW_ALL_MEMBERS)
+			userPermissions.has(ProjectPermissionEnum.VIEW_ALL_MEMBERS),
+			pagination
 		);
-		return members.map((member) => this.memberMapper.toMemberDto(member));
 	}
 
 	async addProjectMembers(projectId: number, userId: number, members: MemberRequestDto[]) {
