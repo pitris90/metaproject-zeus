@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { UsersModule } from '../users-module/users.module';
 import { PerunModule } from '../perun-module/perun.module';
 import { ProjectService } from './services/project.service';
@@ -15,8 +15,9 @@ import { ProjectPermissionService } from './services/project-permission.service'
 import { ProjectLockService } from './services/project-lock.service';
 
 @Module({
-	imports: [UsersModule, PerunModule],
+	imports: [forwardRef(() => UsersModule), PerunModule],
 	controllers: [ProjectController, ProjectApprovalController, MembersController],
+	exports: [ProjectPermissionService, MemberModel],
 	providers: [
 		ProjectService,
 		ProjectMapper,

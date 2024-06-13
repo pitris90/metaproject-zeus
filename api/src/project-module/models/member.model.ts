@@ -8,6 +8,16 @@ import { Pagination } from '../../config-module/decorators/get-pagination';
 export class MemberModel {
 	public constructor(private readonly dataSource: DataSource) {}
 
+	public async getMembersByExternalId(projectId: number, externalIds: number[]) {
+		return this.dataSource
+			.createQueryBuilder()
+			.select(['pu.id', 'u.externalId'])
+			.from(ProjectUser, 'pu')
+			.innerJoin('pu.user', 'u')
+			.where('pu.projectId = :projectId AND u.externalId IN (:...externalIds)', { projectId, externalIds })
+			.getMany();
+	}
+
 	public async getProjectMembers(projectId: number, showAllMembers: boolean, pagination: Pagination) {
 		const projectMemberBuilder = this.dataSource
 			.createQueryBuilder()
