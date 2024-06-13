@@ -1,7 +1,3 @@
-default:
-  tags:
-    - shared
-
 # run pipeline only on merge request
 workflow:
   rules:
