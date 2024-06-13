@@ -9,6 +9,7 @@ import { MemberModel } from '../models/member.model';
 import { PerunUserService } from '../../perun-module/services/perun-user.service';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 import { Pagination } from '../../config-module/decorators/get-pagination';
+import { Sorting } from '../../config-module/decorators/get-sorting';
 import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
@@ -24,7 +25,8 @@ export class MemberService {
 	async getProjectMembers(
 		projectId: number,
 		user: UserDto,
-		pagination: Pagination
+		pagination: Pagination,
+		sorting: Sorting | null
 	): Promise<[ProjectUser[], number]> {
 		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, user.id);
 		const project = await this.projectModel.getProject(projectId);
@@ -36,7 +38,8 @@ export class MemberService {
 		return this.memberModel.getProjectMembers(
 			projectId,
 			userPermissions.has(ProjectPermissionEnum.VIEW_ALL_MEMBERS),
-			pagination
+			pagination,
+			sorting
 		);
 	}
 

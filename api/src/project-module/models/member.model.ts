@@ -3,6 +3,7 @@ import { DataSource, EntityManager } from 'typeorm';
 import { ProjectUser, ProjectUserRole, ProjectUserStatus, User } from 'resource-manager-database';
 import { PerunUser } from '../../perun-module/entities/perun-user.entity';
 import { Pagination } from '../../config-module/decorators/get-pagination';
+import { Sorting } from '../../config-module/decorators/get-sorting';
 
 @Injectable()
 export class MemberModel {
@@ -18,7 +19,12 @@ export class MemberModel {
 			.getMany();
 	}
 
-	public async getProjectMembers(projectId: number, showAllMembers: boolean, pagination: Pagination) {
+	public async getProjectMembers(
+		projectId: number,
+		showAllMembers: boolean,
+		pagination: Pagination,
+		sorting: Sorting | null
+	) {
 		const projectMemberBuilder = this.dataSource
 			.createQueryBuilder()
 			.select(['pu.id', 'pu.role', 'pu.status'])
@@ -33,6 +39,22 @@ export class MemberModel {
 		}
 
 		projectMemberBuilder.offset(pagination.offset).limit(pagination.limit);
+
+		if (sorting) {
+			switch (sorting.columnAccessor) {
+				case 'username':
+					projectMemberBuilder.orderBy('user.username', sorting.direction);
+					break;
+				case 'name':
+					projectMemberBuilder.orderBy('user.name', sorting.direction);
+					break;
+				case 'status':
+					projectMemberBuilder.orderBy('pu.status', sorting.direction);
+					break;
+				default:
+					projectMemberBuilder.orderBy('pu.id', sorting.direction);
+			}
+		}
 
 		return projectMemberBuilder.getManyAndCount();
 	}

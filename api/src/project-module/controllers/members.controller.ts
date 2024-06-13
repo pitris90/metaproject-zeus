@@ -19,6 +19,7 @@ import { MemberRequestListDto } from '../dtos/input/member-request.dto';
 import { ProjectInvalidStatusApiException } from '../../error-module/errors/projects/project-invalid-status.api-exception';
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { MemberMapper } from '../mappers/member.mapper';
+import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -45,9 +46,10 @@ export class MembersController {
 	async getProjectMembers(
 		@Param('id') id: number,
 		@RequestUser() user: UserDto,
-		@GetPagination() pagination: Pagination
+		@GetPagination() pagination: Pagination,
+		@GetSorting() sorting: Sorting | null
 	): Promise<MemberListDto> {
-		const [members, count] = await this.memberService.getProjectMembers(id, user, pagination);
+		const [members, count] = await this.memberService.getProjectMembers(id, user, pagination, sorting);
 		return {
 			metadata: {
 				page: pagination.page,
