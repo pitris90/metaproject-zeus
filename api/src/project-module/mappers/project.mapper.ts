@@ -13,7 +13,8 @@ export class ProjectMapper {
 			title: project.title,
 			description: project.description,
 			status: this.fromProjectStatus(project.status),
-			user: this.userMapper.toUserDto(project.pi)
+			user: this.userMapper.toUserDto(project.pi),
+			createdAt: project.time.createdAt
 		};
 	}
 
