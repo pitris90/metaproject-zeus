@@ -9,7 +9,8 @@ export class UserMapper {
 			id: user.id,
 			source: user.source,
 			externalId: user.externalId,
-			username: user.username
+			username: user.username,
+			name: user.name
 		};
 	}
 }

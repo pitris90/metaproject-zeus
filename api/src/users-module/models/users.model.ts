@@ -7,8 +7,13 @@ export class UsersModel {
 	constructor(private readonly dataSource: DataSource) {}
 
 	async findUserById(id: number): Promise<User | null> {
-		return this.dataSource.getRepository(User).findOneBy({
-			id
+		return this.dataSource.getRepository(User).findOne({
+			relations: {
+				role: true
+			},
+			where: {
+				id
+			}
 		});
 	}
 

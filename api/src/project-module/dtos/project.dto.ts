@@ -27,6 +27,11 @@ export class ProjectDto {
 	 */
 	status: 'new' | 'active' | 'inactive';
 
+	/**
+	 * The project's creation date. ISO format.
+	 */
+	createdAt: string;
+
 	@ApiProperty({ type: UserDto, description: 'The user who created the project' })
 	user: UserDto;
 }

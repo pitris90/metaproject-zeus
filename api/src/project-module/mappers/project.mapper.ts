@@ -1,19 +1,20 @@
 import { Project, ProjectStatus } from 'resource-manager-database';
+import { Injectable } from '@nestjs/common';
 import { ProjectDto } from '../dtos/project.dto';
+import { UserMapper } from '../../users-module/services/user.mapper';
 
+@Injectable()
 export class ProjectMapper {
+	constructor(private readonly userMapper: UserMapper) {}
+
 	toProjectDto(project: Project): ProjectDto {
 		return {
 			id: project.id,
 			title: project.title,
 			description: project.description,
 			status: this.fromProjectStatus(project.status),
-			user: {
-				id: project.pi.id,
-				source: project.pi.source,
-				externalId: project.pi.externalId,
-				username: project.pi.username
-			}
+			user: this.userMapper.toUserDto(project.pi),
+			createdAt: project.time.createdAt
 		};
 	}
 

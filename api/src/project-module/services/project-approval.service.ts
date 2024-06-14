@@ -5,18 +5,23 @@ import { ProjectDto } from '../dtos/project.dto';
 import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
-import { ProjectMapper } from './project.mapper';
+import { ProjectMapper } from '../mappers/project.mapper';
+import { ProjectLockService } from './project-lock.service';
 
 @Injectable()
 export class ProjectApprovalService {
 	constructor(
 		private readonly dataSource: DataSource,
 		private readonly projectModel: ProjectModel,
-		private readonly projectMapper: ProjectMapper
+		private readonly projectMapper: ProjectMapper,
+		private readonly projectLockService: ProjectLockService
 	) {}
 
 	public async approveProject(userId: number, projectId: number): Promise<ProjectDto> {
 		return this.dataSource.transaction(async (manager) => {
+			// lock project before manipulation
+			await this.projectLockService.lockProject(manager, projectId);
+
 			const project = await this.getProject(manager, projectId);
 
 			// update project status
@@ -37,6 +42,8 @@ export class ProjectApprovalService {
 
 	public async rejectProject(userId: number, projectId: number, reason: string): Promise<ProjectDto> {
 		return this.dataSource.transaction(async (manager) => {
+			await this.projectLockService.lockProject(manager, projectId);
+
 			const project = await this.getProject(manager, projectId);
 
 			// update project status
@@ -58,12 +65,11 @@ export class ProjectApprovalService {
 	private async getProject(manager: EntityManager, projectId: number): Promise<Project> {
 		const projectRepository = manager.getRepository(Project);
 
-		// get project and lock it
+		// get project
 		const project = await projectRepository
 			.createQueryBuilder('project')
 			.innerJoinAndSelect('project.pi', 'pi')
 			.where('project.id = :projectId', { projectId })
-			.setLock('pessimistic_write')
 			.getOne();
 
 		if (!project) {

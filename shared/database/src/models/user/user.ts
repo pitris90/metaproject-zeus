@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } 
 import { TimeEntity } from '../time-entity';
 import { Role } from './role';
 import { Project } from '../project/project';
+import { ProjectUser } from '../project/project-user';
 
 @Entity()
 @Unique("externalLogin", ["source", "externalId"])
@@ -18,6 +19,9 @@ export class User {
 	@Column()
 	username: string;
 
+	@Column()
+	name: string;
+
 	@ManyToOne(() => Role, role => role.users)
 	role: Role;
 
@@ -26,4 +30,7 @@ export class User {
 
 	@Column(() => TimeEntity)
 	time: TimeEntity;
+
+	@OneToMany(() => ProjectUser, projectUser => projectUser.user)
+	memberships: ProjectUser[];
 }
