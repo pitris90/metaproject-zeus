@@ -1,8 +1,7 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from './project';
 import { User } from '../user/user';
-import { Unique } from 'typeorm/browser';
 
 export enum ProjectUserRole {
 	USER = "user",
