@@ -15,15 +15,17 @@ import { RequestProjectDto } from '../dtos/input/request-project.dto';
 export class ProjectModel {
 	constructor(private readonly dataSource: DataSource) {}
 
-	public async getProject(projectId: number): Promise<Project | null> {
-		return this.dataSource.getRepository(Project).findOne({
-			relations: {
-				pi: true
-			},
-			where: {
-				id: projectId
-			}
-		});
+	public async getProject(projectId: number, forUpdate: boolean = false): Promise<Project | null> {
+		const projectBuilder = this.dataSource
+			.getRepository(Project)
+			.createQueryBuilder('project')
+			.innerJoinAndSelect('project.pi', 'pi');
+
+		if (forUpdate) {
+			projectBuilder.useTransaction(true).setLock('pessimistic_write');
+		}
+
+		return projectBuilder.where('project.id = :projectId', { projectId }).getOne();
 	}
 
 	public async createProject(

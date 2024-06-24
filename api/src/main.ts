@@ -1,10 +1,14 @@
+import * as path from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { AppService } from './app.service';
 
 async function bootstrap() {
+	AppService.APP_ROOT = path.resolve(__dirname);
+
 	const app = await NestFactory.create(AppModule);
 	const configService = app.get(ConfigService);
 	const isDevelopmentMode = configService.get('APPLICATION_MODE') === 'development';
