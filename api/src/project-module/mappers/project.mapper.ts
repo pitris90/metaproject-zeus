@@ -18,14 +18,18 @@ export class ProjectMapper {
 		};
 	}
 
-	public fromProjectStatus(status: ProjectStatus): 'new' | 'active' | 'inactive' {
+	public fromProjectStatus(status: ProjectStatus): 'new' | 'active' | 'rejected' | 'archived' {
 		switch (status) {
 			case ProjectStatus.NEW:
 				return 'new';
 			case ProjectStatus.ACTIVE:
 				return 'active';
-			case ProjectStatus.INACTIVE:
-				return 'inactive';
+			case ProjectStatus.REJECTED:
+				return 'rejected';
+			case ProjectStatus.ARCHIVED:
+				return 'archived';
+			default:
+				throw new Error('Invalid project status');
 		}
 	}
 
@@ -35,8 +39,10 @@ export class ProjectMapper {
 				return ProjectStatus.NEW;
 			case 'active':
 				return ProjectStatus.ACTIVE;
-			case 'inactive':
-				return ProjectStatus.INACTIVE;
+			case 'rejected':
+				return ProjectStatus.REJECTED;
+			case 'archived':
+				return ProjectStatus.ARCHIVED;
 			default:
 				return null;
 		}

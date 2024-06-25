@@ -53,11 +53,11 @@ export class ProjectArchivalService {
 			}
 
 			// update project status
-			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.INACTIVE });
+			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.ARCHIVED });
 
 			// TODO create record about project archival
 
-			project.status = ProjectStatus.INACTIVE;
+			project.status = ProjectStatus.ARCHIVED;
 			return this.projectMapper.toProjectDto(project);
 		});
 	}

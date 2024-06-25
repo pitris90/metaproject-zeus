@@ -94,7 +94,7 @@ export class ProjectPermissionService {
 			permissions.add(ProjectPermissionEnum.EDIT_MANAGERS);
 
 			// project is inactive, can't edit it anymore
-			if (project.status === ProjectStatus.INACTIVE) {
+			if (project.status === ProjectStatus.REJECTED || project.status === ProjectStatus.ARCHIVED) {
 				this.removeEditPermissions(permissions);
 			}
 
@@ -119,7 +119,7 @@ export class ProjectPermissionService {
 		}
 
 		// project is inactive, can't edit it anymore
-		if (project.status === ProjectStatus.INACTIVE) {
+		if (project.status === ProjectStatus.REJECTED || project.status === ProjectStatus.ARCHIVED) {
 			this.removeEditPermissions(permissions);
 		}
 

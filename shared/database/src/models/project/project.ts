@@ -6,7 +6,8 @@ import { ProjectUser } from './project-user';
 export enum ProjectStatus {
 	NEW = "new",
 	ACTIVE = "active",
-	INACTIVE = "inactive"
+	REJECTED = "rejected",
+	ARCHIVED = "archived"
 }
 
 @Entity()

@@ -25,7 +25,7 @@ export class ProjectDto {
 	 *
 	 * @example "new"
 	 */
-	status: 'new' | 'active' | 'inactive';
+	status: 'new' | 'active' | 'rejected' | 'archived';
 
 	/**
 	 * The project's creation date. ISO format.
