@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 import { AppService } from './app.service';
 
 async function bootstrap() {
-	AppService.APP_ROOT = path.resolve(__dirname);
+	AppService.APP_ROOT = path.join(path.resolve(__dirname), '..', '..');
 
 	const app = await NestFactory.create(AppModule);
 	const configService = app.get(ConfigService);

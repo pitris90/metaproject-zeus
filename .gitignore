@@ -40,4 +40,4 @@ temp/
 
 .env
 
-uploads/
+api/uploads/

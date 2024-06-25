@@ -24,6 +24,7 @@ services:
       - 3000
     volumes:
       - ./shared:/app/shared
+      - ./api/uploads:/app/api/uploads
       - ./api/src:/app/api/src
       - ./api/config:/app/api/config
       - ./api/package.json:/app/api/package.json

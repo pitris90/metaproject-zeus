@@ -34,7 +34,7 @@ import { ProjectArchiveController } from './controllers/project-archive.controll
 				}
 
 				return {
-					dest: path.join(AppService.APP_ROOT, '..', destination)
+					dest: path.join(AppService.APP_ROOT, destination)
 				};
 			},
 			inject: [ConfigService]
