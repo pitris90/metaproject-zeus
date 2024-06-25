@@ -11,6 +11,7 @@ import { ProjectUser } from '../models/project/project-user';
 import { ResourceType } from '../models/resource/resource-type';
 import { Resource } from '../models/resource/resource';
 import { ProjectArchival } from '../models/project/project-archival';
+import { SnakeNamingStrategy } from '../strategies/snake-case.strategy';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -41,7 +42,8 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 			],
 			autoLoadEntities: true,
 			synchronize: process.env['APPLICATION_MODE'] === 'development',
-			keepConnectionAlive: process.env['APPLICATION_MODE'] == 'test'
+			keepConnectionAlive: process.env['APPLICATION_MODE'] == 'test',
+			namingStrategy: new SnakeNamingStrategy()
 		} as TypeOrmModuleOptions;
 	}
 }
