@@ -12,9 +12,11 @@ import { ProjectUserRole, ProjectUserStatus } from './models/project/project-use
 import { Resource} from './models/resource/resource';
 import { ResourceType } from './models/resource/resource-type';
 import { ProjectArchival } from './models/project/project-archival';
+import { File } from './models/file';
 
 export { TypeormConfigService };
 export { Permission, Role, RolePermission, User, Project, ProjectStatus, ProjectApproval, ApprovalStatus, ProjectUser };
 export { ProjectUserRole, ProjectUserStatus }
 export { Resource, ResourceType };
 export { ProjectArchival };
+export { File };

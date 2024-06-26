@@ -12,6 +12,7 @@ import { ResourceType } from '../models/resource/resource-type';
 import { Resource } from '../models/resource/resource';
 import { ProjectArchival } from '../models/project/project-archival';
 import { SnakeNamingStrategy } from '../strategies/snake-case.strategy';
+import { File } from '../models/file';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -38,7 +39,9 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				ProjectUser,
 				// resources
 				ResourceType,
-				Resource
+				Resource,
+				// misc
+				File
 			],
 			autoLoadEntities: true,
 			synchronize: process.env['APPLICATION_MODE'] === 'development',

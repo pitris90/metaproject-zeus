@@ -1,4 +1,4 @@
-import { Controller, Param, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Param, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProjectDto } from '../dtos/project.dto';
@@ -42,8 +42,9 @@ export class ProjectArchiveController {
 			})
 		)
 		file: Express.Multer.File,
-		@Param('id') projectId: number
+		@Param('id') projectId: number,
+		@Body() projectArchiveDto: ProjectArchiveDto
 	): Promise<ProjectDto> {
-		return this.projectArchivalService.archiveProject(user.id, projectId);
+		return this.projectArchivalService.archiveProject(user.id, projectId, projectArchiveDto, file);
 	}
 }

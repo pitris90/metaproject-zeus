@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { ProjectStatus } from 'resource-manager-database';
+import { ProjectStatus, File, ProjectArchival } from 'resource-manager-database';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectModel } from '../models/project.model';
 import { ProjectMapper } from '../mappers/project.mapper';
@@ -8,6 +8,7 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 import { InvalidPermissionException } from '../exceptions/invalid-permission.exception';
 import { ProjectInvalidStatusApiException } from '../../error-module/errors/projects/project-invalid-status.api-exception';
+import { ProjectArchiveDto } from '../dtos/input/project-archive.dto';
 import { ProjectLockService } from './project-lock.service';
 import { ProjectPermissionService } from './project-permission.service';
 
@@ -21,7 +22,12 @@ export class ProjectArchivalService {
 		private readonly projectPermissionService: ProjectPermissionService
 	) {}
 
-	public async archiveProject(userId: number, projectId: number): Promise<ProjectDto> {
+	public async archiveProject(
+		userId: number,
+		projectId: number,
+		projectArchiveDto: ProjectArchiveDto,
+		file: Express.Multer.File
+	): Promise<ProjectDto> {
 		return this.dataSource.transaction(async (manager) => {
 			// lock project before manipulation
 			await this.projectLockService.lockProject(manager, projectId);
@@ -55,7 +61,26 @@ export class ProjectArchivalService {
 			// update project status
 			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.ARCHIVED });
 
-			// TODO create record about project archival
+			// create file
+			const createdFile = await manager
+				.createQueryBuilder()
+				.insert()
+				.into(File)
+				.values({ originalName: file.originalname, mime: file.mimetype, path: file.path, size: file.size })
+				.returning('id')
+				.execute();
+
+			// create record about project archival
+			await manager
+				.createQueryBuilder()
+				.insert()
+				.into(ProjectArchival)
+				.values({
+					project: project,
+					reportFileId: createdFile.raw[0]['id'],
+					description: projectArchiveDto.message
+				})
+				.execute();
 
 			project.status = ProjectStatus.ARCHIVED;
 			return this.projectMapper.toProjectDto(project);
