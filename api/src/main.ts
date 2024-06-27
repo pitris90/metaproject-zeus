@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+import { json } from 'express';
 import { AppModule } from './app.module';
 import { AppService } from './app.service';
 
@@ -24,6 +25,8 @@ async function bootstrap() {
 	app.enableCors({
 		origin: configService.get('CORS_ALLOW_ORIGIN').split(',')
 	});
+
+	app.use(json({ limit: '10mb' }));
 
 	if (isDevelopmentMode) {
 		const swaggerConfig = new DocumentBuilder()

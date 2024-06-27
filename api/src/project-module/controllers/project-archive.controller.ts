@@ -37,7 +37,7 @@ export class ProjectArchiveController {
 	public async archiveProject(
 		@RequestUser() user: UserDto,
 		@UploadedFile(
-			new ParseFilePipeBuilder().addFileTypeValidator({ fileType: 'application/pdf' }).build({
+			new ParseFilePipeBuilder().build({
 				fileIsRequired: false
 			})
 		)
