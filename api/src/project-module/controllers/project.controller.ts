@@ -21,6 +21,7 @@ import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectDetailDto } from '../dtos/project-detail.dto';
 import { ProjectPermissionService } from '../services/project-permission.service';
+import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -52,11 +53,18 @@ export class ProjectController {
 	})
 	async getMyProjects(
 		@RequestUser() user: User,
-		@Query('status') status: 'new' | 'active' | 'inactive' | null
+		@Query('status') status: 'new' | 'active' | 'archived' | null,
+		@GetPagination() pagination: Pagination
 	): Promise<MyProjectsDto> {
 		const projectStatus = this.projectMapper.toProjectStatus(status);
+		const [projects, count] = await this.projectService.getUserProjects(user.id, projectStatus, pagination);
 		return {
-			projects: await this.projectService.getUserProjects(user.id, projectStatus)
+			metadata: {
+				page: pagination.page,
+				recordsPerPage: pagination.limit,
+				totalRecords: count
+			},
+			projects
 		};
 	}
 

@@ -10,6 +10,7 @@ import {
 import { Brackets, DataSource, EntityManager } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
+import { Pagination } from '../../config-module/decorators/get-pagination';
 
 @Injectable()
 export class ProjectModel {
@@ -52,38 +53,14 @@ export class ProjectModel {
 	public async getUserProjects(
 		userId: number,
 		projectStatus: ProjectStatus | null,
-		requireManagerPosition: boolean
-	): Promise<Project[]> {
-		const projectBuilder = await this.getUserProjectBuilder(null, userId, projectStatus, requireManagerPosition);
-		return projectBuilder.getMany();
-	}
-
-	public async updateProject(
-		manager: EntityManager,
-		projectId: number,
-		updatedValues: QueryDeepPartialEntity<Project>
-	): Promise<void> {
-		await manager
-			.createQueryBuilder()
-			.update(Project)
-			.set(updatedValues)
-			.where('id = :projectId', { projectId })
-			.execute();
-	}
-
-	private async getUserProjectBuilder(
-		projectId: number | null,
-		userId: number,
-		projectStatus: ProjectStatus | null,
-		requireManagerPosition: boolean
-	) {
+		requireManagerPosition: boolean,
+		pagination: Pagination
+	): Promise<[Project[], number]> {
 		const existsInProjectQuery = this.dataSource
 			.createQueryBuilder()
 			.select('1')
 			.from(ProjectUser, 'pu')
-			.where(
-				'pu.projectId = :subProjectId AND pu.userId = :subUserId AND pu.status != :subStatus AND pu.role IN (:...allowedRoles)'
-			)
+			.where('pu.userId = :subUserId AND pu.status != :subStatus AND pu.role IN (:...allowedRoles)')
 			.getQuery();
 
 		const projectQuery = this.dataSource
@@ -91,8 +68,8 @@ export class ProjectModel {
 			.innerJoinAndSelect('project.pi', 'pi')
 			.where(
 				new Brackets((qb) => {
+					// TODO add project ID to exists query
 					qb.where('pi.id = :piId', { piId: userId }).orWhere(`EXISTS (${existsInProjectQuery})`, {
-						subProjectId: projectId,
 						subUserId: userId,
 						subStatus: ProjectUserStatus.DENIED,
 						allowedRoles: requireManagerPosition
@@ -106,10 +83,21 @@ export class ProjectModel {
 			projectQuery.andWhere('project.status = :projectStatus', { projectStatus });
 		}
 
-		if (projectId) {
-			projectQuery.andWhere('project.id = :projectId', { projectId });
-		}
+		projectQuery.limit(pagination.limit).offset(pagination.offset);
 
-		return projectQuery;
+		return projectQuery.getManyAndCount();
+	}
+
+	public async updateProject(
+		manager: EntityManager,
+		projectId: number,
+		updatedValues: QueryDeepPartialEntity<Project>
+	): Promise<void> {
+		await manager
+			.createQueryBuilder()
+			.update(Project)
+			.set(updatedValues)
+			.where('id = :projectId', { projectId })
+			.execute();
 	}
 }

@@ -8,6 +8,7 @@ import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
+import { Pagination } from '../../config-module/decorators/get-pagination';
 import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
@@ -19,9 +20,13 @@ export class ProjectService {
 		private readonly projectPermissionService: ProjectPermissionService
 	) {}
 
-	async getUserProjects(userId: number, projectStatus: ProjectStatus | null): Promise<ProjectDto[]> {
-		const projects = await this.projectModel.getUserProjects(userId, projectStatus, false);
-		return projects.map((project) => this.projectMapper.toProjectDto(project));
+	async getUserProjects(
+		userId: number,
+		projectStatus: ProjectStatus | null,
+		pagination: Pagination
+	): Promise<[ProjectDto[], number]> {
+		const [projects, count] = await this.projectModel.getUserProjects(userId, projectStatus, false, pagination);
+		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
 	}
 
 	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDto> {
