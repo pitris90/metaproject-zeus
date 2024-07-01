@@ -11,6 +11,7 @@ import { Brackets, DataSource, EntityManager } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { Pagination } from '../../config-module/decorators/get-pagination';
+import { Sorting } from '../../config-module/decorators/get-sorting';
 
 @Injectable()
 export class ProjectModel {
@@ -54,7 +55,8 @@ export class ProjectModel {
 		userId: number,
 		projectStatus: ProjectStatus | null,
 		requireManagerPosition: boolean,
-		pagination: Pagination
+		pagination: Pagination,
+		sorting: Sorting
 	): Promise<[Project[], number]> {
 		const existsInProjectQuery = this.dataSource
 			.createQueryBuilder()
@@ -81,6 +83,18 @@ export class ProjectModel {
 
 		if (projectStatus) {
 			projectQuery.andWhere('project.status = :projectStatus', { projectStatus });
+		}
+
+		switch (sorting.columnAccessor) {
+			case 'title':
+				projectQuery.orderBy('project.title', sorting.direction);
+				break;
+			case 'id':
+				projectQuery.orderBy('project.id', sorting.direction);
+				break;
+			default:
+				projectQuery.orderBy('project.createdAt', sorting.direction);
+				break;
 		}
 
 		projectQuery.limit(pagination.limit).offset(pagination.offset);

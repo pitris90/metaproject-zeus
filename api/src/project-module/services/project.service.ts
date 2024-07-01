@@ -9,6 +9,7 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 import { Pagination } from '../../config-module/decorators/get-pagination';
+import { Sorting } from '../../config-module/decorators/get-sorting';
 import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
@@ -23,9 +24,16 @@ export class ProjectService {
 	async getUserProjects(
 		userId: number,
 		projectStatus: ProjectStatus | null,
-		pagination: Pagination
+		pagination: Pagination,
+		sorting: Sorting
 	): Promise<[ProjectDto[], number]> {
-		const [projects, count] = await this.projectModel.getUserProjects(userId, projectStatus, false, pagination);
+		const [projects, count] = await this.projectModel.getUserProjects(
+			userId,
+			projectStatus,
+			false,
+			pagination,
+			sorting
+		);
 		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
 	}
 
