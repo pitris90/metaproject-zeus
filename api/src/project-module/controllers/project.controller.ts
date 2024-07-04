@@ -20,7 +20,6 @@ import { ProjectRequestExistsApiException } from '../../error-module/errors/proj
 import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectDetailDto } from '../dtos/project-detail.dto';
-import { ProjectPermissionService } from '../services/project-permission.service';
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 
@@ -32,7 +31,6 @@ import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting'
 export class ProjectController {
 	constructor(
 		private readonly projectService: ProjectService,
-		private readonly projectPermissionService: ProjectPermissionService,
 		private readonly projectMapper: ProjectMapper
 	) {}
 
@@ -90,13 +88,7 @@ export class ProjectController {
 		type: ProjectNotFoundApiException
 	})
 	async projectDetail(@Param('id') id: number, @RequestUser() user: User): Promise<ProjectDetailDto> {
-		const project = await this.projectService.getProjectDetail(id, user.id);
-		const permissions = await this.projectPermissionService.getUserPermissions(id, user.id);
-
-		return {
-			project,
-			permissions: [...permissions]
-		};
+		return this.projectService.getProjectDetail(id, user.id);
 	}
 
 	@Post()

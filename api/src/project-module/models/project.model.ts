@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
 	Project,
+	ProjectArchival,
 	ProjectStatus,
 	ProjectUser,
 	ProjectUserRole,
@@ -28,6 +29,17 @@ export class ProjectModel {
 		}
 
 		return projectBuilder.where('project.id = :projectId', { projectId }).getOne();
+	}
+
+	public async getArchivalInfo(projectId: number): Promise<ProjectArchival | null> {
+		return this.dataSource.getRepository(ProjectArchival).findOne({
+			where: {
+				projectId: projectId
+			},
+			relations: {
+				reportFile: true
+			}
+		});
 	}
 
 	public async createProject(

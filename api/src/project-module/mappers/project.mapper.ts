@@ -1,7 +1,9 @@
-import { Project, ProjectStatus } from 'resource-manager-database';
+import { Project, ProjectArchival, ProjectStatus } from 'resource-manager-database';
 import { Injectable } from '@nestjs/common';
 import { ProjectDto } from '../dtos/project.dto';
 import { UserMapper } from '../../users-module/services/user.mapper';
+import { ArchivalInfoDto, ProjectDetailDto } from '../dtos/project-detail.dto';
+import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 
 @Injectable()
 export class ProjectMapper {
@@ -15,6 +17,18 @@ export class ProjectMapper {
 			status: this.fromProjectStatus(project.status),
 			user: this.userMapper.toUserDto(project.pi),
 			createdAt: project.time.createdAt
+		};
+	}
+
+	toProjectDetailDto(
+		project: Project,
+		permissions: Set<ProjectPermissionEnum>,
+		archivalInfo: ProjectArchival | null
+	): ProjectDetailDto {
+		return {
+			project: this.toProjectDto(project),
+			permissions: [...permissions],
+			archivalInfo: archivalInfo ? this.getProjectArchivalInfo(archivalInfo) : undefined
 		};
 	}
 
@@ -46,5 +60,21 @@ export class ProjectMapper {
 			default:
 				return null;
 		}
+	}
+
+	private getProjectArchivalInfo(archivalInfo: ProjectArchival): ArchivalInfoDto {
+		return {
+			description: archivalInfo.description,
+			archivedAt: archivalInfo.time.createdAt,
+			file: archivalInfo.reportFile
+				? {
+						id: archivalInfo.reportFile.id,
+						name: archivalInfo.reportFile.originalName,
+						size: archivalInfo.reportFile.size,
+						mime: archivalInfo.reportFile.mime,
+						createdAt: archivalInfo.reportFile.time.createdAt
+				  }
+				: undefined
+		};
 	}
 }
