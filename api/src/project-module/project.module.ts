@@ -19,6 +19,7 @@ import { ProjectPermissionService } from './services/project-permission.service'
 import { ProjectLockService } from './services/project-lock.service';
 import { ProjectArchivalService } from './services/project-archival.service';
 import { ProjectArchiveController } from './controllers/project-archive.controller';
+import { ProjectFileController } from './controllers/project-file.controller';
 
 @Module({
 	imports: [
@@ -40,7 +41,13 @@ import { ProjectArchiveController } from './controllers/project-archive.controll
 			inject: [ConfigService]
 		})
 	],
-	controllers: [ProjectController, ProjectApprovalController, MembersController, ProjectArchiveController],
+	controllers: [
+		ProjectController,
+		ProjectApprovalController,
+		MembersController,
+		ProjectArchiveController,
+		ProjectFileController
+	],
 	exports: [ProjectPermissionService, MemberModel],
 	providers: [
 		ProjectService,

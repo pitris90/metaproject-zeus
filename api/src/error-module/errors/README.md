@@ -7,6 +7,7 @@
 * 10002 - Project not found
 * 10003 - Project is already approved or denied
 * 10004 - Project has invalid status for this action
+* 10005 - Requested resource is invalid
 
 ## Users
 * 11000 - Invalid user
