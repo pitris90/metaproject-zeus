@@ -19,7 +19,7 @@ export class ProjectApproval {
 	project: Project;
 
 	@ManyToOne(() => User)
-	@JoinColumn({ name: "reviewerId" })
+	@JoinColumn({ name: "reviewer_id" })
 	reviewer: User;
 
 	@Column()

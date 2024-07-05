@@ -1,17 +1,9 @@
-import { Column } from 'typeorm';
+import { CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export class TimeEntity {
-	@Column({
-		name: "createdAt",
-		type: "timestamptz",
-		default: () => 'CURRENT_TIMESTAMP',
-	})
+	@CreateDateColumn()
 	createdAt: string;
 
-	@Column({
-		name: "updatedAt",
-		type: "timestamptz",
-		default: () => 'CURRENT_TIMESTAMP',
-	})
+	@UpdateDateColumn()
 	updatedAt: string;
 }

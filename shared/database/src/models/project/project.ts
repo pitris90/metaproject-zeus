@@ -1,12 +1,14 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { User } from '../user/user';
 import { ProjectUser } from './project-user';
+import { ProjectArchival } from './project-archival';
 
 export enum ProjectStatus {
 	NEW = "new",
 	ACTIVE = "active",
-	INACTIVE = "inactive"
+	REJECTED = "rejected",
+	ARCHIVED = "archived"
 }
 
 @Entity()
@@ -32,4 +34,7 @@ export class Project {
 
 	@OneToMany(() => ProjectUser, projectUser => projectUser.project)
 	members: ProjectUser[];
+
+	@OneToOne(() => ProjectArchival, archivalInfo => archivalInfo.project)
+	archivalInfo: ProjectArchival;
 }

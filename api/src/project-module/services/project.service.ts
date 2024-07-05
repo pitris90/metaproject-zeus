@@ -8,6 +8,9 @@ import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
+import { Pagination } from '../../config-module/decorators/get-pagination';
+import { Sorting } from '../../config-module/decorators/get-sorting';
+import { ProjectDetailDto } from '../dtos/project-detail.dto';
 import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
@@ -19,12 +22,23 @@ export class ProjectService {
 		private readonly projectPermissionService: ProjectPermissionService
 	) {}
 
-	async getUserProjects(userId: number, projectStatus: ProjectStatus | null): Promise<ProjectDto[]> {
-		const projects = await this.projectModel.getUserProjects(userId, projectStatus, false);
-		return projects.map((project) => this.projectMapper.toProjectDto(project));
+	async getUserProjects(
+		userId: number,
+		projectStatus: ProjectStatus | null,
+		pagination: Pagination,
+		sorting: Sorting
+	): Promise<[ProjectDto[], number]> {
+		const [projects, count] = await this.projectModel.getUserProjects(
+			userId,
+			projectStatus,
+			false,
+			pagination,
+			sorting
+		);
+		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
 	}
 
-	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDto> {
+	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDetailDto> {
 		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
 		const project = await this.projectModel.getProject(projectId);
 
@@ -32,7 +46,11 @@ export class ProjectService {
 			throw new ProjectNotFoundApiException();
 		}
 
-		return this.projectMapper.toProjectDto(project);
+		const archivalInfo = userPermissions.has(ProjectPermissionEnum.VIEW_ADVANCED_DETAILS)
+			? await this.projectModel.getArchivalInfo(projectId)
+			: null;
+
+		return this.projectMapper.toProjectDetailDto(project, userPermissions, archivalInfo);
 	}
 
 	async requestProject(requestProjectDto: RequestProjectDto, piId: number): Promise<ProjectDto> {

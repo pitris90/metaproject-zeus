@@ -8,6 +8,11 @@ import { RolePermission } from '../models/user/role-permission';
 import { Project } from '../models/project/project';
 import { ProjectApproval } from '../models/project/project-approval';
 import { ProjectUser } from '../models/project/project-user';
+import { ResourceType } from '../models/resource/resource-type';
+import { Resource } from '../models/resource/resource';
+import { ProjectArchival } from '../models/project/project-archival';
+import { SnakeNamingStrategy } from '../strategies/snake-case.strategy';
+import { File } from '../models/file';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -30,11 +35,18 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				// project
 				Project,
 				ProjectApproval,
-				ProjectUser
+				ProjectArchival,
+				ProjectUser,
+				// resources
+				ResourceType,
+				Resource,
+				// misc
+				File
 			],
 			autoLoadEntities: true,
 			synchronize: process.env['APPLICATION_MODE'] === 'development',
-			keepConnectionAlive: process.env['APPLICATION_MODE'] == 'test'
+			keepConnectionAlive: process.env['APPLICATION_MODE'] == 'test',
+			namingStrategy: new SnakeNamingStrategy()
 		} as TypeOrmModuleOptions;
 	}
 }

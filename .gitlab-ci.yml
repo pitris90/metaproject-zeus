@@ -59,11 +59,13 @@ test-e2e:
     - npm ci --cache .npm --prefer-offline
     - npm run test:e2e:ci
   variables:
+    APPLICATION_MODE: test
     POSTGRES_HOST: postgres
     POSTGRES_USER: test
     POSTGRES_PASSWORD: test
     POSTGRES_DATABASE: resource-manager
     POSTGRES_PORT: 5432
+    FILE_UPLOAD_FOLDER: /tmp
   artifacts:
     when: always
     paths:

@@ -47,7 +47,7 @@ export class ProjectApprovalService {
 			const project = await this.getProject(manager, projectId);
 
 			// update project status
-			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.INACTIVE });
+			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.REJECTED });
 
 			// create record about project rejection
 			await manager
@@ -57,7 +57,7 @@ export class ProjectApprovalService {
 				.values({ project: project, reviewerId: userId, status: ApprovalStatus.REJECTED, description: reason })
 				.execute();
 
-			project.status = ProjectStatus.INACTIVE;
+			project.status = ProjectStatus.REJECTED;
 			return this.projectMapper.toProjectDto(project);
 		});
 	}

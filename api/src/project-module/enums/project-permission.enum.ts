@@ -5,5 +5,6 @@ export enum ProjectPermissionEnum {
 	EDIT_MANAGERS = 'edit_managers', // manipulate with managers
 	EDIT_PUBLICATIONS = 'edit_publications', // edit publications
 	VIEW_PROJECT = 'view_project', // view basic project detail
-	VIEW_ALL_MEMBERS = 'view_all_members' // view all members (pending and inactive included)
+	VIEW_ALL_MEMBERS = 'view_all_members', // view all members (pending and inactive included)
+	VIEW_ADVANCED_DETAILS = 'view_advanced_details' // view advanced project details
 }

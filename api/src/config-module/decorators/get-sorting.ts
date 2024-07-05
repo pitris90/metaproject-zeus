@@ -10,13 +10,16 @@ export class Sorting {
 	direction: SortDirection;
 }
 
-export const GetSorting = createParamDecorator((_data: unknown, ctx: ExecutionContext): Sorting | null => {
+export const GetSorting = createParamDecorator((_data: unknown, ctx: ExecutionContext): Sorting => {
 	const req = ctx.switchToHttp().getRequest();
 
 	const sortSelector = req.query.sort as string;
 
 	if (!sortSelector) {
-		return null;
+		return {
+			columnAccessor: 'createdAt',
+			direction: 'ASC'
+		};
 	}
 
 	const direction = sortSelector.startsWith('-') ? 'DESC' : 'ASC';

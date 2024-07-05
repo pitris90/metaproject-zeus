@@ -94,7 +94,7 @@ export class ProjectPermissionService {
 			permissions.add(ProjectPermissionEnum.EDIT_MANAGERS);
 
 			// project is inactive, can't edit it anymore
-			if (project.status === ProjectStatus.INACTIVE) {
+			if (project.status === ProjectStatus.REJECTED || project.status === ProjectStatus.ARCHIVED) {
 				this.removeEditPermissions(permissions);
 			}
 
@@ -119,7 +119,7 @@ export class ProjectPermissionService {
 		}
 
 		// project is inactive, can't edit it anymore
-		if (project.status === ProjectStatus.INACTIVE) {
+		if (project.status === ProjectStatus.REJECTED || project.status === ProjectStatus.ARCHIVED) {
 			this.removeEditPermissions(permissions);
 		}
 
@@ -129,7 +129,11 @@ export class ProjectPermissionService {
 	private getDefaultPermissions(permissionsToRole: RolePermission[]): ProjectPermissionEnum[] {
 		return permissionsToRole.flatMap((rolePermission) => {
 			if (rolePermission.permission.codeName === PermissionEnum.GET_ALL_PROJECTS) {
-				return [ProjectPermissionEnum.VIEW_PROJECT, ProjectPermissionEnum.VIEW_ALL_MEMBERS];
+				return [
+					ProjectPermissionEnum.VIEW_PROJECT,
+					ProjectPermissionEnum.VIEW_ADVANCED_DETAILS,
+					ProjectPermissionEnum.VIEW_ALL_MEMBERS
+				];
 			}
 
 			if (rolePermission.permission.codeName === PermissionEnum.MANIPULATE_ALL_PROJECTS) {
@@ -151,6 +155,7 @@ export class ProjectPermissionService {
 		permissions.add(ProjectPermissionEnum.EDIT_PUBLICATIONS);
 		permissions.add(ProjectPermissionEnum.EDIT_MEMBERS);
 		permissions.add(ProjectPermissionEnum.VIEW_ALL_MEMBERS);
+		permissions.add(ProjectPermissionEnum.VIEW_ADVANCED_DETAILS);
 	}
 
 	private removeEditPermissions(permissions: Set<ProjectPermissionEnum>) {

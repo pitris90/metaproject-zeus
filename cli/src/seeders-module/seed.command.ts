@@ -4,6 +4,7 @@ import { EntitySeederInterface } from './entity-seeders/entity-seeder.interface'
 import { PermissionSeeder } from './entity-seeders/permission-seeder.service';
 import { RoleSeeder } from './entity-seeders/role-seeder.service';
 import { RolePermissionSeeder } from './entity-seeders/role-permission-seeder.service';
+import { ResourceTypeSeeder } from './entity-seeders/resource-type-seeder.service';
 
 @Injectable()
 export class SeedCommand {
@@ -13,9 +14,10 @@ export class SeedCommand {
 		private readonly dataSource: DataSource,
 		readonly permissionSeeder: PermissionSeeder,
 		readonly roleSeeder: RoleSeeder,
-		readonly rolePermissionSeeder: RolePermissionSeeder
+		readonly rolePermissionSeeder: RolePermissionSeeder,
+		readonly resourceTypeSeeder: ResourceTypeSeeder
 	) {
-		this.seeders = [permissionSeeder, roleSeeder, rolePermissionSeeder];
+		this.seeders = [permissionSeeder, roleSeeder, rolePermissionSeeder, resourceTypeSeeder];
 	}
 
 	async run(): Promise<void> {
