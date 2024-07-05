@@ -8,11 +8,12 @@ import { AppModule } from './app.module';
 import { AppService } from './app.service';
 
 async function bootstrap() {
-	AppService.APP_ROOT = path.join(path.resolve(__dirname), '..', '..');
-
 	const app = await NestFactory.create(AppModule);
 	const configService = app.get(ConfigService);
-	const isDevelopmentMode = configService.get('APPLICATION_MODE') === 'development';
+	const applicationMode = configService.get('APPLICATION_MODE');
+	const isDevelopmentMode = applicationMode === 'development';
+
+	AppService.APP_ROOT = applicationMode === 'test' ? '' : path.join(path.resolve(__dirname), '..', '..');
 
 	// register validation pipe to protect all endpoints
 	app.useGlobalPipes(
