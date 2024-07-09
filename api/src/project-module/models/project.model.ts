@@ -114,6 +114,17 @@ export class ProjectModel {
 		return projectQuery.getManyAndCount();
 	}
 
+	public async getProjectRequests(pagination: Pagination): Promise<[Project[], number]> {
+		return this.dataSource
+			.createQueryBuilder(Project, 'project')
+			.innerJoinAndSelect('project.pi', 'pi')
+			.where('project.status = :status', { status: ProjectStatus.NEW })
+			.offset(pagination.offset)
+			.limit(pagination.limit)
+			.orderBy('project.createdAt', 'ASC')
+			.getManyAndCount();
+	}
+
 	public async updateProject(
 		manager: EntityManager,
 		projectId: number,

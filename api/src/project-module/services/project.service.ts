@@ -53,6 +53,11 @@ export class ProjectService {
 		return this.projectMapper.toProjectDetailDto(project, userPermissions, archivalInfo);
 	}
 
+	async getProjectRequests(pagination: Pagination): Promise<[ProjectDto[], number]> {
+		const [projects, count] = await this.projectModel.getProjectRequests(pagination);
+		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
+	}
+
 	async requestProject(requestProjectDto: RequestProjectDto, piId: number): Promise<ProjectDto> {
 		return this.dataSource.transaction(async (manager) => {
 			const userRepository = manager.getRepository(User);
