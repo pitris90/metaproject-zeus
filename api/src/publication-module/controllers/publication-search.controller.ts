@@ -25,8 +25,6 @@ export class PublicationSearchController {
 		type: PublicationNotFoundApiException
 	})
 	public async getPublicationByDoi(@Param('doi') doi: string) {
-		const response = await this.apiPublicationService.getPublicationByDoi(doi);
-		console.log(response);
-		return response;
+		return this.apiPublicationService.getPublicationByDoi(doi);
 	}
 }

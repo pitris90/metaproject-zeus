@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { PublicationDto } from '../dto/publication.dto';
+import { PublicationNotFoundApiException } from '../../error-module/errors/publications/publication-not-found.api-exception';
+import { PublicationMapper } from '../mapper/publication.mapper';
 
 @Injectable()
 export class ApiPublicationService {
@@ -10,7 +12,8 @@ export class ApiPublicationService {
 
 	constructor(
 		private readonly httpService: HttpService,
-		configService: ConfigService
+		configService: ConfigService,
+		private readonly publicationMapper: PublicationMapper
 	) {
 		const mailTo = configService.get<string>('API_PUBLICATION_MAIL_TO');
 
@@ -23,16 +26,22 @@ export class ApiPublicationService {
 
 	async getPublicationByDoi(doi: string): Promise<PublicationDto> {
 		const source$ = this.getCrossRefResponse(`works/${doi}`, 'GET');
-		const response = await lastValueFrom(source$);
-		const data = response.data;
+		try {
+			const response = await lastValueFrom(source$);
+			return this.publicationMapper.mapWorkApiResponseToDto(response.data);
+		} catch (error) {
+			const response = error?.response;
 
-		return {
-			title: data.message.title[0],
-			authors: data.message.author.map((author: any) => author.given + ' ' + author.family).join(', '),
-			year: data.message.created['date-parts'][0][0],
-			uniqueId: data.message.DOI,
-			journal: data.message['container-title'][0]
-		};
+			if (!response) {
+				throw error;
+			}
+
+			if (response.status === 404) {
+				throw new PublicationNotFoundApiException();
+			}
+
+			throw error;
+		}
 	}
 
 	private getCrossRefResponse = (url: string, method: 'GET') => {
