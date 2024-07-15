@@ -9,5 +9,7 @@ export const validationSchema = Joi.object({
 	POSTGRES_PASSWORD: Joi.string(),
 	POSTGRES_DATABASE: Joi.string(),
 	// CORS
-	CORS_ALLOW_ORIGIN: Joi.string()
+	CORS_ALLOW_ORIGIN: Joi.string(),
+	//
+	API_PUBLICATION_MAIL_TO: Joi.string()
 });

@@ -20,6 +20,7 @@ services:
       - POSTGRES_DATABASE
       - CORS_ALLOW_ORIGIN
       - FILE_UPLOAD_FOLDER
+      - API_PUBLICATION_MAIL_TO
     expose:
       - 3000
     volumes:
