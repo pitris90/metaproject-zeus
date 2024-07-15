@@ -13,6 +13,7 @@ import { Resource } from '../models/resource/resource';
 import { ProjectArchival } from '../models/project/project-archival';
 import { SnakeNamingStrategy } from '../strategies/snake-case.strategy';
 import { File } from '../models/file';
+import { Publication } from '../models/publication/publication';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -40,6 +41,8 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				// resources
 				ResourceType,
 				Resource,
+				// publications
+				Publication,
 				// misc
 				File
 			],
