@@ -22,6 +22,7 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 import { ProjectDetailDto } from '../dtos/project-detail.dto';
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
+import { ProjectRequestsDto } from '../dtos/project-requests.dto';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -63,6 +64,28 @@ export class ProjectController {
 			pagination,
 			sorting
 		);
+		return {
+			metadata: {
+				page: pagination.page,
+				recordsPerPage: pagination.limit,
+				totalRecords: count
+			},
+			projects
+		};
+	}
+
+	@Get('requests')
+	@PermissionsCheck([PermissionEnum.GET_ALL_PROJECTS])
+	@ApiOperation({
+		summary: 'Get project requests',
+		description: 'Get all project requests.'
+	})
+	@ApiOkResponse({
+		description: 'The project requests were successfully retrieved.',
+		type: [ProjectRequestsDto]
+	})
+	async getProjectRequests(@GetPagination() pagination: Pagination) {
+		const [projects, count] = await this.projectService.getProjectRequests(pagination);
 		return {
 			metadata: {
 				page: pagination.page,
