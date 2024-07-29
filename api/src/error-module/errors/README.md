@@ -11,3 +11,6 @@
 
 ## Users
 * 11000 - Invalid user
+
+## Publications
+* 12000 - Publication not found

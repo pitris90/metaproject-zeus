@@ -8,6 +8,7 @@ import { PermissionModule } from './permission-module/permission.module';
 import { UsersModule } from './users-module/users.module';
 import { AuthModule } from './auth-module/auth.module';
 import { ProjectModule } from './project-module/project.module';
+import { PublicationModule } from './publication-module/publication.module';
 
 @Module({
 	imports: [
@@ -21,7 +22,8 @@ import { ProjectModule } from './project-module/project.module';
 		AuthModule,
 		PermissionModule,
 		UsersModule,
-		ProjectModule
+		ProjectModule,
+		PublicationModule
 	],
 	controllers: [AppController]
 })

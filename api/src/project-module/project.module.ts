@@ -48,7 +48,7 @@ import { ProjectFileController } from './controllers/project-file.controller';
 		ProjectArchiveController,
 		ProjectFileController
 	],
-	exports: [ProjectPermissionService, MemberModel],
+	exports: [ProjectPermissionService, MemberModel, ProjectModel],
 	providers: [
 		ProjectService,
 		ProjectMapper,

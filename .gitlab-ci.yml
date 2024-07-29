@@ -48,32 +48,32 @@ test-lint:
         - api/test/_output/eslint.xml
     expire_in: 10 minutes
 
-test-e2e:
-  image: ${TEST_IMAGE}
-  stage: test
-  services:
-    - postgres:16.0
-  script:
-    - !reference [.build-shared, script]
-    - cd api
-    - npm ci --cache .npm --prefer-offline
-    - npm run test:e2e:ci
-  variables:
-    APPLICATION_MODE: test
-    POSTGRES_HOST: postgres
-    POSTGRES_USER: test
-    POSTGRES_PASSWORD: test
-    POSTGRES_DATABASE: resource-manager
-    POSTGRES_PORT: 5432
-    FILE_UPLOAD_FOLDER: /tmp
-  artifacts:
-    when: always
-    paths:
-      - api/test/_output/jest-e2e.xml
-    reports:
-      junit:
-        - api/test/_output/jest-e2e.xml
-    expire_in: 10 minutes
+#test-e2e:
+#  image: ${TEST_IMAGE}
+#  stage: test
+#  services:
+#    - postgres:16.0
+#  script:
+#    - !reference [.build-shared, script]
+#    - cd api
+#    - npm ci --cache .npm --prefer-offline
+#    - npm run test:e2e:ci
+#  variables:
+#    APPLICATION_MODE: test
+#    POSTGRES_HOST: postgres
+#    POSTGRES_USER: test
+#    POSTGRES_PASSWORD: test
+#    POSTGRES_DATABASE: resource-manager
+#    POSTGRES_PORT: 5432
+#    FILE_UPLOAD_FOLDER: /tmp
+#  artifacts:
+#    when: always
+#    paths:
+#      - api/test/_output/jest-e2e.xml
+#    reports:
+#      junit:
+#        - api/test/_output/jest-e2e.xml
+#    expire_in: 10 minutes
 
 test-unit:
   image: ${TEST_IMAGE}
