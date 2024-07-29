@@ -6,11 +6,12 @@ import { PublicationSearchController } from './controllers/publication-search.co
 import { PublicationMapper } from './mapper/publication.mapper';
 import { PublicationService } from './services/publication.service';
 import { PublicationController } from './controllers/publication.controller';
+import { PublicationModel } from './models/publication.model';
 
 @Module({
 	imports: [HttpModule, ProjectModule],
 	exports: [],
-	providers: [ApiPublicationService, PublicationMapper, PublicationService],
+	providers: [ApiPublicationService, PublicationMapper, PublicationService, PublicationModel],
 	controllers: [PublicationSearchController, PublicationController]
 })
 export class PublicationModule {}

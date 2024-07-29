@@ -5,13 +5,31 @@ import { Publication } from 'resource-manager-database';
 import { PublicationInputDto } from '../dto/input/publication-input.dto';
 import { ProjectPermissionService } from '../../project-module/services/project-permission.service';
 import { ProjectPermissionEnum } from '../../project-module/enums/project-permission.enum';
+import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
+import { ProjectModel } from '../../project-module/models/project.model';
+import { Pagination } from '../../config-module/decorators/get-pagination';
+import { Sorting } from '../../config-module/decorators/get-sorting';
+import { PublicationModel } from '../models/publication.model';
 
 @Injectable()
 export class PublicationService {
 	constructor(
 		private readonly projectPermissionService: ProjectPermissionService,
-		private readonly dataSource: DataSource
+		private readonly dataSource: DataSource,
+		private readonly projectModel: ProjectModel,
+		private readonly publicationModel: PublicationModel
 	) {}
+
+	async getProjectPublications(projectId: number, userId: number, pagination: Pagination, sorting: Sorting | null) {
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+		const project = await this.projectModel.getProject(projectId);
+
+		if (!userPermissions.has(ProjectPermissionEnum.VIEW_PROJECT) || !project) {
+			throw new ProjectNotFoundApiException();
+		}
+
+		return this.publicationModel.getProjectPublications(projectId, pagination, sorting);
+	}
 
 	async addPublicationToProject(
 		userId: number,
