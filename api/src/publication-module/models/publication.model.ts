@@ -8,6 +8,12 @@ import { Sorting } from '../../config-module/decorators/get-sorting';
 export class PublicationModel {
 	constructor(private readonly dataSource: DataSource) {}
 
+	async findById(publicationId: number): Promise<Publication | null> {
+		return this.dataSource.getRepository(Publication).findOneBy({
+			id: publicationId
+		});
+	}
+
 	async getProjectPublications(projectId: number, pagination: Pagination, sorting: Sorting | null) {
 		const publicationsBuilder = this.dataSource
 			.createQueryBuilder()

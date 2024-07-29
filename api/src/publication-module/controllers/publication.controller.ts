@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
 import { PermissionEnum } from '../../permission-module/models/permission.enum';
@@ -54,9 +54,23 @@ export class PublicationController {
 				totalRecords: count
 			},
 			publications: publications.map((publication) =>
-				this.publicationMapper.mapPublicationToPublicationDto(publication)
+				this.publicationMapper.mapPublicationToPublicationDetailDto(publication)
 			)
 		};
+	}
+
+	@Delete('/:publicationId')
+	@HttpCode(204)
+	@PermissionsCheck([PermissionEnum.MANIPULATE_OWNED_PROJECTS])
+	@ApiOperation({
+		summary: 'Deletes publication from the project',
+		description: 'Deletes publication from the project if user has correct permissions and access.'
+	})
+	@ApiNotFoundResponse({
+		description: 'Publication with provided ID not found or user has no permission to access it.'
+	})
+	public async deletePublication(@Param('publicationId') publicationId: number, @RequestUser() user: UserDto) {
+		await this.publicationService.deleteProjectPublication(publicationId, user.id);
 	}
 
 	@Post('/:projectId')

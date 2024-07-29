@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Publication } from 'resource-manager-database';
-import { PublicationDto } from '../dto/publication.dto';
+import { PublicationDetailDto } from '../dto/publication-detail.dto';
 
 @Injectable()
 export class PublicationMapper {
@@ -14,8 +14,9 @@ export class PublicationMapper {
 		};
 	}
 
-	public mapPublicationToPublicationDto(publication: Publication): PublicationDto {
+	public mapPublicationToPublicationDetailDto(publication: Publication): PublicationDetailDto {
 		return {
+			id: publication.id,
 			title: publication.title,
 			authors: publication.author,
 			journal: publication.journal,

@@ -10,6 +10,7 @@ import { ProjectModel } from '../../project-module/models/project.model';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { Sorting } from '../../config-module/decorators/get-sorting';
 import { PublicationModel } from '../models/publication.model';
+import { PublicationNotFoundApiException } from '../../error-module/errors/publications/publication-not-found.api-exception';
 
 @Injectable()
 export class PublicationService {
@@ -29,6 +30,28 @@ export class PublicationService {
 		}
 
 		return this.publicationModel.getProjectPublications(projectId, pagination, sorting);
+	}
+
+	async deleteProjectPublication(publicationId: number, userId: number) {
+		const publication = await this.publicationModel.findById(publicationId);
+
+		// validation if publication exists and user has permissions to delete it
+		if (!publication) {
+			throw new PublicationNotFoundApiException();
+		}
+
+		const permissions = await this.projectPermissionService.getUserPermissions(publication.projectId, userId);
+
+		if (!permissions.has(ProjectPermissionEnum.EDIT_PUBLICATIONS)) {
+			throw new PublicationNotFoundApiException();
+		}
+
+		await this.dataSource
+			.createQueryBuilder()
+			.delete()
+			.from(Publication)
+			.where('id = :id', { id: publicationId })
+			.execute();
 	}
 
 	async addPublicationToProject(
