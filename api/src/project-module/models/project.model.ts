@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
+	ApprovalStatus,
 	Project,
+	ProjectApproval,
 	ProjectArchival,
 	ProjectStatus,
 	ProjectUser,
@@ -40,6 +42,16 @@ export class ProjectModel {
 				reportFile: true
 			}
 		});
+	}
+
+	public async getRejectedComments(projectId: number): Promise<ProjectApproval[]> {
+		return this.dataSource
+			.createQueryBuilder(ProjectApproval, 'pa')
+			.innerJoinAndSelect('pa.reviewer', 'r')
+			.where('pa.projectId = :projectId', { projectId })
+			.andWhere('pa.status = :status', { status: ApprovalStatus.REJECTED })
+			.orderBy('pa.time.createdAt', 'DESC')
+			.getMany();
 	}
 
 	public async createProject(

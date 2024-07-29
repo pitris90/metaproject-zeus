@@ -49,11 +49,11 @@ export class ProjectController {
 		name: 'status',
 		required: false,
 		description: 'Filter projects by status.',
-		enum: ['new', 'active', 'inactive']
+		enum: ['new', 'active', 'archived', 'rejected']
 	})
 	async getMyProjects(
 		@RequestUser() user: User,
-		@Query('status') status: 'new' | 'active' | 'archived' | null,
+		@Query('status') status: 'new' | 'active' | 'archived' | 'rejected' | null,
 		@GetPagination() pagination: Pagination,
 		@GetSorting() sorting: Sorting
 	): Promise<MyProjectsDto> {

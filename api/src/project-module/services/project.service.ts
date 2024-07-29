@@ -50,7 +50,11 @@ export class ProjectService {
 			? await this.projectModel.getArchivalInfo(projectId)
 			: null;
 
-		return this.projectMapper.toProjectDetailDto(project, userPermissions, archivalInfo);
+		const rejectedComments = userPermissions.has(ProjectPermissionEnum.VIEW_ADVANCED_DETAILS)
+			? await this.projectModel.getRejectedComments(projectId)
+			: null;
+
+		return this.projectMapper.toProjectDetailDto(project, userPermissions, archivalInfo, rejectedComments);
 	}
 
 	async getProjectRequests(pagination: Pagination): Promise<[ProjectDto[], number]> {
