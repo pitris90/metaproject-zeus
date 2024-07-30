@@ -20,6 +20,9 @@ export class Project {
 	@Column()
 	title: string;
 
+	@Column({ nullable: true })
+	link: string;
+
 	@ManyToOne(() => User, user => user.assignedProjects)
 	pi: User;
 

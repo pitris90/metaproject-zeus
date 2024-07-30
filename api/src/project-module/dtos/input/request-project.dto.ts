@@ -1,4 +1,4 @@
-import { IsNotEmpty, MinLength } from 'class-validator';
+import { IsEmpty, IsNotEmpty, MinLength } from 'class-validator';
 
 export class RequestProjectDto {
 	/**
@@ -9,6 +9,14 @@ export class RequestProjectDto {
 	@IsNotEmpty()
 	@MinLength(5)
 	title: string;
+
+	/**
+	 * The link to the project
+	 *
+	 * @example "https://is.muni.cz/project-link"
+	 */
+	@IsEmpty()
+	link: string;
 
 	/**
 	 * The description of the project

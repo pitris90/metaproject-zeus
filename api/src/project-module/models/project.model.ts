@@ -67,6 +67,7 @@ export class ProjectModel {
 			.values({
 				title: requestProjectDto.title,
 				description: requestProjectDto.description,
+				link: requestProjectDto.link,
 				status,
 				pi: user
 			})

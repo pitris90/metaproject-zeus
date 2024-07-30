@@ -113,16 +113,12 @@ export class ProjectService {
 			}
 
 			try {
-				await manager
-					.createQueryBuilder()
-					.update(Project)
-					.set({
-						title: requestProjectDto.title,
-						description: requestProjectDto.description,
-						status: ProjectStatus.NEW
-					})
-					.where('id = :projectId', { projectId: projectId })
-					.execute();
+				await this.projectModel.updateProject(manager, projectId, {
+					title: requestProjectDto.title,
+					link: requestProjectDto.link,
+					description: requestProjectDto.description,
+					status: ProjectStatus.NEW
+				});
 			} catch (e) {
 				if (
 					e instanceof QueryFailedError &&
