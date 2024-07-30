@@ -95,7 +95,6 @@ export class ProjectService {
 
 	async requestProjectAgain(projectId: number, userId: number, requestProjectDto: RequestProjectDto): Promise<void> {
 		await this.dataSource.transaction(async (manager) => {
-			console.log(userId);
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
 				projectId,

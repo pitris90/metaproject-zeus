@@ -24,6 +24,10 @@ export class ProjectApprovalService {
 
 			const project = await this.getProject(manager, projectId);
 
+			if (project.status !== ProjectStatus.NEW) {
+				throw new ProjectHasApprovalApiException();
+			}
+
 			// update project status
 			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.ACTIVE });
 

@@ -39,7 +39,7 @@ export class ProjectPermissionService {
 		permission: ProjectPermissionEnum
 	) {
 		const userPermissions = await this.userPermissionsHelper(manager, projectId, userId);
-		console.log(userPermissions);
+
 		if (!userPermissions.has(permission)) {
 			throw new InvalidPermissionException(permission);
 		}

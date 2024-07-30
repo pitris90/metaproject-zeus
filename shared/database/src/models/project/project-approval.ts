@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { User } from '../user/user';
 import { Project } from './project';
@@ -9,12 +9,11 @@ export enum ApprovalStatus {
 }
 
 @Entity()
-@Unique(["project", "reviewer"])
 export class ProjectApproval {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	@OneToOne(() => Project)
+	@ManyToOne(() => Project)
 	@JoinColumn()
 	project: Project;
 
