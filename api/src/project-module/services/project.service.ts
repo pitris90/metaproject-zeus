@@ -92,4 +92,48 @@ export class ProjectService {
 			}
 		});
 	}
+
+	async requestProjectAgain(projectId: number, userId: number, requestProjectDto: RequestProjectDto): Promise<void> {
+		await this.dataSource.transaction(async (manager) => {
+			console.log(userId);
+			await this.projectPermissionService.validateUserPermissions(
+				manager,
+				projectId,
+				userId,
+				ProjectPermissionEnum.EDIT_PROJECT
+			);
+
+			const project = await manager.getRepository(Project).findOne({
+				where: {
+					id: projectId
+				}
+			});
+
+			if (!project || project.status !== ProjectStatus.REJECTED) {
+				throw new ProjectNotFoundApiException();
+			}
+
+			try {
+				await manager
+					.createQueryBuilder()
+					.update(Project)
+					.set({
+						title: requestProjectDto.title,
+						description: requestProjectDto.description,
+						status: ProjectStatus.NEW
+					})
+					.where('id = :projectId', { projectId: projectId })
+					.execute();
+			} catch (e) {
+				if (
+					e instanceof QueryFailedError &&
+					e.message.includes('duplicate key value violates unique constraint')
+				) {
+					throw new ProjectRequestExistsApiException();
+				}
+
+				throw e;
+			}
+		});
+	}
 }
