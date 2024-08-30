@@ -15,6 +15,12 @@ export class ProjectDto {
 	 */
 	title: string;
 	/**
+	 * The project's link
+	 *
+	 * @example "https://is.muni,cz"
+	 */
+	link: string;
+	/**
 	 * The project's description
 	 *
 	 * @example "This is a project description"

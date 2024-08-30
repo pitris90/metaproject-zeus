@@ -21,6 +21,23 @@ export class ArchivalInfoDto {
 	archivedAt: string;
 }
 
+export class RejectedCommentDto {
+	/**
+	 * Comment text
+	 */
+	comment: string;
+
+	/**
+	 * Comment author
+	 */
+	author: string;
+
+	/**
+	 * Review created at
+	 */
+	createdAt: string;
+}
+
 export class ProjectDetailDto {
 	/**
 	 * Project details
@@ -36,4 +53,9 @@ export class ProjectDetailDto {
 	 * The project's archival info (if project is archived and user has permissions.)
 	 */
 	archivalInfo?: ArchivalInfoDto;
+
+	/**
+	 * Rejected comments (if project is rejected if the project is rejected and user has permissions)
+	 */
+	rejectedComments?: RejectedCommentDto[];
 }

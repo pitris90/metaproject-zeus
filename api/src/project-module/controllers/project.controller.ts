@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { User } from 'resource-manager-database';
 import {
 	ApiBody,
@@ -23,6 +23,7 @@ import { ProjectDetailDto } from '../dtos/project-detail.dto';
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 import { ProjectRequestsDto } from '../dtos/project-requests.dto';
+import { UserDto } from '../../users-module/dtos/user.dto';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -49,11 +50,11 @@ export class ProjectController {
 		name: 'status',
 		required: false,
 		description: 'Filter projects by status.',
-		enum: ['new', 'active', 'inactive']
+		enum: ['new', 'active', 'archived', 'rejected']
 	})
 	async getMyProjects(
 		@RequestUser() user: User,
-		@Query('status') status: 'new' | 'active' | 'archived' | null,
+		@Query('status') status: 'new' | 'active' | 'archived' | 'rejected' | null,
 		@GetPagination() pagination: Pagination,
 		@GetSorting() sorting: Sorting
 	): Promise<MyProjectsDto> {
@@ -115,6 +116,7 @@ export class ProjectController {
 	}
 
 	@Post()
+	@HttpCode(201)
 	@PermissionsCheck([PermissionEnum.REQUEST_PROJECT])
 	@ApiOperation({
 		summary: 'Request a project',
@@ -131,7 +133,37 @@ export class ProjectController {
 	@ApiBody({
 		type: RequestProjectDto
 	})
-	async requestProject(@Body() requestProjectDto: RequestProjectDto, @RequestUser() user: User): Promise<ProjectDto> {
+	async requestProject(
+		@Body() requestProjectDto: RequestProjectDto,
+		@RequestUser() user: UserDto
+	): Promise<ProjectDto> {
 		return this.projectService.requestProject(requestProjectDto, user.id);
+	}
+
+	@Post(':id/request')
+	@HttpCode(204)
+	@PermissionsCheck([PermissionEnum.REQUEST_PROJECT])
+	@ApiOperation({
+		summary: 'Re-request a project',
+		description:
+			'Should be called after updating info in rejected project to send project to review again. Project should be in rejected state.'
+	})
+	@ApiConflictResponse({
+		description: 'Different project with same info already exists.',
+		type: ProjectRequestExistsApiException
+	})
+	@ApiNotFoundResponse({
+		description: 'Project not found or user does not have correct access to a project.',
+		type: ProjectNotFoundApiException
+	})
+	@ApiBody({
+		type: RequestProjectDto
+	})
+	async requestProjectAgain(
+		@Param('id') projectId: number,
+		@RequestUser() user: UserDto,
+		@Body() requestProjectDto: RequestProjectDto
+	) {
+		await this.projectService.requestProjectAgain(projectId, user.id, requestProjectDto);
 	}
 }

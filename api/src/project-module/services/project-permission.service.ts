@@ -94,10 +94,14 @@ export class ProjectPermissionService {
 			permissions.add(ProjectPermissionEnum.EDIT_MANAGERS);
 
 			// project is inactive, can't edit it anymore
-			if (project.status === ProjectStatus.REJECTED || project.status === ProjectStatus.ARCHIVED) {
+			if (project.status === ProjectStatus.ARCHIVED) {
 				this.removeEditPermissions(permissions);
 			}
 
+			// project is rejected - can edit only title and description
+			if (project.status === ProjectStatus.REJECTED) {
+				permissions.add(ProjectPermissionEnum.EDIT_PROJECT);
+			}
 			return permissions;
 		}
 

@@ -50,7 +50,11 @@ export class ProjectService {
 			? await this.projectModel.getArchivalInfo(projectId)
 			: null;
 
-		return this.projectMapper.toProjectDetailDto(project, userPermissions, archivalInfo);
+		const rejectedComments = userPermissions.has(ProjectPermissionEnum.VIEW_ADVANCED_DETAILS)
+			? await this.projectModel.getRejectedComments(projectId)
+			: null;
+
+		return this.projectMapper.toProjectDetailDto(project, userPermissions, archivalInfo, rejectedComments);
 	}
 
 	async getProjectRequests(pagination: Pagination): Promise<[ProjectDto[], number]> {
@@ -76,6 +80,45 @@ export class ProjectService {
 				});
 
 				return this.projectMapper.toProjectDto(project);
+			} catch (e) {
+				if (
+					e instanceof QueryFailedError &&
+					e.message.includes('duplicate key value violates unique constraint')
+				) {
+					throw new ProjectRequestExistsApiException();
+				}
+
+				throw e;
+			}
+		});
+	}
+
+	async requestProjectAgain(projectId: number, userId: number, requestProjectDto: RequestProjectDto): Promise<void> {
+		await this.dataSource.transaction(async (manager) => {
+			await this.projectPermissionService.validateUserPermissions(
+				manager,
+				projectId,
+				userId,
+				ProjectPermissionEnum.EDIT_PROJECT
+			);
+
+			const project = await manager.getRepository(Project).findOne({
+				where: {
+					id: projectId
+				}
+			});
+
+			if (!project || project.status !== ProjectStatus.REJECTED) {
+				throw new ProjectNotFoundApiException();
+			}
+
+			try {
+				await this.projectModel.updateProject(manager, projectId, {
+					title: requestProjectDto.title,
+					link: requestProjectDto.link,
+					description: requestProjectDto.description,
+					status: ProjectStatus.NEW
+				});
 			} catch (e) {
 				if (
 					e instanceof QueryFailedError &&

@@ -1,8 +1,8 @@
-import { Project, ProjectArchival, ProjectStatus } from 'resource-manager-database';
+import { Project, ProjectApproval, ProjectArchival, ProjectStatus } from 'resource-manager-database';
 import { Injectable } from '@nestjs/common';
 import { ProjectDto } from '../dtos/project.dto';
 import { UserMapper } from '../../users-module/services/user.mapper';
-import { ArchivalInfoDto, ProjectDetailDto } from '../dtos/project-detail.dto';
+import { ArchivalInfoDto, ProjectDetailDto, RejectedCommentDto } from '../dtos/project-detail.dto';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 
 @Injectable()
@@ -13,6 +13,7 @@ export class ProjectMapper {
 		return {
 			id: project.id,
 			title: project.title,
+			link: project.link,
 			description: project.description,
 			status: this.fromProjectStatus(project.status),
 			user: this.userMapper.toUserDto(project.pi),
@@ -23,12 +24,14 @@ export class ProjectMapper {
 	toProjectDetailDto(
 		project: Project,
 		permissions: Set<ProjectPermissionEnum>,
-		archivalInfo: ProjectArchival | null
+		archivalInfo: ProjectArchival | null,
+		rejectedComments: ProjectApproval[] | null
 	): ProjectDetailDto {
 		return {
 			project: this.toProjectDto(project),
 			permissions: [...permissions],
-			archivalInfo: archivalInfo ? this.getProjectArchivalInfo(archivalInfo) : undefined
+			archivalInfo: archivalInfo ? this.getProjectArchivalInfo(archivalInfo) : undefined,
+			rejectedComments: rejectedComments !== null ? this.getRejectedComments(rejectedComments) : undefined
 		};
 	}
 
@@ -60,6 +63,20 @@ export class ProjectMapper {
 			default:
 				return null;
 		}
+	}
+
+	private getRejectedComments(rejectedComments: ProjectApproval[]): RejectedCommentDto[] {
+		return rejectedComments.flatMap((comment) => {
+			if (!comment.description) {
+				return [];
+			}
+
+			return {
+				comment: comment.description,
+				author: comment.reviewer.name,
+				createdAt: comment.time.createdAt
+			};
+		});
 	}
 
 	private getProjectArchivalInfo(archivalInfo: ProjectArchival): ArchivalInfoDto {
