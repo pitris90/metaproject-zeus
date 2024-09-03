@@ -19,5 +19,7 @@ export const validationSchema = Joi.object({
 	IDENTITY_AUTHORIZATION_URL: Joi.string(),
 	IDENTITY_TOKEN_URL: Joi.string(),
 	IDENTITY_CALLBACK_URL: Joi.string(),
-	IDENTITY_USER_INFO_URL: Joi.string()
+	IDENTITY_USER_INFO_URL: Joi.string(),
+	// session
+	SESSION_SECRET: Joi.string()
 });

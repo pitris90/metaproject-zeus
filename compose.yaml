@@ -28,6 +28,7 @@ services:
       - IDENTITY_TOKEN_URL
       - IDENTITY_USER_INFO_URL
       - IDENTITY_CALLBACK_URL
+      - SESSION_SECRET
     expose:
       - 3000
     volumes:

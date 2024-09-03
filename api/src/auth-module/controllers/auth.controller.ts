@@ -13,6 +13,7 @@ export class AuthController {
 	async logIn() {}
 
 	@Get('callback')
+	@Public()
 	@UseGuards(OpenIdConnectGuard)
 	async logInCallback(@Req() req: Request, @Res() res: Response) {
 		console.log(req);

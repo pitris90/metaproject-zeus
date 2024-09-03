@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { json } from 'express';
+import * as session from 'express-session';
 import { AppModule } from './app.module';
 import { AppService } from './app.service';
 
@@ -28,6 +29,22 @@ async function bootstrap() {
 	});
 
 	app.use(json({ limit: '10mb' }));
+
+	const sessionSecret = configService.get('SESSION_SECRET');
+
+	if (!sessionSecret) {
+		throw new Error('SESSION_SECRET is required');
+	}
+
+	// session secret
+	// TODO use redis storage for production, memory storage is default and does not scale well
+	app.use(
+		session({
+			secret: sessionSecret,
+			resave: false,
+			saveUninitialized: false
+		})
+	);
 
 	if (isDevelopmentMode) {
 		const swaggerConfig = new DocumentBuilder()
