@@ -11,5 +11,13 @@ export const validationSchema = Joi.object({
 	// CORS
 	CORS_ALLOW_ORIGIN: Joi.string(),
 	//
-	API_PUBLICATION_MAIL_TO: Joi.string()
+	API_PUBLICATION_MAIL_TO: Joi.string(),
+	// identity
+	IDENTITY_ISSUER: Joi.string(),
+	IDENTITY_CLIENT_ID: Joi.string(),
+	IDENTITY_CLIENT_SECRET: Joi.string(),
+	IDENTITY_AUTHORIZATION_URL: Joi.string(),
+	IDENTITY_TOKEN_URL: Joi.string(),
+	IDENTITY_CALLBACK_URL: Joi.string(),
+	IDENTITY_USER_INFO_URL: Joi.string()
 });

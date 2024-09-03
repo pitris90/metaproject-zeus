@@ -1,0 +1,30 @@
+import { PassportStrategy } from '@nestjs/passport';
+import { Profile, Strategy, VerifyCallback } from 'passport-openidconnect';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class OpenIdStrategy extends PassportStrategy(Strategy, 'open-id-connect') {
+	constructor(configService: ConfigService) {
+		super({
+			issuer: configService.get<string>('IDENTITY_ISSUER'),
+			clientID: configService.get<string>('IDENTITY_CLIENT_ID'),
+			clientSecret: configService.get<string>('IDENTITY_CLIENT_SECRET'),
+			authorizationURL: configService.get('IDENTITY_AUTHORIZATION_URL'),
+			tokenURL: configService.get('IDENTITY_TOKEN_URL'),
+			callbackURL: configService.get('IDENTITY_CALLBACK_URL'),
+			userInfoURL: configService.get('IDENTITY_USER_INFO_URL'),
+			responseType: 'code',
+			scope: ['openid', 'profile', 'email']
+		});
+	}
+
+	async validate(accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback): Promise<void> {
+		// const user = await this.authService.validateUser(profile);
+		// done(null, user);
+		console.log(accessToken);
+		console.log(refreshToken);
+		console.log(profile);
+		done(null, profile);
+	}
+}
