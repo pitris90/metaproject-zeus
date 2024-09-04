@@ -13,14 +13,17 @@ export class User {
 	@Column({enum: ['perun']})
 	source: string;
 
-	@Column({unsigned: true})
-	externalId: number;
+	@Column({nullable: false})
+	externalId: string;
 
 	@Column()
 	username: string;
 
 	@Column()
 	name: string;
+
+	@Column()
+	roleId: number;
 
 	@ManyToOne(() => Role, role => role.users)
 	role: Role;

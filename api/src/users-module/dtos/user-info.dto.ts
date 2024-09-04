@@ -3,7 +3,7 @@ export class UserInfoDto {
 	/**
 	 * User ID.
 	 */
-	id: number;
+	id: string;
 	/**
 	 * User email.
 	 */

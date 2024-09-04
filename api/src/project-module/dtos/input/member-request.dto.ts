@@ -2,7 +2,7 @@ export class MemberRequestDto {
 	/**
 	 * External ID in Perun.
 	 */
-	id: number;
+	id: string;
 	/**
 	 * User role.
 	 */

@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { OpenIdConnectGuard } from '../guards/open-id-connect.guard';
@@ -16,8 +16,6 @@ export class AuthController {
 	@Public()
 	@UseGuards(OpenIdConnectGuard)
 	async logInCallback(@Req() req: Request, @Res() res: Response) {
-		console.log(req);
-
-		return res.status(HttpStatus.OK);
+		return res.redirect(`http://localhost:5137/auth/login?token=my_token}`);
 	}
 }

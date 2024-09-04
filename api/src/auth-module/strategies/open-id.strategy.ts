@@ -2,10 +2,14 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy, VerifyCallback } from 'passport-openidconnect';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthService } from '../services/auth.service';
 
 @Injectable()
 export class OpenIdStrategy extends PassportStrategy(Strategy, 'open-id-connect') {
-	constructor(configService: ConfigService) {
+	constructor(
+		private readonly authService: AuthService,
+		configService: ConfigService
+	) {
 		super({
 			issuer: configService.get<string>('IDENTITY_ISSUER'),
 			clientID: configService.get<string>('IDENTITY_CLIENT_ID'),
@@ -19,12 +23,8 @@ export class OpenIdStrategy extends PassportStrategy(Strategy, 'open-id-connect'
 		});
 	}
 
-	async validate(accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback): Promise<void> {
-		// const user = await this.authService.validateUser(profile);
-		// done(null, user);
-		console.log(accessToken);
-		console.log(refreshToken);
-		console.log(profile);
-		done(null, profile);
+	async validate(_authority: string, profile: Profile, done: VerifyCallback): Promise<void> {
+		const user = await this.authService.signIn(profile);
+		done(null, user);
 	}
 }

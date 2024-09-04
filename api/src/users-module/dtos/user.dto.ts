@@ -16,7 +16,7 @@ export class UserDto {
 	 *
 	 * @example 12345
 	 */
-	externalId: number;
+	externalId: string;
 	/**
 	 * User's username
 	 *

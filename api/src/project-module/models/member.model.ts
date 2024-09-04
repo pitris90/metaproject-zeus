@@ -9,7 +9,7 @@ import { Sorting } from '../../config-module/decorators/get-sorting';
 export class MemberModel {
 	public constructor(private readonly dataSource: DataSource) {}
 
-	public async getMembersByExternalId(projectId: number, externalIds: number[]) {
+	public async getMembersByExternalId(projectId: number, externalIds: string[]) {
 		return this.dataSource
 			.createQueryBuilder()
 			.select(['pu.id', 'u.externalId'])
