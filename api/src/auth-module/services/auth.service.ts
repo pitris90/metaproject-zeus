@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Profile } from 'passport-openidconnect';
 import { DataSource } from 'typeorm';
 import { User } from 'resource-manager-database';
 import { InvalidUserApiException } from '../../error-module/errors/users/invalid-user.api-exception';
@@ -8,7 +7,7 @@ import { InvalidUserApiException } from '../../error-module/errors/users/invalid
 export class AuthService {
 	constructor(private readonly dataSource: DataSource) {}
 
-	async signIn(profile: Profile): Promise<Express.User> {
+	async signIn(profile: any): Promise<void> {
 		const email = profile.emails?.[0].value;
 
 		if (!email) {
@@ -26,11 +25,5 @@ export class AuthService {
 			},
 			['source', 'externalId']
 		);
-
-		return {
-			id: profile.id,
-			email,
-			name: profile.displayName
-		};
 	}
 }
