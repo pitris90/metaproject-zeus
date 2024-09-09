@@ -3,11 +3,13 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { UsersModel } from '../../users-module/models/users.model';
 import { UserMapper } from '../../users-module/services/user.mapper';
+import { TokenService } from '../services/token.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
 	constructor(
 		private readonly usersModel: UsersModel,
+		private readonly tokenService: TokenService,
 		private readonly reflector: Reflector,
 		private readonly userMapper: UserMapper
 	) {}
@@ -23,22 +25,21 @@ export class AuthGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest();
-		const authorizationHeader = request.headers['Authorization'];
+		const authorizationHeader = request.headers['authorization'];
 
 		// authorization header not present
 		if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
 			throw new UnauthorizedException();
 		}
 
-		// const accessToken = authorizationHeader.split('Bearer ')[1].trim();
+		const accessToken = authorizationHeader.split('Bearer ')[1].trim();
+		const externalId = await this.tokenService.getUserExternalId(accessToken);
 
-		// TODO this will be probably some token or something, for now we just send ID directly
-		const userId = request.headers['x-user-id'];
-		if (!userId) {
+		if (!externalId) {
 			throw new UnauthorizedException();
 		}
 
-		const user = await this.usersModel.findUserById(userId);
+		const user = await this.usersModel.findUserByExternalId(externalId);
 		if (!user) {
 			throw new UnauthorizedException();
 		}

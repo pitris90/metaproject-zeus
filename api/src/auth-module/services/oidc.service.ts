@@ -4,6 +4,7 @@ import { UserManager } from 'oidc-client-ts';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { UserInfoDto } from '../dto/user-info.dto';
+import { IntrospectionDto } from '../dto/introspection.dto';
 
 @Injectable()
 export class OidcService {
@@ -49,5 +50,24 @@ export class OidcService {
 		);
 		const info = await lastValueFrom(response$);
 		return info.data;
+	}
+
+	async getIntrospection(token: string): Promise<IntrospectionDto> {
+		const basicToken = Buffer.from(
+			`${this.userManager.settings.client_id}:${this.userManager.settings.client_secret}`
+		).toString('base64');
+		const endpoint = this.userManager.settings.metadata?.introspection_endpoint;
+
+		if (!endpoint) {
+			throw new Error('Introspection endpoint not found');
+		}
+
+		const response$ = this.httpService.get(`${endpoint}?token=${token}`, {
+			headers: {
+				Authorization: `Basic ${basicToken}`
+			}
+		});
+		const result = await lastValueFrom(response$);
+		return result.data;
 	}
 }
