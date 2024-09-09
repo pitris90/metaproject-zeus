@@ -1,18 +1,27 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Post, UnauthorizedException, Headers } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Response } from 'express';
 import { Public } from '../decorators/public.decorator';
+import { TokenService } from '../services/token.service';
+import { AuthService } from '../services/auth.service';
 
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
-	@Get('login')
-	@Public()
-	async logIn() {}
+	constructor(
+		private readonly tokenService: TokenService,
+		private readonly authService: AuthService
+	) {}
 
-	@Get('callback')
+	@Post('sign-in')
 	@Public()
-	async logInCallback(@Req() req: Request, @Res() res: Response) {
-		return res.redirect(`http://localhost:5137/auth/login?token=my_token}`);
+	async signIn(@Headers('Authorization') authorizationHeader: string): Promise<void> {
+		const accessToken = authorizationHeader.split(' ')[1]?.trim();
+
+		if (!accessToken) {
+			throw new UnauthorizedException();
+		}
+
+		const userInfo = await this.tokenService.getUserInfo(accessToken);
+		await this.authService.signIn(userInfo);
 	}
 }

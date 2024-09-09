@@ -23,6 +23,14 @@ export class AuthGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest();
+		const authorizationHeader = request.headers['Authorization'];
+
+		// authorization header not present
+		if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
+			throw new UnauthorizedException();
+		}
+
+		// const accessToken = authorizationHeader.split('Bearer ')[1].trim();
 
 		// TODO this will be probably some token or something, for now we just send ID directly
 		const userId = request.headers['x-user-id'];
