@@ -21,5 +21,9 @@ export const validationSchema = Joi.object({
 	IDENTITY_CALLBACK_URL: Joi.string(),
 	IDENTITY_USER_INFO_URL: Joi.string(),
 	// session
-	SESSION_SECRET: Joi.string()
+	SESSION_SECRET: Joi.string(),
+	// cache
+	CACHE_PROVIDER: Joi.string().valid('memory', 'redis'),
+	REDIS_HOST: Joi.string(),
+	REDIS_PORT: Joi.number()
 });

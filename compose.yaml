@@ -28,7 +28,8 @@ services:
       - IDENTITY_TOKEN_URL
       - IDENTITY_USER_INFO_URL
       - IDENTITY_CALLBACK_URL
-      - SESSION_SECRET
+      - REDIS_HOST
+      - REDIS_PORT
     expose:
       - 3000
     volumes:
