@@ -16,13 +16,28 @@ export class UserDto {
 	 *
 	 * @example 12345
 	 */
-	externalId: number;
+	externalId: string;
 	/**
 	 * User's username
 	 *
 	 * @example "johndoe"
 	 */
 	username: string;
+
+	/**
+	 * User's email
+	 *
+	 * @example "johndoe@mail.muni.cz"
+	 */
+	email: string;
+
+	/**
+	 * User's locale
+	 *
+	 * @example 'cs'
+	 */
+	locale: string;
+
 	/**
 	 * User's full name
 	 *

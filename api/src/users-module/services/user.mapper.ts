@@ -7,6 +7,8 @@ export class UserMapper {
 	toUserDto(user: User): UserDto {
 		return {
 			id: user.id,
+			locale: user.locale,
+			email: user.email,
 			source: user.source,
 			externalId: user.externalId,
 			username: user.username,

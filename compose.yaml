@@ -1,7 +1,7 @@
-version: "3.8"
-
 volumes:
   pg-data:
+  redis-data:
+    driver: local
 
 services:
   nest-js-api:
@@ -21,6 +21,15 @@ services:
       - CORS_ALLOW_ORIGIN
       - FILE_UPLOAD_FOLDER
       - API_PUBLICATION_MAIL_TO
+      - IDENTITY_ISSUER
+      - IDENTITY_CLIENT_ID
+      - IDENTITY_CLIENT_SECRET
+      - IDENTITY_AUTHORIZATION_URL
+      - IDENTITY_TOKEN_URL
+      - IDENTITY_USER_INFO_URL
+      - IDENTITY_CALLBACK_URL
+      - REDIS_HOST
+      - REDIS_PORT
     expose:
       - 3000
     volumes:
@@ -81,6 +90,18 @@ services:
         aliases:
           - postgres.resource-manager
           - postgres
+
+  redis:
+    image: ${BASE_IMAGE_REDIS}
+    volumes:
+      - redis-data:/data
+    expose:
+      - ${REDIS_PORT}
+    networks:
+      common:
+        aliases:
+          - redis.resource-manager
+          - redis
 
   proxy:
     build:
