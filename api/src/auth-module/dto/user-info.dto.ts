@@ -6,4 +6,5 @@ export class UserInfoDto {
 	locale: string;
 	email: string;
 	email_verified: boolean;
+	preferred_username: string;
 }

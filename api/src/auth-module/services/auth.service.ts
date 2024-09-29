@@ -19,7 +19,9 @@ export class AuthService {
 			{
 				source: 'perun',
 				externalId: profile.sub,
-				username: email,
+				email: profile.email,
+				emailVerified: profile.email_verified,
+				username: profile.preferred_username,
 				name: profile.name,
 				// TODO 1 for now, will be provided from OAuth later
 				roleId: 1
