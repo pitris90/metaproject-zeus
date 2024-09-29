@@ -35,7 +35,7 @@ export class TokenService {
 		}
 
 		// token is active
-		await this.tokenCache.setToken(token, introspectionDto.sub);
+		await this.tokenCache.setToken(token, introspectionDto.sub, introspectionDto.exp - introspectionDto.iat);
 		return introspectionDto.sub;
 	}
 }
