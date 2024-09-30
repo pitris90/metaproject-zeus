@@ -20,8 +20,14 @@ export class Resource {
 	@ManyToOne(() => ResourceType, resourceType => resourceType.resources)
 	resourceType: ResourceType;
 
+	@Column()
+	resourceTypeId: number;
+
 	@ManyToOne(() => Resource, resource => resource.childResources, {nullable: true})
 	parentResource: Resource;
+
+	@Column()
+	parentResourceId: number;
 
 	@OneToMany(() => Resource, resource => resource.parentResource)
 	childResources: Resource[];
