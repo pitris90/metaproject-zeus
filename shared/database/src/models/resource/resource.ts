@@ -1,6 +1,7 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { ResourceType } from './resource-type';
+import { ResourceToAttributeType } from './resource-to-attribute-type';
 
 @Entity()
 export class Resource {
@@ -27,4 +28,7 @@ export class Resource {
 
 	@Column(() => TimeEntity)
 	time: TimeEntity;
+
+	@OneToMany(() => ResourceToAttributeType, resourceToResourceAttributes => resourceToResourceAttributes.resource)
+	resourceToResourceAttributes: ResourceToAttributeType[];
 }
