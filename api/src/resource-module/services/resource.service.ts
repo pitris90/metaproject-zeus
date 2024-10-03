@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Resource, ResourceToAttributeType } from 'resource-manager-database';
+import { Resource, ResourceAttributeType, ResourceToAttributeType } from 'resource-manager-database';
 import { ResourceInputDto } from '../dtos/input/resource-input.dto';
 import { ResourceMapper } from '../mappers/resource.mapper';
 
@@ -36,11 +36,24 @@ export class ResourceService {
 
 			const resourceId = result.identifiers[0]['id'];
 
-			const attributeValues = Object.values(resourceInputDto.attributes).map((attribute) => {
+			const attributeTypes = await manager
+				.createQueryBuilder()
+				.select('rat')
+				.from(ResourceAttributeType, 'rat')
+				.where('name IN (:...names)', { names: resourceInputDto.attributes.map((a) => a.key) })
+				.getMany();
+
+			const attributeValues = attributeTypes.flatMap((at) => {
+				const value = resourceInputDto.attributes.find((a) => a.key === at['name'])?.value;
+
+				if (!value) {
+					return [];
+				}
+
 				return {
 					resourceId,
-					attributeTypeId: attribute.key,
-					value: attribute.value
+					resourceAttributeTypeId: at['id'],
+					value
 				};
 			});
 

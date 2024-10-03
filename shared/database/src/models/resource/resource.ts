@@ -26,7 +26,7 @@ export class Resource {
 	@ManyToOne(() => Resource, resource => resource.childResources, {nullable: true})
 	parentResource: Resource;
 
-	@Column()
+	@Column({ nullable: true })
 	parentResourceId: number;
 
 	@OneToMany(() => Resource, resource => resource.parentResource)
