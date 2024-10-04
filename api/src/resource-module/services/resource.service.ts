@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Resource, ResourceAttributeType, ResourceToAttributeType } from 'resource-manager-database';
 import { ResourceInputDto } from '../dtos/input/resource-input.dto';
@@ -10,6 +10,24 @@ export class ResourceService {
 		private readonly dataSource: DataSource,
 		private readonly resourceMapper: ResourceMapper
 	) {}
+
+	async getResource(id: number) {
+		const resource = await this.dataSource.getRepository(Resource).findOne({
+			where: { id },
+			relations: [
+				'resourceType',
+				'parentResource',
+				'resourceToResourceAttributes',
+				'resourceToResourceAttributes.resourceAttributeType'
+			]
+		});
+
+		if (!resource) {
+			throw new NotFoundException();
+		}
+
+		return this.resourceMapper.toResourceDetailDto(resource);
+	}
 
 	async getResources() {
 		const resources = await this.dataSource.getRepository(Resource).find({

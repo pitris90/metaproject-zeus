@@ -1,7 +1,4 @@
-class AttributeDto {
-	key: string;
-	value: string;
-}
+import { AttributeDto } from '../attribute.dto';
 
 export class ResourceInputDto {
 	name: string;

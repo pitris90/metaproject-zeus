@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ResourceService } from '../services/resource.service';
 
@@ -10,5 +10,10 @@ export class ResourceController {
 	@Get('/')
 	async getResources() {
 		return this.resourceService.getResources();
+	}
+
+	@Get('/:id')
+	async getResource(@Param('id') id: number) {
+		return this.resourceService.getResource(id);
 	}
 }
