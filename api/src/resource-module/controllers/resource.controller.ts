@@ -12,6 +12,11 @@ export class ResourceController {
 		return this.resourceService.getResources();
 	}
 
+	@Get('/attributes')
+	async getResourceAttributes() {
+		return this.resourceService.getResourceAttributes();
+	}
+
 	@Get('/:id')
 	async getResource(@Param('id') id: number) {
 		return this.resourceService.getResource(id);

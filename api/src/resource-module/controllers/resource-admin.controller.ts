@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
 import { RolesCheck } from '../../permission-module/decorators/roles.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { ResourceInputDto } from '../dtos/input/resource-input.dto';
@@ -13,5 +13,12 @@ export class ResourceAdminController {
 	@HttpCode(201)
 	async createResource(@Body() resourceInputDto: ResourceInputDto) {
 		await this.resourceService.createResource(resourceInputDto);
+	}
+
+	@Post('/:id')
+	@HttpCode(204)
+	async updateResource(@Param('id') id: number, @Body() resourceInputDto: ResourceInputDto) {
+		console.log('im here');
+		await this.resourceService.updateResource(id, resourceInputDto);
 	}
 }

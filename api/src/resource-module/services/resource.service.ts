@@ -18,7 +18,8 @@ export class ResourceService {
 				'resourceType',
 				'parentResource',
 				'resourceToResourceAttributes',
-				'resourceToResourceAttributes.resourceAttributeType'
+				'resourceToResourceAttributes.resourceAttributeType',
+				'resourceToResourceAttributes.resourceAttributeType.attributeType'
 			]
 		});
 
@@ -27,6 +28,15 @@ export class ResourceService {
 		}
 
 		return this.resourceMapper.toResourceDetailDto(resource);
+	}
+
+	async getResourceAttributes() {
+		const resourceAttributes = await this.dataSource.getRepository(ResourceAttributeType).find({
+			relations: ['attributeType']
+		});
+		return resourceAttributes.map((resourceAttribute) =>
+			this.resourceMapper.toResourceAttributeDto(resourceAttribute)
+		);
 	}
 
 	async getResources() {
@@ -74,6 +84,61 @@ export class ResourceService {
 					value
 				};
 			});
+
+			await manager.createQueryBuilder().insert().into(ResourceToAttributeType).values(attributeValues).execute();
+		});
+	}
+
+	async updateResource(id: number, resourceInputDto: ResourceInputDto) {
+		await this.dataSource.transaction(async (manager) => {
+			const resource = await manager.getRepository(Resource).findOne({
+				where: { id }
+			});
+
+			if (!resource) {
+				throw new NotFoundException();
+			}
+
+			await manager
+				.createQueryBuilder()
+				.update(Resource)
+				.set({
+					name: resourceInputDto.name,
+					description: resourceInputDto.description,
+					isAvailable: resourceInputDto.isAvailable,
+					resourceTypeId: resourceInputDto.resourceTypeId,
+					parentResourceId: resourceInputDto.parentResourceId
+				})
+				.where('id = :id', { id })
+				.execute();
+
+			const attributeTypes = await manager
+				.createQueryBuilder()
+				.select('rat')
+				.from(ResourceAttributeType, 'rat')
+				.where('name IN (:...names)', { names: resourceInputDto.attributes.map((a) => a.key) })
+				.getMany();
+
+			const attributeValues = attributeTypes.flatMap((at) => {
+				const value = resourceInputDto.attributes.find((a) => a.key === at['name'])?.value;
+
+				if (!value) {
+					return [];
+				}
+
+				return {
+					resourceId: id,
+					resourceAttributeTypeId: at['id'],
+					value
+				};
+			});
+
+			await manager
+				.createQueryBuilder()
+				.delete()
+				.from(ResourceToAttributeType)
+				.where('resourceId = :id', { id })
+				.execute();
 
 			await manager.createQueryBuilder().insert().into(ResourceToAttributeType).values(attributeValues).execute();
 		});
