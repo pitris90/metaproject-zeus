@@ -7,4 +7,5 @@ export class ResourceAttributeDto {
 		id: number;
 		name: string;
 	};
+	hasResources: boolean;
 }

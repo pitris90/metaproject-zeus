@@ -32,7 +32,7 @@ export class ResourceService {
 
 	async getResourceAttributes() {
 		const resourceAttributes = await this.dataSource.getRepository(ResourceAttributeType).find({
-			relations: ['attributeType']
+			relations: ['attributeType', 'resourceToResourceAttributes']
 		});
 		return resourceAttributes.map((resourceAttribute) =>
 			this.resourceMapper.toResourceAttributeDto(resourceAttribute)

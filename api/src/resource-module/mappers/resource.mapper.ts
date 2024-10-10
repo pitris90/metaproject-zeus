@@ -61,7 +61,8 @@ export class ResourceMapper {
 			attributeType: {
 				id: resourceAttribute.attributeType.id,
 				name: resourceAttribute.attributeType.name
-			}
+			},
+			hasResources: resourceAttribute.resourceToResourceAttributes.length > 0
 		};
 	}
 }
