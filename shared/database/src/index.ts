@@ -17,6 +17,9 @@ import { Publication, PublicationSource } from './models/publication/publication
 import { ResourceAttributeType } from './models/resource/resource-attribute-type';
 import { ResourceToAttributeType } from './models/resource/resource-to-attribute-type';
 import { AttributeType } from './models/attribute-type';
+import { AllocationStatus } from './enums/allocation.status';
+import { Allocation } from './models/allocation/allocation';
+import { AllocationUser } from './models/allocation/allocation-user';
 
 export { TypeormConfigService };
 export { AttributeType };
@@ -26,3 +29,4 @@ export { Resource, ResourceType, ResourceAttributeType, ResourceToAttributeType 
 export { ProjectArchival };
 export { File };
 export { Publication, PublicationSource }
+export { AllocationStatus, Allocation, AllocationUser }
