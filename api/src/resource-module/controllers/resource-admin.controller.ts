@@ -18,7 +18,6 @@ export class ResourceAdminController {
 	@Post('/:id')
 	@HttpCode(204)
 	async updateResource(@Param('id') id: number, @Body() resourceInputDto: ResourceInputDto) {
-		console.log('im here');
 		await this.resourceService.updateResource(id, resourceInputDto);
 	}
 }

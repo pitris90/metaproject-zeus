@@ -19,6 +19,7 @@ export class ResourceController {
 
 	@Get('/:id')
 	async getResource(@Param('id') id: number) {
+		// TODO add validation for admin, get only available detail for public attributes
 		return this.resourceService.getResource(id);
 	}
 }
