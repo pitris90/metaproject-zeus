@@ -4,6 +4,8 @@ import { Allocation, AllocationStatus, AllocationUser } from 'resource-manager-d
 import { AllocationRequestDto } from '../dtos/allocation-request.dto';
 import { ProjectPermissionService } from '../../project-module/services/project-permission.service';
 import { ProjectPermissionEnum } from '../../project-module/enums/project-permission.enum';
+import { Sorting } from '../../config-module/decorators/get-sorting';
+import { Pagination } from '../../config-module/decorators/get-pagination';
 
 @Injectable()
 export class AllocationService {
@@ -46,5 +48,50 @@ export class AllocationService {
 				})
 				.execute();
 		});
+	}
+
+	async list(projectId: number, userId: number, pagination: Pagination, sorting: Sorting | null) {
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+
+		const allocationBuilder = this.dataSource
+			.createQueryBuilder()
+			.select('a')
+			.from(Allocation, 'a')
+			.leftJoinAndSelect('a.resource', 'r')
+			.leftJoinAndSelect('r.resourceType', 'rt')
+			.where('a.projectId = :projectId', { projectId })
+			.offset(pagination.offset)
+			.limit(pagination.limit);
+
+		if (!userPermissions.has(ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS)) {
+			allocationBuilder.andWhereExists(
+				this.dataSource
+					.createQueryBuilder()
+					.select('au')
+					.from(AllocationUser, 'au')
+					.where('au.allocationId = a.id')
+					.andWhere('au.userId = :userId', { userId })
+					.subQuery()
+			);
+		}
+
+		if (sorting) {
+			switch (sorting.columnAccessor) {
+				case 'name':
+					allocationBuilder.orderBy('r.name', sorting.direction);
+					break;
+				case 'type':
+					allocationBuilder.orderBy('rt.name', sorting.direction);
+					break;
+				case 'endDate':
+					allocationBuilder.orderBy('a.endDate', sorting.direction);
+					break;
+				case 'status':
+					allocationBuilder.orderBy('a.status', sorting.direction);
+					break;
+			}
+		}
+
+		return allocationBuilder.getManyAndCount();
 	}
 }

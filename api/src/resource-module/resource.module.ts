@@ -11,6 +11,7 @@ import { AttributeTypeService } from './services/attribute-type.service';
 import { AttributeMapper } from './mappers/attribute.mapper';
 import { AllocationController } from './controllers/allocation.controller';
 import { AllocationService } from './services/allocation.service';
+import { AllocationMapper } from './mappers/allocation.mapper';
 
 @Module({
 	imports: [ProjectModule],
@@ -27,7 +28,8 @@ import { AllocationService } from './services/allocation.service';
 		ResourceService,
 		AttributeTypeService,
 		AttributeMapper,
-		AllocationService
+		AllocationService,
+		AllocationMapper
 	]
 })
 export class ResourceModule {}
