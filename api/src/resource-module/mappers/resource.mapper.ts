@@ -47,6 +47,7 @@ export class ResourceMapper {
 				key: a.resourceAttributeType.name,
 				value: a.value,
 				isPublic: a.resourceAttributeType.isPublic,
+				isRequired: a.resourceAttributeType.isRequired,
 				type: a.resourceAttributeType.attributeType.name
 			}))
 		};
