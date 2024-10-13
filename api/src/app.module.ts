@@ -11,6 +11,7 @@ import { UsersModule } from './users-module/users.module';
 import { AuthModule } from './auth-module/auth.module';
 import { ProjectModule } from './project-module/project.module';
 import { PublicationModule } from './publication-module/publication.module';
+import { ResourceModule } from './resource-module/resource.module';
 
 @Module({
 	imports: [
@@ -33,7 +34,8 @@ import { PublicationModule } from './publication-module/publication.module';
 		PermissionModule,
 		UsersModule,
 		ProjectModule,
-		PublicationModule
+		PublicationModule,
+		ResourceModule
 	],
 	controllers: [AppController]
 })

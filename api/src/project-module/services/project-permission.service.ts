@@ -136,7 +136,8 @@ export class ProjectPermissionService {
 				return [
 					ProjectPermissionEnum.VIEW_PROJECT,
 					ProjectPermissionEnum.VIEW_ADVANCED_DETAILS,
-					ProjectPermissionEnum.VIEW_ALL_MEMBERS
+					ProjectPermissionEnum.VIEW_ALL_MEMBERS,
+					ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS
 				];
 			}
 
@@ -159,6 +160,7 @@ export class ProjectPermissionService {
 		permissions.add(ProjectPermissionEnum.EDIT_PUBLICATIONS);
 		permissions.add(ProjectPermissionEnum.EDIT_MEMBERS);
 		permissions.add(ProjectPermissionEnum.VIEW_ALL_MEMBERS);
+		permissions.add(ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS);
 		permissions.add(ProjectPermissionEnum.VIEW_ADVANCED_DETAILS);
 	}
 

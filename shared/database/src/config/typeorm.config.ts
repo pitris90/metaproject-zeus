@@ -14,6 +14,11 @@ import { ProjectArchival } from '../models/project/project-archival';
 import { SnakeNamingStrategy } from '../strategies/snake-case.strategy';
 import { File } from '../models/file';
 import { Publication } from '../models/publication/publication';
+import { AttributeType } from '../models/attribute-type';
+import { ResourceAttributeType } from '../models/resource/resource-attribute-type';
+import { ResourceToAttributeType } from '../models/resource/resource-to-attribute-type';
+import { Allocation } from '../models/allocation/allocation';
+import { AllocationUser } from '../models/allocation/allocation-user';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -28,6 +33,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 			password: database.password,
 			database: database.database,
 			entities: [
+				AttributeType,
 				// user
 				Permission,
 				Role,
@@ -41,6 +47,11 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				// resources
 				ResourceType,
 				Resource,
+				ResourceAttributeType,
+				ResourceToAttributeType,
+				// allocations
+				Allocation,
+				AllocationUser,
 				// publications
 				Publication,
 				// misc

@@ -14,3 +14,9 @@
 
 ## Publications
 * 12000 - Publication not found
+
+## Resources
+* 13000 - Resource not found
+* 13001 - Resource already exists
+* 13002 - Resource attribute already belongs to resource
+* 13003 - Invalid resource operation
