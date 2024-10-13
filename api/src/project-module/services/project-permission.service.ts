@@ -6,14 +6,14 @@ import {
 	ProjectUser,
 	ProjectUserRole,
 	ProjectUserStatus,
-	RolePermission,
+	Role,
 	User
 } from 'resource-manager-database';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { InvalidUserApiException } from '../../error-module/errors/users/invalid-user.api-exception';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
-import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { InvalidPermissionException } from '../exceptions/invalid-permission.exception';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 @Injectable()
 export class ProjectPermissionService {
@@ -69,11 +69,7 @@ export class ProjectPermissionService {
 
 		const user = await manager.getRepository(User).findOne({
 			relations: {
-				role: {
-					permissionsToRole: {
-						permission: true
-					}
-				}
+				role: true
 			},
 			where: {
 				id: userId
@@ -85,7 +81,7 @@ export class ProjectPermissionService {
 		}
 
 		// fill with default permissions
-		const permissions = new Set(this.getDefaultPermissions(user.role.permissionsToRole));
+		const permissions = new Set(this.getDefaultPermissions(user.role));
 
 		// user is PI
 		if (project.pi.id === userId) {
@@ -100,6 +96,7 @@ export class ProjectPermissionService {
 
 			// project is rejected - can edit only title and description
 			if (project.status === ProjectStatus.REJECTED) {
+				this.removeEditPermissions(permissions);
 				permissions.add(ProjectPermissionEnum.EDIT_PROJECT);
 			}
 			return permissions;
@@ -130,28 +127,31 @@ export class ProjectPermissionService {
 		return permissions;
 	}
 
-	private getDefaultPermissions(permissionsToRole: RolePermission[]): ProjectPermissionEnum[] {
-		return permissionsToRole.flatMap((rolePermission) => {
-			if (rolePermission.permission.codeName === PermissionEnum.GET_ALL_PROJECTS) {
-				return [
-					ProjectPermissionEnum.VIEW_PROJECT,
-					ProjectPermissionEnum.VIEW_ADVANCED_DETAILS,
-					ProjectPermissionEnum.VIEW_ALL_MEMBERS,
-					ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS
-				];
-			}
+	private getDefaultPermissions(role: Role): ProjectPermissionEnum[] {
+		if (role.codeName === RoleEnum.ADMIN) {
+			return [
+				ProjectPermissionEnum.EDIT_PROJECT,
+				ProjectPermissionEnum.EDIT_PUBLICATIONS,
+				ProjectPermissionEnum.EDIT_MEMBERS,
+				ProjectPermissionEnum.EDIT_MANAGERS,
+				ProjectPermissionEnum.REQUEST_ALLOCATION,
+				ProjectPermissionEnum.VIEW_PROJECT,
+				ProjectPermissionEnum.VIEW_ADVANCED_DETAILS,
+				ProjectPermissionEnum.VIEW_ALL_MEMBERS,
+				ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS
+			];
+		}
 
-			if (rolePermission.permission.codeName === PermissionEnum.MANIPULATE_ALL_PROJECTS) {
-				return [
-					ProjectPermissionEnum.EDIT_PROJECT,
-					ProjectPermissionEnum.EDIT_PUBLICATIONS,
-					ProjectPermissionEnum.EDIT_MEMBERS,
-					ProjectPermissionEnum.EDIT_MANAGERS
-				];
-			}
+		if (role.codeName === RoleEnum.DIRECTOR) {
+			return [
+				ProjectPermissionEnum.VIEW_PROJECT,
+				ProjectPermissionEnum.VIEW_ADVANCED_DETAILS,
+				ProjectPermissionEnum.VIEW_ALL_MEMBERS,
+				ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS
+			];
+		}
 
-			return [];
-		});
+		return [];
 	}
 
 	private addManagerPermissions(permissions: Set<ProjectPermissionEnum>) {

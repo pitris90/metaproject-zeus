@@ -1,10 +1,10 @@
 import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
-import { RolesCheck } from '../../permission-module/decorators/roles.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { ResourceInputDto } from '../dtos/input/resource-input.dto';
 import { ResourceService } from '../services/resource.service';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 
-@RolesCheck([RoleEnum.ADMIN])
+@MinRoleCheck(RoleEnum.ADMIN)
 @Controller('/resource')
 export class ResourceAdminController {
 	constructor(private readonly resourceService: ResourceService) {}

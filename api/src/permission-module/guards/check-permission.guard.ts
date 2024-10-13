@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PermissionsCheck } from '../decorators/permissions.decorator';
-import { RolesCheck } from '../decorators/roles.decorator';
+import { MinRoleCheck } from '../decorators/min-role.decorator';
 import { UsersModel } from '../../users-module/models/users.model';
+import { RoleEnum } from '../models/role.enum';
 
 @Injectable()
 export class CheckPermissionGuard implements CanActivate {
@@ -12,29 +12,26 @@ export class CheckPermissionGuard implements CanActivate {
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
-		const permissions = this.reflector.get(PermissionsCheck, context.getHandler());
-		const roles = this.reflector.get(RolesCheck, context.getHandler());
+		const role = this.reflector.getAllAndOverride(MinRoleCheck, [context.getHandler(), context.getClass()]);
 		// endpoint has no specific permissions defined, so it's available for all
-		if (!permissions && !roles) {
-			return true;
-		}
-
-		// it shouldn't be allowed to define both roles and permissions auth
-		if (permissions && roles) {
-			throw new Error('Please define only permissions or roles for endpoint. Both options cannot be defined.');
+		if (!role) {
+			throw new Error('Please define minimum allowed role for endpoint.');
 		}
 
 		const user = context.switchToHttp().getRequest().user;
-		const userPermissions = await this.usersModel.getUserRole(user.id);
-		if (!userPermissions) {
+		const userRole = await this.usersModel.getUserRole(user.id);
+		if (!userRole) {
 			return false;
 		}
 
-		if (permissions) {
-			const userPermissionNames = userPermissions.role.permissionsToRole.map((p) => p.permission.codeName);
-			return permissions.every((p) => userPermissionNames.includes(p.toString()));
+		if (userRole.codeName === RoleEnum.ADMIN) {
+			return true;
 		}
 
-		return roles.some((role) => role.toString() === userPermissions.role.codeName);
+		if (userRole.codeName === RoleEnum.DIRECTOR) {
+			return role !== RoleEnum.ADMIN;
+		}
+
+		return role === RoleEnum.USER;
 	}
 }

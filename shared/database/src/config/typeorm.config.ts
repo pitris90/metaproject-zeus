@@ -1,10 +1,8 @@
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 import { DatabaseFactory } from './database.factory';
-import { Permission } from '../models/user/permission';
 import { Injectable } from '@nestjs/common';
 import { Role } from '../models/user/role';
 import { User } from '../models/user/user';
-import { RolePermission } from '../models/user/role-permission';
 import { Project } from '../models/project/project';
 import { ProjectApproval } from '../models/project/project-approval';
 import { ProjectUser } from '../models/project/project-user';
@@ -35,9 +33,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 			entities: [
 				AttributeType,
 				// user
-				Permission,
 				Role,
-				RolePermission,
 				User,
 				// project
 				Project,

@@ -1,6 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { RoleEnum } from '../../permission-module/models/role.enum';
-import { RolesCheck } from '../../permission-module/decorators/roles.decorator';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { AllocationRequestDto } from '../dtos/allocation-request.dto';
@@ -8,6 +7,7 @@ import { AllocationService } from '../services/allocation.service';
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 import { AllocationMapper } from '../mappers/allocation.mapper';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 
 @Controller('/allocation')
 export class AllocationController {
@@ -17,7 +17,7 @@ export class AllocationController {
 	) {}
 
 	@Post('/request/:projectId')
-	@RolesCheck([RoleEnum.USER, RoleEnum.ADMIN])
+	@MinRoleCheck(RoleEnum.USER)
 	@HttpCode(201)
 	async requestAllocation(
 		@Param('projectId') projectId: number,
@@ -28,7 +28,7 @@ export class AllocationController {
 	}
 
 	@Get('/list/:projectId')
-	@RolesCheck([RoleEnum.USER, RoleEnum.ADMIN])
+	@MinRoleCheck(RoleEnum.USER)
 	async allocationList(
 		@Param('projectId') projectId: number,
 		@RequestUser() user: UserDto,

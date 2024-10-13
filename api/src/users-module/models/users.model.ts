@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { Injectable } from '@nestjs/common';
-import { User } from 'resource-manager-database';
+import { Role, User } from 'resource-manager-database';
 
 @Injectable()
 export class UsersModel {
@@ -28,12 +28,18 @@ export class UsersModel {
 		});
 	}
 
-	async getUserRole(id: number) {
-		return this.dataSource.getRepository(User).findOne({
+	async getUserRole(id: number): Promise<Role | null> {
+		const user = await this.dataSource.getRepository(User).findOne({
 			where: {
 				id
 			},
-			relations: ['role', 'role.permissionsToRole.permission']
+			relations: ['role']
 		});
+
+		if (!user) {
+			return null;
+		}
+
+		return user.role;
 	}
 }

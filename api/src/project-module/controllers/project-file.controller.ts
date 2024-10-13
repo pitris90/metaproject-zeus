@@ -4,13 +4,13 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nest
 import type { Response } from 'express';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
-import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
-import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { ProjectPermissionService } from '../services/project-permission.service';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 import { ProjectModel } from '../models/project.model';
 import { ProjectInvalidResourceApiException } from '../../error-module/errors/projects/project-invalid-resource.api-exception';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -21,7 +21,7 @@ export class ProjectFileController {
 	) {}
 
 	@Get(':id/file/archival')
-	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Download archival attachment for specific project',
 		description: 'Download file.'

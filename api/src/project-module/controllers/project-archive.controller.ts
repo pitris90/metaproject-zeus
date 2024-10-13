@@ -3,12 +3,12 @@ import { ApiBody, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } fr
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProjectDto } from '../dtos/project.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
-import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
-import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { ProjectArchiveDto } from '../dtos/input/project-archive.dto';
 import { ProjectArchivalService } from '../services/project-archival.service';
+import { RoleEnum } from '../../permission-module/models/role.enum';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -16,7 +16,7 @@ export class ProjectArchiveController {
 	constructor(private readonly projectArchivalService: ProjectArchivalService) {}
 
 	@Post('/:id/archive')
-	@PermissionsCheck([PermissionEnum.PROJECT_APPROVAL])
+	@MinRoleCheck(RoleEnum.ADMIN)
 	@ApiOperation({
 		summary: 'Archive project',
 		description: 'Archive project request.'

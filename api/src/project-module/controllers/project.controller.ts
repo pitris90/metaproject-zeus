@@ -9,8 +9,6 @@ import {
 	ApiQuery,
 	ApiTags
 } from '@nestjs/swagger';
-import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
-import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { ProjectService } from '../services/project.service';
@@ -24,6 +22,8 @@ import { GetPagination, Pagination } from '../../config-module/decorators/get-pa
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 import { ProjectRequestsDto } from '../dtos/project-requests.dto';
 import { UserDto } from '../../users-module/dtos/user.dto';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -37,7 +37,7 @@ export class ProjectController {
 	) {}
 
 	@Get()
-	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Get my projects',
 		description: 'Get all projects that the user has requested or is a part of.'
@@ -76,7 +76,7 @@ export class ProjectController {
 	}
 
 	@Get('requests')
-	@PermissionsCheck([PermissionEnum.GET_ALL_PROJECTS])
+	@MinRoleCheck(RoleEnum.DIRECTOR)
 	@ApiOperation({
 		summary: 'Get project requests',
 		description: 'Get all project requests.'
@@ -98,7 +98,7 @@ export class ProjectController {
 	}
 
 	@Get(':id')
-	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Get project detail of concrete project',
 		description: 'Gets detail of project which user is part of.'
@@ -117,7 +117,7 @@ export class ProjectController {
 
 	@Post()
 	@HttpCode(201)
-	@PermissionsCheck([PermissionEnum.REQUEST_PROJECT])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Request a project',
 		description: 'Request a project to be created.'
@@ -142,7 +142,7 @@ export class ProjectController {
 
 	@Post(':id/request')
 	@HttpCode(204)
-	@PermissionsCheck([PermissionEnum.REQUEST_PROJECT])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Re-request a project',
 		description:
