@@ -12,7 +12,8 @@ export class UserMapper {
 			source: user.source,
 			externalId: user.externalId,
 			username: user.username,
-			name: user.name
+			name: user.name,
+			role: user?.role?.codeName
 		};
 	}
 }

@@ -19,6 +19,9 @@ export class UsersModel {
 
 	async findUserByExternalId(externalId: string): Promise<User | null> {
 		return this.dataSource.getRepository(User).findOne({
+			relations: {
+				role: true
+			},
 			where: {
 				externalId
 			}

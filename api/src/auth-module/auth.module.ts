@@ -8,6 +8,7 @@ import { AuthController } from './controllers/auth.controller';
 import { OidcService } from './services/oidc.service';
 import { TokenService } from './services/token.service';
 import { TokenCache } from './cache/token.cache';
+import { AuthMapper } from './mapper/auth.mapper';
 
 @Module({
 	providers: [
@@ -18,7 +19,8 @@ import { TokenCache } from './cache/token.cache';
 		AuthService,
 		OidcService,
 		TokenService,
-		TokenCache
+		TokenCache,
+		AuthMapper
 	],
 	controllers: [AuthController],
 	imports: [UsersModule, HttpModule]

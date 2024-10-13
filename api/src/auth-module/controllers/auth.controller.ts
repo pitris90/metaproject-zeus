@@ -1,10 +1,11 @@
-import { Controller, Post, UnauthorizedException, Headers, Body } from '@nestjs/common';
+import { Controller, Post, UnauthorizedException, Headers } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../decorators/public.decorator';
 import { TokenService } from '../services/token.service';
 import { AuthService } from '../services/auth.service';
-import { SignInDto } from '../dto/sign-in.dto';
-import { UsersModel } from '../../users-module/models/users.model';
+import { InvalidUserApiException } from '../../error-module/errors/users/invalid-user.api-exception';
+import { UserMapper } from '../../users-module/services/user.mapper';
+import { UserDto } from '../../users-module/dtos/user.dto';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -12,26 +13,26 @@ export class AuthController {
 	constructor(
 		private readonly tokenService: TokenService,
 		private readonly authService: AuthService,
-		private readonly usersModel: UsersModel
+		private readonly userMapper: UserMapper
 	) {}
 
 	@Post('sign-in')
 	@Public()
-	async signIn(@Headers('Authorization') authorizationHeader: string, @Body() signIn: SignInDto): Promise<void> {
+	async signIn(@Headers('Authorization') authorizationHeader: string): Promise<UserDto> {
 		const accessToken = authorizationHeader.split(' ')[1]?.trim();
 
 		if (!accessToken) {
 			throw new UnauthorizedException();
 		}
 
-		// only optimization - if user exists, we don't want to change anything
-		const user = await this.usersModel.findUserByExternalId(signIn.externalId);
-		if (user) {
-			return;
-		}
-
 		// otherwise get data from endpoint
 		const userInfo = await this.tokenService.getUserInfo(accessToken);
-		await this.authService.signIn(userInfo);
+		const user = await this.authService.signIn(userInfo);
+
+		if (!user) {
+			throw new InvalidUserApiException();
+		}
+
+		return this.userMapper.toUserDto(user);
 	}
 }

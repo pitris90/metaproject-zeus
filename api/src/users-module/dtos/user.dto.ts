@@ -44,4 +44,11 @@ export class UserDto {
 	 * @example "John Doe"
 	 */
 	name: string;
+
+	/**
+	 * User's role. Used for visual information in frontend.
+	 *
+	 * @example "user"
+	 */
+	role?: string;
 }
