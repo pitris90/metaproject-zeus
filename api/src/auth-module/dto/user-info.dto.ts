@@ -7,4 +7,5 @@ export class UserInfoDto {
 	email: string;
 	email_verified: boolean;
 	preferred_username: string;
+	eduperson_entitlement?: string[];
 }
