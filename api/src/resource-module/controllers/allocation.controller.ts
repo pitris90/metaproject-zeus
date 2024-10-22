@@ -12,7 +12,7 @@ import { MinRoleCheck } from '../../permission-module/decorators/min-role.decora
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 
 @Controller('/allocation')
-@ApiTags('Project allocation')
+@ApiTags('Allocation')
 export class AllocationController {
 	constructor(
 		private readonly allocationService: AllocationService,

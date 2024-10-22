@@ -16,7 +16,7 @@ import { AttributeTypeDto } from '../dtos/attribute-type.dto';
 import { ResourceNotFoundError } from '../../error-module/errors/resources/resource-not-found.error';
 import { InvalidResourceOperationError } from '../../error-module/errors/resources/invalid-resource-operation.error';
 
-@ApiTags('Resource Type')
+@ApiTags('Resource')
 @Controller('/resource-type')
 export class ResourceTypeController {
 	constructor(private readonly resourceTypeService: ResourceTypeService) {}

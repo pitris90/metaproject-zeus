@@ -6,7 +6,7 @@ import { Public } from '../../auth-module/decorators/public.decorator';
 import { ApiPublicationService } from '../services/api-publication.service';
 
 @Controller('/publication-search')
-@ApiTags('Publication Search')
+@ApiTags('Publication')
 export class PublicationSearchController {
 	constructor(private readonly apiPublicationService: ApiPublicationService) {}
 
