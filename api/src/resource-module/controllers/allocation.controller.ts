@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { UserDto } from '../../users-module/dtos/user.dto';
@@ -8,8 +9,10 @@ import { GetPagination, Pagination } from '../../config-module/decorators/get-pa
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 import { AllocationMapper } from '../mappers/allocation.mapper';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 
 @Controller('/allocation')
+@ApiTags('Project allocation')
 export class AllocationController {
 	constructor(
 		private readonly allocationService: AllocationService,
@@ -19,6 +22,17 @@ export class AllocationController {
 	@Post('/request/:projectId')
 	@MinRoleCheck(RoleEnum.USER)
 	@HttpCode(201)
+	@ApiOperation({
+		summary: 'Request allocation',
+		description: 'Allow user which is part of the project to request allocation.'
+	})
+	@ApiCreatedResponse({
+		description: 'The allocation was successfully requested.'
+	})
+	@ApiNotFoundResponse({
+		description: 'Project not found or user has no access to this project.',
+		type: ProjectNotFoundApiException
+	})
 	async requestAllocation(
 		@Param('projectId') projectId: number,
 		@RequestUser() user: UserDto,
@@ -29,6 +43,17 @@ export class AllocationController {
 
 	@Get('/list/:projectId')
 	@MinRoleCheck(RoleEnum.USER)
+	@ApiOperation({
+		summary: 'Get project allocation list',
+		description: 'Get project allocations. This method supports pagination.'
+	})
+	@ApiOkResponse({
+		description: 'Allocations of the project.'
+	})
+	@ApiNotFoundResponse({
+		description: 'Project not found or user has no access to this project.',
+		type: ProjectNotFoundApiException
+	})
 	async allocationList(
 		@Param('projectId') projectId: number,
 		@RequestUser() user: UserDto,

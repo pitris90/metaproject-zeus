@@ -7,6 +7,8 @@ import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { UserDto } from '../dtos/user.dto';
 import { ProjectPermissionEnum } from '../../project-module/enums/project-permission.enum';
 import { MemberModel } from '../../project-module/models/member.model';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 @ApiTags('User')
 @Controller('/users')
@@ -36,6 +38,7 @@ export class UsersController {
 		description: 'Users matching query.',
 		type: [UserInfoListDto]
 	})
+	@MinRoleCheck(RoleEnum.USER)
 	async getUsersByCriteria(
 		@RequestUser() user: UserDto,
 		@Query('query') query: string,

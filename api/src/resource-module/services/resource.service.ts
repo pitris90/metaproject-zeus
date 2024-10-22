@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Resource, ResourceAttributeType, ResourceToAttributeType } from 'resource-manager-database';
 import { ResourceInputDto } from '../dtos/input/resource-input.dto';
 import { ResourceMapper } from '../mappers/resource.mapper';
+import { ResourceNotFoundError } from '../../error-module/errors/resources/resource-not-found.error';
 
 @Injectable()
 export class ResourceService {
@@ -24,7 +25,7 @@ export class ResourceService {
 		});
 
 		if (!resource) {
-			throw new NotFoundException();
+			throw new ResourceNotFoundError();
 		}
 
 		return this.resourceMapper.toResourceDetailDto(resource);
@@ -96,7 +97,7 @@ export class ResourceService {
 			});
 
 			if (!resource) {
-				throw new NotFoundException();
+				throw new ResourceNotFoundError();
 			}
 
 			await manager
