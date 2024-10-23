@@ -1,7 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
-import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { PublicationService } from '../services/publication.service';
@@ -11,6 +9,8 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 import { PublicationMapper } from '../mapper/publication.mapper';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 @Controller('/publication')
 @ApiTags('Publication')
@@ -21,7 +21,7 @@ export class PublicationController {
 	) {}
 
 	@Get('/:projectId')
-	@PermissionsCheck([PermissionEnum.MANIPULATE_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Get project publications',
 		description: 'Get project publications. This method supports pagination.'
@@ -61,7 +61,7 @@ export class PublicationController {
 
 	@Delete('/:publicationId')
 	@HttpCode(204)
-	@PermissionsCheck([PermissionEnum.MANIPULATE_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Deletes publication from the project',
 		description: 'Deletes publication from the project if user has correct permissions and access.'
@@ -75,7 +75,7 @@ export class PublicationController {
 
 	@Post('/:projectId')
 	@HttpCode(201)
-	@PermissionsCheck([PermissionEnum.MANIPULATE_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Add publications to project',
 		description: 'Adds publications to project. This is bulk endpoint, either all publications are added or none.'

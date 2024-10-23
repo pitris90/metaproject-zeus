@@ -30,6 +30,9 @@ services:
       - IDENTITY_CALLBACK_URL
       - REDIS_HOST
       - REDIS_PORT
+      - FRONTEND_URL
+      - REDOC_USERNAME
+      - REDOC_PASSWORD
     expose:
       - 3000
     volumes:

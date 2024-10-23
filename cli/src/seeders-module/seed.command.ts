@@ -1,9 +1,7 @@
 import { DataSource, QueryFailedError } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { EntitySeederInterface } from './entity-seeders/entity-seeder.interface';
-import { PermissionSeeder } from './entity-seeders/permission-seeder.service';
 import { RoleSeeder } from './entity-seeders/role-seeder.service';
-import { RolePermissionSeeder } from './entity-seeders/role-permission-seeder.service';
 import { ResourceTypeSeeder } from './entity-seeders/resource-type-seeder.service';
 import { AttributeTypeSeeder } from './entity-seeders/attribute-type-seeder.service';
 import { ResourceAttributeTypeSeeder } from './entity-seeders/resource-attribute-type-seeder.service';
@@ -14,21 +12,12 @@ export class SeedCommand {
 
 	constructor(
 		private readonly dataSource: DataSource,
-		readonly permissionSeeder: PermissionSeeder,
 		readonly roleSeeder: RoleSeeder,
-		readonly rolePermissionSeeder: RolePermissionSeeder,
 		readonly resourceTypeSeeder: ResourceTypeSeeder,
 		readonly attributeTypeSeeder: AttributeTypeSeeder,
 		readonly resourceAttributeTypeSeeder: ResourceAttributeTypeSeeder
 	) {
-		this.seeders = [
-			permissionSeeder,
-			roleSeeder,
-			rolePermissionSeeder,
-			resourceTypeSeeder,
-			attributeTypeSeeder,
-			resourceAttributeTypeSeeder
-		];
+		this.seeders = [roleSeeder, resourceTypeSeeder, attributeTypeSeeder, resourceAttributeTypeSeeder];
 	}
 
 	async run(): Promise<void> {

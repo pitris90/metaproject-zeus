@@ -12,11 +12,11 @@ import { ProjectApproveDto } from '../dtos/input/project-approve.dto';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectRejectDto } from '../dtos/input/project-reject.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
-import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
-import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
 import { UserDto } from '../../users-module/dtos/user.dto';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 @ApiTags('Project')
 @Controller('/project/approval')
@@ -24,7 +24,7 @@ export class ProjectApprovalController {
 	constructor(private readonly projectApprovalService: ProjectApprovalService) {}
 
 	@Post('/approve')
-	@PermissionsCheck([PermissionEnum.PROJECT_APPROVAL])
+	@MinRoleCheck(RoleEnum.ADMIN)
 	@ApiOperation({
 		summary: 'Approve a project',
 		description: 'Approve a project request.'
@@ -53,7 +53,7 @@ export class ProjectApprovalController {
 	}
 
 	@Post('/reject')
-	@PermissionsCheck([PermissionEnum.PROJECT_APPROVAL])
+	@MinRoleCheck(RoleEnum.ADMIN)
 	@ApiOperation({
 		summary: 'Reject a project',
 		description: 'Reject a project request.'

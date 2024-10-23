@@ -10,8 +10,6 @@ import {
 } from '@nestjs/swagger';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
-import { PermissionsCheck } from '../../permission-module/decorators/permissions.decorator';
-import { PermissionEnum } from '../../permission-module/models/permission.enum';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { MemberService } from '../services/member.service';
 import { MemberListDto } from '../dtos/member-list.dto';
@@ -20,6 +18,8 @@ import { ProjectInvalidStatusApiException } from '../../error-module/errors/proj
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { MemberMapper } from '../mappers/member.mapper';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -30,7 +30,7 @@ export class MembersController {
 	) {}
 
 	@Get(':id/members')
-	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Get members of specific project',
 		description: 'Get members of specific project.'
@@ -61,7 +61,7 @@ export class MembersController {
 	}
 
 	@Post(':id/members')
-	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Add members to specific project',
 		description: 'Add members to specific project. This endpoint either adds all members or none of the members.'
@@ -87,7 +87,7 @@ export class MembersController {
 	}
 
 	@Delete(':projectId/members/:userId')
-	@PermissionsCheck([PermissionEnum.GET_OWNED_PROJECTS])
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Deletes member from specific project',
 		description: 'Deletes member from specific project.'

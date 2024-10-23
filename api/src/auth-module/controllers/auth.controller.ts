@@ -1,5 +1,5 @@
 import { Controller, Post, UnauthorizedException, Headers } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../decorators/public.decorator';
 import { TokenService } from '../services/token.service';
 import { AuthService } from '../services/auth.service';
@@ -8,7 +8,7 @@ import { UserMapper } from '../../users-module/services/user.mapper';
 import { UserDto } from '../../users-module/dtos/user.dto';
 
 @Controller('auth')
-@ApiTags('auth')
+@ApiTags('Auth')
 export class AuthController {
 	constructor(
 		private readonly tokenService: TokenService,
@@ -18,6 +18,10 @@ export class AuthController {
 
 	@Post('sign-in')
 	@Public()
+	@ApiOperation({
+		summary: 'Signs in user',
+		description: 'Creates user in internal system from access token.'
+	})
 	async signIn(@Headers('Authorization') authorizationHeader: string): Promise<UserDto> {
 		const accessToken = authorizationHeader.split(' ')[1]?.trim();
 
