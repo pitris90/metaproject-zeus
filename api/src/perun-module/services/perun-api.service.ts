@@ -2,7 +2,7 @@ import { Injectable, Scope } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { lastValueFrom, Observable } from 'rxjs';
-import { AxiosError, AxiosResponse } from 'axios';
+import { AxiosError } from 'axios';
 import { PerunManager } from '../entities/manager.entity';
 import { PerunApiException } from '../exceptions/perun-api.exception';
 
@@ -72,7 +72,7 @@ export class PerunApiService {
 		return this.handleResponse(response$);
 	}
 
-	private async handleResponse<T>(response$: Observable<AxiosResponse>): Promise<T> {
+	private async handleResponse<T>(response$: Observable<any>): Promise<T> {
 		try {
 			const result = await lastValueFrom(response$);
 
