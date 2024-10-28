@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Scope } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { lastValueFrom, Observable } from 'rxjs';
@@ -6,8 +6,10 @@ import { AxiosError, AxiosResponse } from 'axios';
 import { PerunManager } from '../entities/manager.entity';
 import { PerunApiException } from '../exceptions/perun-api.exception';
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class PerunApiService {
+	private cookie: string;
+
 	private readonly baseUrl: string;
 	private readonly user: string;
 	private readonly password: string;
@@ -31,9 +33,14 @@ export class PerunApiService {
 	callBasic<T>(manager: PerunManager, method: string, params: Record<string, any>): Promise<T> {
 		const response$ = this.httpService.post(`${this.baseUrl}/ba/rpc/json/${manager}/${method}`, params, {
 			withCredentials: true,
+			withXSRFToken: true,
 			auth: {
 				username: this.user,
 				password: this.password
+			},
+			headers: {
+				'X-XSRF-TOKEN': this.cookie,
+				Cookie: `XSRF-TOKEN=${this.cookie}`
 			}
 		});
 		return this.handleResponse(response$);
@@ -55,8 +62,11 @@ export class PerunApiService {
 	): Promise<T> {
 		const response$ = this.httpService.post(`${this.baseUrl}/oauth/rpc/json/${manager}/${method}`, params, {
 			withCredentials: true,
+			withXSRFToken: true,
 			headers: {
-				Authorization: `Bearer ${token}`
+				Authorization: `Bearer ${token}`,
+				'X-XSRF-TOKEN': this.cookie,
+				Cookie: `XSRF-TOKEN=${this.cookie}`
 			}
 		});
 		return this.handleResponse(response$);
@@ -65,10 +75,18 @@ export class PerunApiService {
 	private async handleResponse<T>(response$: Observable<AxiosResponse>): Promise<T> {
 		try {
 			const result = await lastValueFrom(response$);
+
+			// if response has correct cookies, set session
+			if (result.headers['set-cookie']) {
+				const perunSession = result.headers['set-cookie']?.find((cookie) => cookie.startsWith('PERUNSESSION'));
+				if (perunSession) {
+					this.cookie = perunSession.split(';')[0].split('=')[1];
+				}
+			}
+
 			return result.data;
 		} catch (error) {
 			if (error instanceof AxiosError) {
-				console.log(error.request);
 				const data = error.response?.data as Record<string, string>;
 				throw new PerunApiException(data['name'], data['message']);
 			}
