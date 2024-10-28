@@ -14,7 +14,7 @@ import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { ProjectService } from '../services/project.service';
 import { ProjectDto } from '../dtos/project.dto';
 import { MyProjectsDto } from '../dtos/my-projects.dto';
-import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
+import { ProjectExistsApiException } from '../../error-module/errors/projects/project-exists.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectDetailDto } from '../dtos/project-detail.dto';
@@ -128,7 +128,7 @@ export class ProjectController {
 	})
 	@ApiConflictResponse({
 		description: 'A project request already exists.',
-		type: ProjectRequestExistsApiException
+		type: ProjectExistsApiException
 	})
 	@ApiBody({
 		type: RequestProjectDto
@@ -150,7 +150,7 @@ export class ProjectController {
 	})
 	@ApiConflictResponse({
 		description: 'Different project with same info already exists.',
-		type: ProjectRequestExistsApiException
+		type: ProjectExistsApiException
 	})
 	@ApiNotFoundResponse({
 		description: 'Project not found or user does not have correct access to a project.',

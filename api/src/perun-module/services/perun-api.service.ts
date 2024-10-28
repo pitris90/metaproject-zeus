@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { lastValueFrom, Observable } from 'rxjs';
-import { AxiosResponse } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 import { PerunManager } from '../entities/manager.entity';
 import { PerunApiException } from '../exceptions/perun-api.exception';
 
@@ -21,7 +21,14 @@ export class PerunApiService {
 		this.password = this.configService.getOrThrow('PERUN_PASSWORD');
 	}
 
-	async callBasic<T>(manager: PerunManager, method: string, params: Record<string, string>): Promise<T> {
+	/**
+	 * Calls PERUN API method via service account.
+	 *
+	 * @param manager PERUN manager
+	 * @param method PERUN method name
+	 * @param params PERUN params
+	 */
+	callBasic<T>(manager: PerunManager, method: string, params: Record<string, any>): Promise<T> {
 		const response$ = this.httpService.post(`${this.baseUrl}/ba/rpc/json/${manager}/${method}`, params, {
 			withCredentials: true,
 			auth: {
@@ -32,6 +39,14 @@ export class PerunApiService {
 		return this.handleResponse(response$);
 	}
 
+	/**
+	 * Calls PERUN API method via OAuth token (this method joins concrete action in PERUN to user).
+	 *
+	 * @param token of user which is doing the action
+	 * @param manager PERUN manager
+	 * @param method PERUN method name
+	 * @param params PERUN params
+	 */
 	async callOauth<T>(
 		token: string,
 		manager: PerunManager,
@@ -48,12 +63,17 @@ export class PerunApiService {
 	}
 
 	private async handleResponse<T>(response$: Observable<AxiosResponse>): Promise<T> {
-		const result = await lastValueFrom(response$);
+		try {
+			const result = await lastValueFrom(response$);
+			return result.data;
+		} catch (error) {
+			if (error instanceof AxiosError) {
+				console.log(error.request);
+				const data = error.response?.data as Record<string, string>;
+				throw new PerunApiException(data['name'], data['message']);
+			}
 
-		if (result.status !== 200) {
-			throw new PerunApiException(`Perun API call failed: ${result.statusText}`);
+			throw error;
 		}
-
-		return result.data;
 	}
 }

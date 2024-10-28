@@ -3,7 +3,7 @@ import { DataSource, QueryFailedError } from 'typeorm';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { ProjectDto } from '../dtos/project.dto';
-import { ProjectRequestExistsApiException } from '../../error-module/errors/projects/project-request-exists.api-exception';
+import { ProjectExistsApiException } from '../../error-module/errors/projects/project-exists.api-exception';
 import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
@@ -85,7 +85,7 @@ export class ProjectService {
 					e instanceof QueryFailedError &&
 					e.message.includes('duplicate key value violates unique constraint')
 				) {
-					throw new ProjectRequestExistsApiException();
+					throw new ProjectExistsApiException();
 				}
 
 				throw e;
@@ -124,7 +124,7 @@ export class ProjectService {
 					e instanceof QueryFailedError &&
 					e.message.includes('duplicate key value violates unique constraint')
 				) {
-					throw new ProjectRequestExistsApiException();
+					throw new ProjectExistsApiException();
 				}
 
 				throw e;

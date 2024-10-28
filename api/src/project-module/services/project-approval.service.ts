@@ -6,6 +6,7 @@ import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
+import { PerunFacade } from '../../perun-module/perun.facade';
 import { ProjectLockService } from './project-lock.service';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class ProjectApprovalService {
 		private readonly dataSource: DataSource,
 		private readonly projectModel: ProjectModel,
 		private readonly projectMapper: ProjectMapper,
+		private readonly perunFacade: PerunFacade,
 		private readonly projectLockService: ProjectLockService
 	) {}
 
@@ -38,6 +40,9 @@ export class ProjectApprovalService {
 				.into(ProjectApproval)
 				.values({ project: project, reviewerId: userId, status: ApprovalStatus.APPROVED })
 				.execute();
+
+			// create group in Perun
+			await this.perunFacade.createGroup(project.title, project.description);
 
 			project.status = ProjectStatus.ACTIVE;
 			return this.projectMapper.toProjectDto(project);
