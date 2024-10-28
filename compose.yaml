@@ -33,6 +33,9 @@ services:
       - FRONTEND_URL
       - REDOC_USERNAME
       - REDOC_PASSWORD
+      - PERUN_URL
+      - PERUN_USER
+      - PERUN_PASSWORD
     expose:
       - 3000
     volumes:
