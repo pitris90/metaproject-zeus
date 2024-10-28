@@ -30,9 +30,6 @@ export class ProjectApprovalService {
 				throw new ProjectHasApprovalApiException();
 			}
 
-			// update project status
-			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.ACTIVE });
-
 			// create record about project approval
 			await manager
 				.createQueryBuilder()
@@ -42,7 +39,13 @@ export class ProjectApprovalService {
 				.execute();
 
 			// create group in Perun
-			await this.perunFacade.createGroup(project.title, project.description);
+			const group = await this.perunFacade.createGroup(project.title, project.description);
+
+			// update project status
+			await this.projectModel.updateProject(manager, projectId, {
+				status: ProjectStatus.ACTIVE,
+				perunUuid: group.uuid
+			});
 
 			project.status = ProjectStatus.ACTIVE;
 			return this.projectMapper.toProjectDto(project);
