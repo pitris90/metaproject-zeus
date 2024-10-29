@@ -3,9 +3,8 @@ import { PerunManager } from '../entities/manager.entity';
 import { PerunApiException } from '../exceptions/perun-api.exception';
 import { ProjectExistsApiException } from '../../error-module/errors/projects/project-exists.api-exception';
 import { Group } from '../entities/group.entity';
+import { VO_ID } from '../config/constants';
 import { PerunApiService } from './perun-api.service';
-
-const VO_ID = 4068;
 
 @Injectable()
 export class PerunGroupService {

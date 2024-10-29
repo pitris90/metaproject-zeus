@@ -1,0 +1,24 @@
+export type PerunAttribute = {
+	id: number;
+	createdAt: string;
+	createdBy: string;
+	modifiedAt: string;
+	createdByUid: number;
+	modifiedByUid: number;
+	friendlyName: string;
+	namespace: string;
+	description: string;
+	displayName: string;
+	type: string;
+	value: string | null;
+	writable: boolean;
+	unique: boolean;
+	valueCreatedAt: string | null;
+	valueModifiedAt: string | null;
+	valueCreatedBy: number | null;
+	valueModifiedBy: number | null;
+	baseFriendlyName: string;
+	friendlyNameParameter: string;
+	entity: string;
+	beanName: 'Attribute';
+};

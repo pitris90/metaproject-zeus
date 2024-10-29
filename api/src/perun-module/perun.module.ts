@@ -6,6 +6,8 @@ import { PerunApiService } from './services/perun-api.service';
 import { PerunGroupService } from './services/perun-group.service';
 import { PerunFacade } from './perun.facade';
 import { PerunGroupConsumer } from './consumers/perun-group.consumer';
+import { PerunMembersService } from './services/perun-members.service';
+import { PerunAttributesService } from './services/perun-attributes.service';
 
 @Module({
 	imports: [
@@ -15,6 +17,14 @@ import { PerunGroupConsumer } from './consumers/perun-group.consumer';
 		})
 	],
 	exports: [PerunUserService, PerunFacade],
-	providers: [PerunUserService, PerunApiService, PerunGroupService, PerunFacade, PerunGroupConsumer]
+	providers: [
+		PerunUserService,
+		PerunApiService,
+		PerunGroupService,
+		PerunFacade,
+		PerunGroupConsumer,
+		PerunMembersService,
+		PerunAttributesService
+	]
 })
 export class PerunModule {}

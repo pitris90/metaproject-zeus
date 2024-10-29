@@ -1,3 +1,6 @@
 export enum PerunManager {
-	GROUPS = 'groupsManager'
+	GROUPS = 'groupsManager',
+	MEMBERS = 'membersManager',
+	ATTRIBUTES = 'attributesManager',
+	AUTHZ = 'authzResolver'
 }
