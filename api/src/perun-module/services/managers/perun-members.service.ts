@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { PerunManager } from '../entities/manager.entity';
-import { VO_ID } from '../config/constants';
-import { RichMember } from '../entities/rich-member.entity';
-import { PerunApiService } from './perun-api.service';
+import { PerunManager } from '../../entities/manager.entity';
+import { VO_ID } from '../../config/constants';
+import { PerunApiService } from '../perun-api.service';
+import { RichMember } from '../../entities/rich-member.entity';
 
 @Injectable()
 export class PerunMembersService {

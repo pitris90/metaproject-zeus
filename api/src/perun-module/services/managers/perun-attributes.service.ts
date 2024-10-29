@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PerunManager } from '../entities/manager.entity';
-import { PerunAttribute } from '../entities/perun-attribute.entity';
-import { PerunApiService } from './perun-api.service';
+import { PerunManager } from '../../entities/manager.entity';
+import { PerunAttribute } from '../../entities/perun-attribute.entity';
+import { PerunApiService } from '../perun-api.service';
 
 @Injectable()
 export class PerunAttributesService {

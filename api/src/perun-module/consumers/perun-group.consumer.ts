@@ -3,9 +3,9 @@ import { Job } from 'bullmq';
 import { DataSource } from 'typeorm';
 import { Project } from 'resource-manager-database';
 import { Group } from '../entities/group.entity';
-import { PerunAttributesService } from '../services/perun-attributes.service';
-import { PerunMembersService } from '../services/perun-members.service';
-import { PerunAuthzService } from '../services/perun-authz.service';
+import { PerunAttributesService } from '../services/managers/perun-attributes.service';
+import { PerunMembersService } from '../services/managers/perun-members.service';
+import { PerunAuthzService } from '../services/managers/perun-authz.service';
 
 type JobData = {
 	group: Group;

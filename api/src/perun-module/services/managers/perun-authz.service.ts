@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PerunManager } from '../entities/manager.entity';
-import { PerunApiService } from './perun-api.service';
+import { PerunManager } from '../../entities/manager.entity';
+import { PerunApiService } from '../perun-api.service';
 
 @Injectable()
 export class PerunAuthzService {

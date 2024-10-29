@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { PerunGroupService } from './services/perun-group.service';
+import { PerunGroupService } from './services/managers/perun-group.service';
 import { Group } from './entities/group.entity';
 
 @Injectable()
