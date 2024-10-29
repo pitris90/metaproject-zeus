@@ -8,6 +8,7 @@ import { PerunGroupConsumer } from './consumers/perun-group.consumer';
 import { PerunMembersService } from './services/managers/perun-members.service';
 import { PerunAttributesService } from './services/managers/perun-attributes.service';
 import { PerunAuthzService } from './services/managers/perun-authz.service';
+import { FailedStageModel } from './models/failed-stage.model';
 
 @Module({
 	imports: [
@@ -18,6 +19,7 @@ import { PerunAuthzService } from './services/managers/perun-authz.service';
 	],
 	exports: [PerunFacade],
 	providers: [
+		FailedStageModel,
 		PerunApiService,
 		PerunGroupService,
 		PerunFacade,
