@@ -39,12 +39,12 @@ export class ProjectApprovalService {
 				.execute();
 
 			// create group in Perun
-			const group = await this.perunFacade.createGroup(project.title, project.description);
+			const group = await this.perunFacade.createGroup(projectId, project.title, project.description);
 
 			// update project status
 			await this.projectModel.updateProject(manager, projectId, {
 				status: ProjectStatus.ACTIVE,
-				perunUuid: group.uuid
+				perunId: group.id
 			});
 
 			project.status = ProjectStatus.ACTIVE;

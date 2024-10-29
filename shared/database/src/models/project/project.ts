@@ -30,11 +30,11 @@ export class Project {
 	description: string;
 
 	/**
-	 * Perun UUID of the project group.
+	 * Perun ID of the project group.
 	 * Added when group is created in Perun.
 	 */
 	@Column({ nullable: true, default: null, unique: true })
-	perunUuid: string;
+	perunId: number;
 
 	@Column()
 	status: ProjectStatus;
