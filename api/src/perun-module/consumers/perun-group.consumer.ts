@@ -7,6 +7,7 @@ import { PerunAttributesService } from '../services/managers/perun-attributes.se
 import { PerunMembersService } from '../services/managers/perun-members.service';
 import { PerunAuthzService } from '../services/managers/perun-authz.service';
 import { FailedStageModel, Stage } from '../models/failed-stage.model';
+import { PerunRegistrarService } from '../services/managers/perun-registrar.service';
 
 type JobData = {
 	group: Group;
@@ -20,6 +21,7 @@ export class PerunGroupConsumer extends WorkerHost {
 		private readonly perunAttributesService: PerunAttributesService,
 		private readonly perunMembersService: PerunMembersService,
 		private readonly perunAuthzService: PerunAuthzService,
+		private readonly perunRegistrarService: PerunRegistrarService,
 		private readonly failedStageModel: FailedStageModel
 	) {
 		super();
@@ -46,6 +48,7 @@ export class PerunGroupConsumer extends WorkerHost {
 			const pi = project.pi;
 
 			// set group attributes
+			currentStage = 'set_attributes';
 			await this.perunAttributesService.setAttribute(
 				group.id,
 				'urn:perun:group:attribute-def:def:fromEmail',
@@ -56,11 +59,10 @@ export class PerunGroupConsumer extends WorkerHost {
 				'urn:perun:group:attribute-def:def:toEmail',
 				pi.email
 			);
-			currentStage = 'set_attributes';
 
 			// find perun user
-			const richMembers = await this.perunMembersService.findCompleteRichMembers(pi.externalId);
 			currentStage = 'get_user';
+			const richMembers = await this.perunMembersService.findCompleteRichMembers(pi.externalId);
 
 			if (richMembers.length !== 1) {
 				throw new Error('Should found exactly one member with specific externalId');
@@ -69,7 +71,16 @@ export class PerunGroupConsumer extends WorkerHost {
 			const perunUser = richMembers[0];
 
 			// set PI as group manager
+			currentStage = 'set_user';
 			await this.perunAuthzService.setRole('GROUPADMIN', perunUser.userId, group);
+
+			// copy application form
+			currentStage = 'copy_form';
+			await this.perunRegistrarService.copyForm(group.id);
+
+			// copy mail templates
+			currentStage = 'copy_mails';
+			await this.perunRegistrarService.copyMails(group.id);
 
 			// everything successful, remove failed stage
 			await this.failedStageModel.removeFailedStage(projectId);

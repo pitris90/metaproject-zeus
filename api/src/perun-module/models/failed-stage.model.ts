@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { GroupFailedStage } from 'resource-manager-database';
 
-export type Stage = 'create_group' | 'set_attributes' | 'get_user';
+export type Stage = 'create_group' | 'set_attributes' | 'get_user' | 'set_user' | 'copy_form' | 'copy_mails';
 
 @Injectable()
 export class FailedStageModel {

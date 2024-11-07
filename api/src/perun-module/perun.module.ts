@@ -9,6 +9,7 @@ import { PerunMembersService } from './services/managers/perun-members.service';
 import { PerunAttributesService } from './services/managers/perun-attributes.service';
 import { PerunAuthzService } from './services/managers/perun-authz.service';
 import { FailedStageModel } from './models/failed-stage.model';
+import { PerunRegistrarService } from './services/managers/perun-registrar.service';
 
 @Module({
 	imports: [
@@ -26,7 +27,8 @@ import { FailedStageModel } from './models/failed-stage.model';
 		PerunGroupConsumer,
 		PerunMembersService,
 		PerunAttributesService,
-		PerunAuthzService
+		PerunAuthzService,
+		PerunRegistrarService
 	]
 })
 export class PerunModule {}
