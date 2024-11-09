@@ -13,6 +13,9 @@ export class GroupFailedStage {
 	@Column()
 	lastStage: string;
 
+	@Column({ default: false })
+	isRunning: boolean;
+
 	@Column({ unique: true })
 	projectId: number;
 

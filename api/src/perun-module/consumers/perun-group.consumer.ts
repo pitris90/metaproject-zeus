@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { DataSource } from 'typeorm';
 import { Project } from 'resource-manager-database';
@@ -7,8 +7,8 @@ import { Group } from '../entities/group.entity';
 import { PerunAttributesService } from '../services/managers/perun-attributes.service';
 import { PerunMembersService } from '../services/managers/perun-members.service';
 import { PerunAuthzService } from '../services/managers/perun-authz.service';
-import { FailedStageModel, Stage } from '../models/failed-stage.model';
 import { PerunRegistrarService } from '../services/managers/perun-registrar.service';
+import { FailedStageService, Stage } from '../services/failed-stage.service';
 
 type JobData = {
 	group: Group;
@@ -25,9 +25,15 @@ export class PerunGroupConsumer extends WorkerHost {
 		private readonly perunMembersService: PerunMembersService,
 		private readonly perunAuthzService: PerunAuthzService,
 		private readonly perunRegistrarService: PerunRegistrarService,
-		private readonly failedStageModel: FailedStageModel
+		private readonly failedStageService: FailedStageService
 	) {
 		super();
+	}
+
+	@OnWorkerEvent('active')
+	async onActive(job: Job<JobData>) {
+		this.logger.log(`Marking stage for project ${job.data.projectId} as running`);
+		await this.failedStageService.setRunning(job.data.projectId, true);
 	}
 
 	async process(job: Job<JobData>) {
@@ -49,13 +55,13 @@ export class PerunGroupConsumer extends WorkerHost {
 				throw new Error('Project not found, should not happen');
 			}
 
-			const lastStage = await this.failedStageModel.getLastStage(projectId);
+			const lastStage = await this.failedStageService.getLastStage(projectId);
 
 			const pi = project.pi;
 
 			// set group attributes
 			currentStage = 'set_attributes';
-			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
 				this.logger.log('Setting Perun group attributes');
 				await this.perunAttributesService.setAttribute(
 					group.id,
@@ -79,33 +85,46 @@ export class PerunGroupConsumer extends WorkerHost {
 
 			// set PI as group manager
 			currentStage = 'set_user';
-			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
 				this.logger.log(`Setting user with Perun ID ${perunUser.userId}`);
 				await this.perunAuthzService.setRole('GROUPADMIN', perunUser.userId, group);
 			}
 
 			// copy application form
 			currentStage = 'copy_form';
-			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
 				this.logger.log('Copying application form from template group');
 				await this.perunRegistrarService.copyForm(group.id);
 			}
 
 			// copy mail templates
 			currentStage = 'copy_mails';
-			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
 				this.logger.log('Copying notifications from template group');
 				await this.perunRegistrarService.copyMails(group.id);
 			}
 
 			// everything successful, remove failed stage
-			await this.failedStageModel.removeFailedStage(projectId);
+			await this.failedStageService.removeFailedStage(projectId);
 		} catch (e) {
 			// set that something failed
-			await this.failedStageModel.setLastStage(projectId, currentStage);
+			this.logger.warn(`Job for project ${projectId} failed.`);
+			await this.failedStageService.setLastStage(projectId, currentStage);
 			throw e;
 		}
 
 		this.logger.log(`Perun processing for project ${projectId} done.`);
+	}
+
+	@OnWorkerEvent('completed')
+	async onCompleted(job: Job) {
+		this.logger.log(`Marking stage for project ${job.data.projectId} as not running`);
+		await this.failedStageService.setRunning(job.data.projectId, false);
+	}
+
+	@OnWorkerEvent('failed')
+	async onFailed(job: Job) {
+		this.logger.log(`Marking stage for project ${job.data.projectId} as not running`);
+		await this.failedStageService.setRunning(job.data.projectId, false);
 	}
 }

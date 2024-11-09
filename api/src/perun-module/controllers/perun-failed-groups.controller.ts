@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { FailedStageService } from '../services/failed-stage.service';
 import { FailedProjectDto } from '../dto/failed-project.dto';
 import { PerunFacade } from '../perun.facade';
+import { ProjectJobStatusDto } from '../dto/project-job-status.dto';
 
 @Controller('project/failed-stages')
 @ApiTags('Project')
@@ -38,7 +39,22 @@ export class PerunFailedGroupsController {
 	@ApiCreatedResponse({
 		description: 'Created synchronize job'
 	})
+	@HttpCode(201)
 	async synchronizeGroup(@Param('projectId') projectId: number) {
 		await this.perunFacade.synchronize(projectId);
+	}
+
+	@Get(':projectId')
+	@MinRoleCheck(RoleEnum.ADMIN)
+	@ApiOperation({
+		summary: 'Get failed stage job status',
+		description: 'Get status whether job for project is running or not.'
+	})
+	@ApiOkResponse({
+		description: 'Job status',
+		type: ProjectJobStatusDto
+	})
+	async getProjectJobStatus(@Param('projectId') projectId: number) {
+		return this.failedStageService.isJobRunning(projectId);
 	}
 }
