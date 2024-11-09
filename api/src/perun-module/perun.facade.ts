@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { PerunGroupService } from './services/managers/perun-group.service';
+import { DataSource } from 'typeorm';
+import { Project } from 'resource-manager-database';
+import { ProjectNotFoundApiException } from '../error-module/errors/projects/project-not-found.api-exception';
 import { Group } from './entities/group.entity';
+import { PerunGroupService } from './services/managers/perun-group.service';
 
 @Injectable()
 export class PerunFacade {
 	constructor(
+		private readonly dataSource: DataSource,
 		private readonly perunGroupService: PerunGroupService,
 		@InjectQueue('perun') private readonly perunQueue: Queue
 	) {}
@@ -16,5 +20,20 @@ export class PerunFacade {
 		await this.perunQueue.add('groupSettings', { group, projectId });
 
 		return group;
+	}
+
+	async synchronize(projectId: number): Promise<void> {
+		const project = await this.dataSource.getRepository(Project).findOne({
+			where: {
+				id: projectId
+			}
+		});
+
+		if (!project) {
+			throw new ProjectNotFoundApiException();
+		}
+
+		const group = await this.perunGroupService.getGroupById(project.perunId);
+		await this.perunQueue.add('synchronize', { group, projectId });
 	}
 }

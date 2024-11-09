@@ -10,6 +10,9 @@ import { PerunAttributesService } from './services/managers/perun-attributes.ser
 import { PerunAuthzService } from './services/managers/perun-authz.service';
 import { FailedStageModel } from './models/failed-stage.model';
 import { PerunRegistrarService } from './services/managers/perun-registrar.service';
+import { PerunFailedGroupsController } from './controllers/perun-failed-groups.controller';
+import { FailedStageService } from './services/failed-stage.service';
+import { FailedStageMapper } from './mappers/failed-stage.mapper';
 
 @Module({
 	imports: [
@@ -28,7 +31,10 @@ import { PerunRegistrarService } from './services/managers/perun-registrar.servi
 		PerunMembersService,
 		PerunAttributesService,
 		PerunAuthzService,
-		PerunRegistrarService
-	]
+		PerunRegistrarService,
+		FailedStageService,
+		FailedStageMapper
+	],
+	controllers: [PerunFailedGroupsController]
 })
 export class PerunModule {}

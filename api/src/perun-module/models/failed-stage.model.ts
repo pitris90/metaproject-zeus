@@ -10,6 +10,14 @@ const isStage = (x: any): x is Stage => stages.includes(x);
 export class FailedStageModel {
 	constructor(private readonly dataSource: DataSource) {}
 
+	async getFailedProjects(): Promise<GroupFailedStage[]> {
+		return this.dataSource.getRepository(GroupFailedStage).find({
+			relations: {
+				project: true
+			}
+		});
+	}
+
 	async getLastStage(projectId: number): Promise<Stage | undefined> {
 		const row = await this.dataSource.getRepository(GroupFailedStage).findOne({
 			where: {
@@ -39,10 +47,13 @@ export class FailedStageModel {
 	}
 
 	async setLastStage(projectId: number, stage: Stage) {
-		await this.dataSource.getRepository(GroupFailedStage).insert({
-			projectId: projectId,
-			lastStage: stage
-		});
+		await this.dataSource.getRepository(GroupFailedStage).upsert(
+			{
+				projectId: projectId,
+				lastStage: stage
+			},
+			['projectId']
+		);
 	}
 
 	private convertToStage(stage: string): Stage {
