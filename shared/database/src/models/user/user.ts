@@ -6,6 +6,7 @@ import { ProjectUser } from '../project/project-user';
 
 @Entity()
 @Unique("externalLogin", ["source", "externalId"])
+@Unique("externalEmail", ["source", "email"])
 export class User {
 	@PrimaryGeneratedColumn()
 	id: number;
@@ -13,19 +14,19 @@ export class User {
 	@Column({enum: ['perun']})
 	source: string;
 
-	@Column({nullable: false})
+	@Column({nullable: true})
 	externalId: string;
 
 	@Column({ nullable: false })
 	email: string;
 
-	@Column()
+	@Column({ default: false })
 	emailVerified: boolean;
 
 	@Column({ nullable: true })
 	username: string;
 
-	@Column()
+	@Column({ nullable: true })
 	name: string;
 
 	@Column({ nullable: true })

@@ -51,7 +51,9 @@ export class MemberService {
 				usesManagerRole ? ProjectPermissionEnum.EDIT_MANAGERS : ProjectPermissionEnum.EDIT_MEMBERS
 			);
 
-			// TODO: send member invite
+			for (const member of members) {
+				await this.memberModel.addMember(manager, projectId, member.email, member.role);
+			}
 		});
 	}
 

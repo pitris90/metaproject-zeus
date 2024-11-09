@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Post, UnauthorizedException } from '@nestjs/common';
 import {
 	ApiCreatedResponse,
 	ApiForbiddenResponse,
@@ -20,13 +20,15 @@ import { MemberMapper } from '../mappers/member.mapper';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
+import { PerunFacade } from '../../perun-module/perun.facade';
 
 @ApiTags('Project')
 @Controller('/project')
 export class MembersController {
 	public constructor(
 		private readonly memberService: MemberService,
-		private readonly memberMapper: MemberMapper
+		private readonly memberMapper: MemberMapper,
+		private readonly perunFacade: PerunFacade
 	) {}
 
 	@Get(':id/members')
@@ -80,10 +82,22 @@ export class MembersController {
 	async addProjectMembers(
 		@Param('id') id: number,
 		@RequestUser() user: UserDto,
-		@Body() membersBody: MemberRequestListDto
+		@Body() membersBody: MemberRequestListDto,
+		@Headers('Authorization') authorizationHeader: string
 	) {
+		const accessToken = authorizationHeader.split(' ')[1]?.trim();
+
+		if (!accessToken) {
+			throw new UnauthorizedException();
+		}
+
 		const membersToAdd = membersBody.members;
 		await this.memberService.addProjectMembers(id, user.id, membersToAdd);
+		await this.perunFacade.inviteMembers(
+			accessToken,
+			membersToAdd.map((m) => m.email),
+			id
+		);
 	}
 
 	@Delete(':projectId/members/:userId')

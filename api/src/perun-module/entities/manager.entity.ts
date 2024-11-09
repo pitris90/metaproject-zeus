@@ -3,5 +3,6 @@ export enum PerunManager {
 	MEMBERS = 'membersManager',
 	ATTRIBUTES = 'attributesManager',
 	AUTHZ = 'authzResolver',
-	REGISTRAR = 'registrarManager'
+	REGISTRAR = 'registrarManager',
+	INVITATIONS = 'invitationsManager'
 }

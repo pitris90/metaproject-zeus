@@ -12,7 +12,8 @@ export class PerunFacade {
 	constructor(
 		private readonly dataSource: DataSource,
 		private readonly perunGroupService: PerunGroupService,
-		@InjectQueue('perun') private readonly perunQueue: Queue
+		@InjectQueue('perunGroup') private readonly perunQueue: Queue,
+		@InjectQueue('perunInvitations') private readonly perunInvitationQueue: Queue
 	) {}
 
 	async createGroup(projectId: number, title: string, description: string): Promise<Group> {
@@ -35,5 +36,19 @@ export class PerunFacade {
 
 		const group = await this.perunGroupService.getGroupById(project.perunId);
 		await this.perunQueue.add('synchronize', { group, projectId });
+	}
+
+	async inviteMembers(userToken: string, emails: string[], projectId: number) {
+		const project = await this.dataSource.getRepository(Project).findOne({
+			where: {
+				id: projectId
+			}
+		});
+
+		if (!project) {
+			throw new ProjectNotFoundApiException();
+		}
+
+		await this.perunInvitationQueue.add('invite', { userToken, emails, groupId: project.perunId });
 	}
 }

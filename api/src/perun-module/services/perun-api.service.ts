@@ -54,12 +54,7 @@ export class PerunApiService {
 	 * @param method PERUN method name
 	 * @param params PERUN params
 	 */
-	async callOauth<T>(
-		token: string,
-		manager: PerunManager,
-		method: string,
-		params: Record<string, string>
-	): Promise<T> {
+	async callOauth<T>(token: string, manager: PerunManager, method: string, params: Record<string, any>): Promise<T> {
 		const response$ = this.httpService.post(`${this.baseUrl}/oauth/rpc/json/${manager}/${method}`, params, {
 			withCredentials: true,
 			withXSRFToken: true,

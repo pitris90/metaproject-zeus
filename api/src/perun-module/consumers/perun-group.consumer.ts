@@ -15,7 +15,7 @@ type JobData = {
 	projectId: number;
 };
 
-@Processor('perun')
+@Processor('perunGroup')
 export class PerunGroupConsumer extends WorkerHost {
 	private readonly logger = new Logger(PerunGroupConsumer.name);
 

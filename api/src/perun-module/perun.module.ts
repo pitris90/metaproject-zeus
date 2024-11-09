@@ -13,12 +13,17 @@ import { PerunRegistrarService } from './services/managers/perun-registrar.servi
 import { PerunFailedGroupsController } from './controllers/perun-failed-groups.controller';
 import { FailedStageService } from './services/failed-stage.service';
 import { FailedStageMapper } from './mappers/failed-stage.mapper';
+import { PerunInvitationsConsumer } from './consumers/perun-invitations.consumer';
+import { PerunInvitationsService } from './services/managers/perun-invitations.service';
 
 @Module({
 	imports: [
 		HttpModule,
 		BullModule.registerQueue({
-			name: 'perun'
+			name: 'perunGroup'
+		}),
+		BullModule.registerQueue({
+			name: 'perunInvitations'
 		})
 	],
 	exports: [PerunFacade],
@@ -28,10 +33,12 @@ import { FailedStageMapper } from './mappers/failed-stage.mapper';
 		PerunGroupService,
 		PerunFacade,
 		PerunGroupConsumer,
+		PerunInvitationsConsumer,
 		PerunMembersService,
 		PerunAttributesService,
 		PerunAuthzService,
 		PerunRegistrarService,
+		PerunInvitationsService,
 		FailedStageService,
 		FailedStageMapper
 	],
