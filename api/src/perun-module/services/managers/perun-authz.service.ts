@@ -9,7 +9,7 @@ export class PerunAuthzService {
 	async setRole(role: string, userId: number, complementaryObject: any) {
 		await this.perunApiService.callBasic(PerunManager.AUTHZ, 'setRole', {
 			role,
-			userId,
+			user: userId,
 			complementaryObject
 		});
 	}

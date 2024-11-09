@@ -1,4 +1,4 @@
-import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { DataSource } from 'typeorm';
 import { Project } from 'resource-manager-database';
@@ -30,13 +30,10 @@ export class PerunGroupConsumer extends WorkerHost {
 		super();
 	}
 
-	@OnWorkerEvent('active')
-	async onActive(job: Job<JobData>) {
+	async process(job: Job<JobData>) {
 		this.logger.log(`Marking stage for project ${job.data.projectId} as running`);
 		await this.failedStageService.setRunning(job.data.projectId, true);
-	}
 
-	async process(job: Job<JobData>) {
 		let currentStage: Stage = 'create_group';
 		const { group, projectId } = job.data;
 		this.logger.log(`Processing Perun group creation for project ${projectId}`);
@@ -111,20 +108,11 @@ export class PerunGroupConsumer extends WorkerHost {
 			this.logger.warn(`Job for project ${projectId} failed.`);
 			await this.failedStageService.setLastStage(projectId, currentStage);
 			throw e;
+		} finally {
+			this.logger.log(`Marking stage for project ${job.data.projectId} as not running`);
+			await this.failedStageService.setRunning(job.data.projectId, false);
 		}
 
 		this.logger.log(`Perun processing for project ${projectId} done.`);
-	}
-
-	@OnWorkerEvent('completed')
-	async onCompleted(job: Job) {
-		this.logger.log(`Marking stage for project ${job.data.projectId} as not running`);
-		await this.failedStageService.setRunning(job.data.projectId, false);
-	}
-
-	@OnWorkerEvent('failed')
-	async onFailed(job: Job) {
-		this.logger.log(`Marking stage for project ${job.data.projectId} as not running`);
-		await this.failedStageService.setRunning(job.data.projectId, false);
 	}
 }
