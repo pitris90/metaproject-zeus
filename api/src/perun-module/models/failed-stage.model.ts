@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { GroupFailedStage } from 'resource-manager-database';
 
-export type Stage = 'create_group' | 'set_attributes' | 'get_user' | 'set_user' | 'copy_form' | 'copy_mails';
+const stages = ['create_group', 'set_attributes', 'set_user', 'copy_form', 'copy_mails'] as const;
+export type Stage = (typeof stages)[number];
+const isStage = (x: any): x is Stage => stages.includes(x);
 
 @Injectable()
 export class FailedStageModel {
 	constructor(private readonly dataSource: DataSource) {}
 
-	async getLastStage(projectId: number): Promise<Stage | null> {
+	async getLastStage(projectId: number): Promise<Stage | undefined> {
 		const row = await this.dataSource.getRepository(GroupFailedStage).findOne({
 			where: {
 				projectId
@@ -16,10 +18,18 @@ export class FailedStageModel {
 		});
 
 		if (!row) {
-			return null;
+			return undefined;
 		}
 
 		return this.convertToStage(row.lastStage);
+	}
+
+	shouldRunStage(currentStage: Stage, failedStage?: Stage) {
+		if (failedStage === undefined) {
+			return true;
+		}
+
+		return stages.indexOf(currentStage) >= stages.indexOf(failedStage);
 	}
 
 	async removeFailedStage(projectId: number) {
@@ -28,22 +38,18 @@ export class FailedStageModel {
 		});
 	}
 
-	async setLastStage(stage: Stage) {
+	async setLastStage(projectId: number, stage: Stage) {
 		await this.dataSource.getRepository(GroupFailedStage).insert({
+			projectId: projectId,
 			lastStage: stage
 		});
 	}
 
 	private convertToStage(stage: string): Stage {
-		switch (stage) {
-			case 'create_group':
-				return 'create_group';
-			case 'set_attributes':
-				return 'set_attributes';
-			case 'get_user':
-				return 'get_user';
-			default:
-				throw new Error('Unknown stage');
+		if (isStage(stage)) {
+			return stage;
 		}
+
+		throw new Error('Unknown stage');
 	}
 }

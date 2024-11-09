@@ -39,7 +39,11 @@ export class ProjectApprovalService {
 				.execute();
 
 			// create group in Perun
-			const group = await this.perunFacade.createGroup(projectId, project.title, project.description);
+			const group = await this.perunFacade.createGroup(
+				projectId,
+				project.title,
+				`Project for user ${project.pi.name} `
+			);
 
 			// update project status
 			await this.projectModel.updateProject(manager, projectId, {

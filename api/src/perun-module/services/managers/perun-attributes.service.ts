@@ -20,7 +20,7 @@ export class PerunAttributesService {
 		});
 	}
 
-	async setAttribute(groupId: number, key: string, value: string) {
+	async setAttribute(groupId: number, key: string, value: any) {
 		const attributeTemplate = await this.getAttribute(groupId, key);
 		attributeTemplate.value = value;
 

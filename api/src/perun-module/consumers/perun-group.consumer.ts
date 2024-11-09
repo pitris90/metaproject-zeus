@@ -45,23 +45,24 @@ export class PerunGroupConsumer extends WorkerHost {
 				throw new Error('Project not found, should not happen');
 			}
 
+			const lastStage = await this.failedStageModel.getLastStage(projectId);
+
 			const pi = project.pi;
 
 			// set group attributes
 			currentStage = 'set_attributes';
-			await this.perunAttributesService.setAttribute(
-				group.id,
-				'urn:perun:group:attribute-def:def:fromEmail',
-				pi.email
-			);
-			await this.perunAttributesService.setAttribute(
-				group.id,
-				'urn:perun:group:attribute-def:def:toEmail',
-				pi.email
-			);
+			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+				await this.perunAttributesService.setAttribute(
+					group.id,
+					'urn:perun:group:attribute-def:def:fromEmail',
+					pi.email
+				);
+				await this.perunAttributesService.setAttribute(group.id, 'urn:perun:group:attribute-def:def:toEmail', [
+					pi.email
+				]);
+			}
 
 			// find perun user
-			currentStage = 'get_user';
 			const richMembers = await this.perunMembersService.findCompleteRichMembers(pi.externalId);
 
 			if (richMembers.length !== 1) {
@@ -72,21 +73,27 @@ export class PerunGroupConsumer extends WorkerHost {
 
 			// set PI as group manager
 			currentStage = 'set_user';
-			await this.perunAuthzService.setRole('GROUPADMIN', perunUser.userId, group);
+			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+				await this.perunAuthzService.setRole('GROUPADMIN', perunUser.userId, group);
+			}
 
 			// copy application form
 			currentStage = 'copy_form';
-			await this.perunRegistrarService.copyForm(group.id);
+			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+				await this.perunRegistrarService.copyForm(group.id);
+			}
 
 			// copy mail templates
 			currentStage = 'copy_mails';
-			await this.perunRegistrarService.copyMails(group.id);
+			if (this.failedStageModel.shouldRunStage(currentStage, lastStage)) {
+				await this.perunRegistrarService.copyMails(group.id);
+			}
 
 			// everything successful, remove failed stage
 			await this.failedStageModel.removeFailedStage(projectId);
 		} catch (e) {
 			// set that something failed
-			await this.failedStageModel.setLastStage(currentStage);
+			await this.failedStageModel.setLastStage(projectId, currentStage);
 			throw e;
 		}
 	}
