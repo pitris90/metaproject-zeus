@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { ProjectUser, ProjectUserRole, ProjectUserStatus, User } from 'resource-manager-database';
-import { PerunUser } from '../../perun-module/entities/perun-user.entity';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { Sorting } from '../../config-module/decorators/get-sorting';
 
@@ -59,24 +58,22 @@ export class MemberModel {
 		return projectMemberBuilder.getManyAndCount();
 	}
 
-	public async addMember(manager: EntityManager, projectId: number, member: PerunUser, role: string) {
+	public async addMember(manager: EntityManager, projectId: number, email: string, role: string) {
 		await manager
 			.createQueryBuilder()
 			.insert()
 			.into(User)
 			.values({
-				externalId: member.id,
 				source: 'perun',
-				username: member.username,
-				name: member.name
-				// TODO load role from Perun
+				email: email,
+				roleId: 1
 			})
 			.orIgnore()
 			.execute();
 
 		const user = await manager.getRepository(User).findOneOrFail({
 			where: {
-				externalId: member.id,
+				email,
 				source: 'perun'
 			}
 		});

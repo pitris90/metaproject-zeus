@@ -21,7 +21,7 @@ export class AuthService {
 	async signIn(profile: UserInfoDto): Promise<User | null> {
 		const email = profile.email;
 
-		if (!email) {
+		if (!email || !profile.sub) {
 			throw new InvalidUserApiException();
 		}
 
@@ -43,7 +43,7 @@ export class AuthService {
 				name: profile.name,
 				roleId: role.id
 			},
-			['source', 'externalId']
+			['source', 'email']
 		);
 
 		return this.usersModel.findUserById(insertResult.identifiers[0]['id']);

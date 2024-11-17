@@ -1,0 +1,20 @@
+export type PerunUser = {
+	id: number;
+	createdAt: string;
+	createdBy: string;
+	modifiedAt: string;
+	modifiedBy: string;
+	createByUid: number;
+	modifiedByUid: number;
+	firstName: string;
+	lastName: string;
+	middleName: string | null;
+	titleBefore: string | null;
+	titleAfter: string | null;
+	serviceUser: boolean;
+	sponsoredUser: boolean;
+	uuid: string;
+	majorSpecificType: string;
+	specificUser: boolean;
+	beanName: 'User';
+};

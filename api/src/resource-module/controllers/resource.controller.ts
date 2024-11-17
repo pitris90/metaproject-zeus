@@ -7,6 +7,8 @@ import { ResourceDto } from '../dtos/input/resource.dto';
 import { ResourceAttributeDto } from '../dtos/resource-attribute.dto';
 import { ResourceDetailDto } from '../dtos/resource-detail.dto';
 import { ResourceNotFoundError } from '../../error-module/errors/resources/resource-not-found.error';
+import { RequestUser } from '../../auth-module/decorators/user.decorator';
+import { UserDto } from '../../users-module/dtos/user.dto';
 
 @ApiTags('Resource')
 @Controller('/resource')
@@ -56,8 +58,7 @@ export class ResourceController {
 		description: 'Resource does not exist.',
 		type: ResourceNotFoundError
 	})
-	async getResource(@Param('id') id: number) {
-		// TODO add validation for admin or director, get only available detail for public attributes
-		return this.resourceService.getResource(id);
+	async getResource(@Param('id') id: number, @RequestUser() user: UserDto) {
+		return this.resourceService.getResource(id, user.role === 'user');
 	}
 }

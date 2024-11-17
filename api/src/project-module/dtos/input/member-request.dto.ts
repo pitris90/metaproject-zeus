@@ -1,8 +1,8 @@
 export class MemberRequestDto {
 	/**
-	 * External ID in Perun.
+	 * Email for invitation.
 	 */
-	id: string;
+	email: string;
 	/**
 	 * User role.
 	 */

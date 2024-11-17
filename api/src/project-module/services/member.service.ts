@@ -6,7 +6,6 @@ import { UserDto } from '../../users-module/dtos/user.dto';
 import { ProjectModel } from '../models/project.model';
 import { MemberRequestDto } from '../dtos/input/member-request.dto';
 import { MemberModel } from '../models/member.model';
-import { PerunUserService } from '../../perun-module/services/perun-user.service';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { Sorting } from '../../config-module/decorators/get-sorting';
@@ -18,7 +17,6 @@ export class MemberService {
 		private readonly projectModel: ProjectModel,
 		private readonly memberModel: MemberModel,
 		private readonly dataSource: DataSource,
-		private readonly perunUserService: PerunUserService,
 		private readonly projectPermissionService: ProjectPermissionService
 	) {}
 
@@ -54,13 +52,7 @@ export class MemberService {
 			);
 
 			for (const member of members) {
-				const perunUser = this.perunUserService.getUserById(member.id);
-
-				if (!perunUser) {
-					throw new Error(`User with id ${member.id} not found`);
-				}
-
-				await this.memberModel.addMember(manager, projectId, perunUser, member.role);
+				await this.memberModel.addMember(manager, projectId, member.email, member.role);
 			}
 		});
 	}

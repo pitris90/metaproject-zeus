@@ -18,6 +18,7 @@ import { AttributeType } from './models/attribute-type';
 import { AllocationStatus } from './enums/allocation.status';
 import { Allocation } from './models/allocation/allocation';
 import { AllocationUser } from './models/allocation/allocation-user';
+import { GroupFailedStage } from './models/project/group-failed-stage';
 
 export { TypeormConfigService };
 export { AttributeType };
@@ -28,3 +29,4 @@ export { ProjectArchival };
 export { File };
 export { Publication, PublicationSource }
 export { AllocationStatus, Allocation, AllocationUser }
+export { GroupFailedStage }

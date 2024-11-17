@@ -17,6 +17,7 @@ import { ResourceAttributeType } from '../models/resource/resource-attribute-typ
 import { ResourceToAttributeType } from '../models/resource/resource-to-attribute-type';
 import { Allocation } from '../models/allocation/allocation';
 import { AllocationUser } from '../models/allocation/allocation-user';
+import { GroupFailedStage } from '../models/project/group-failed-stage';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -40,6 +41,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				ProjectApproval,
 				ProjectArchival,
 				ProjectUser,
+				GroupFailedStage,
 				// resources
 				ResourceType,
 				Resource,

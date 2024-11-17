@@ -29,6 +29,13 @@ export class Project {
 	@Column("text")
 	description: string;
 
+	/**
+	 * Perun ID of the project group.
+	 * Added when group is created in Perun.
+	 */
+	@Column({ nullable: true, default: null, unique: true })
+	perunId: number;
+
 	@Column()
 	status: ProjectStatus;
 

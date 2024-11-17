@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { TypeormConfigService } from 'resource-manager-database';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import { BullModule } from '@nestjs/bullmq';
 import { validationSchema } from '../config/validationSchema.config';
 import { AppController } from './app.controller';
 import { PermissionModule } from './permission-module/permission.module';
@@ -29,6 +30,18 @@ import { ResourceModule } from './resource-module/resource.module';
 				host: process.env['REDIS_HOST']!,
 				port: process.env['REDIS_PORT']!
 			}
+		}),
+		BullModule.forRootAsync({
+			imports: [ConfigModule],
+			useFactory: async (configService: ConfigService) => {
+				return {
+					connection: {
+						host: configService.getOrThrow('REDIS_HOST'),
+						port: configService.getOrThrow('REDIS_PORT')
+					}
+				};
+			},
+			inject: [ConfigService]
 		}),
 		AuthModule,
 		PermissionModule,

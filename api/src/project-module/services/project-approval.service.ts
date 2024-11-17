@@ -6,6 +6,7 @@ import { ProjectModel } from '../models/project.model';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
+import { PerunFacade } from '../../perun-module/perun.facade';
 import { ProjectLockService } from './project-lock.service';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class ProjectApprovalService {
 		private readonly dataSource: DataSource,
 		private readonly projectModel: ProjectModel,
 		private readonly projectMapper: ProjectMapper,
+		private readonly perunFacade: PerunFacade,
 		private readonly projectLockService: ProjectLockService
 	) {}
 
@@ -28,9 +30,6 @@ export class ProjectApprovalService {
 				throw new ProjectHasApprovalApiException();
 			}
 
-			// update project status
-			await this.projectModel.updateProject(manager, projectId, { status: ProjectStatus.ACTIVE });
-
 			// create record about project approval
 			await manager
 				.createQueryBuilder()
@@ -38,6 +37,19 @@ export class ProjectApprovalService {
 				.into(ProjectApproval)
 				.values({ project: project, reviewerId: userId, status: ApprovalStatus.APPROVED })
 				.execute();
+
+			// create group in Perun
+			const group = await this.perunFacade.createGroup(
+				projectId,
+				project.title,
+				`Project for user ${project.pi.name} `
+			);
+
+			// update project status
+			await this.projectModel.updateProject(manager, projectId, {
+				status: ProjectStatus.ACTIVE,
+				perunId: group.id
+			});
 
 			project.status = ProjectStatus.ACTIVE;
 			return this.projectMapper.toProjectDto(project);

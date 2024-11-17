@@ -99,6 +99,14 @@ export class ProjectPermissionService {
 				this.removeEditPermissions(permissions);
 				permissions.add(ProjectPermissionEnum.EDIT_PROJECT);
 			}
+
+			// project is new, can only edit and request allocations
+			if (project.status === ProjectStatus.NEW) {
+				this.removeEditPermissions(permissions);
+				permissions.add(ProjectPermissionEnum.REQUEST_ALLOCATION);
+				permissions.add(ProjectPermissionEnum.EDIT_PROJECT);
+			}
+
 			return permissions;
 		}
 
