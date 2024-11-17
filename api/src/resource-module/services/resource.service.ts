@@ -18,7 +18,6 @@ export class ResourceService {
 		};
 
 		if (onlyPublic) {
-			console.log('am in only public');
 			where['resourceToResourceAttributes'] = {
 				resourceAttributeType: {
 					isPublic: true
