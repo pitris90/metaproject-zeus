@@ -4,7 +4,7 @@ import { UserDto } from '../dtos/user.dto';
 
 @Injectable()
 export class UserMapper {
-	toUserDto(user: User): UserDto {
+	toUserDto(user: User, forceUserRole?: boolean): UserDto {
 		return {
 			id: user.id,
 			locale: user.locale,
@@ -13,7 +13,7 @@ export class UserMapper {
 			externalId: user.externalId,
 			username: user.username,
 			name: user.name,
-			role: user?.role?.codeName
+			role: forceUserRole ? 'user' : user?.role?.codeName
 		};
 	}
 }

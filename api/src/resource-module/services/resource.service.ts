@@ -12,9 +12,22 @@ export class ResourceService {
 		private readonly resourceMapper: ResourceMapper
 	) {}
 
-	async getResource(id: number) {
+	async getResource(id: number, onlyPublic: boolean) {
+		const where = {
+			id
+		};
+
+		if (onlyPublic) {
+			console.log('am in only public');
+			where['resourceToResourceAttributes'] = {
+				resourceAttributeType: {
+					isPublic: true
+				}
+			};
+		}
+
 		const resource = await this.dataSource.getRepository(Resource).findOne({
-			where: { id },
+			where: where,
 			relations: [
 				'resourceType',
 				'parentResource',

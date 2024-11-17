@@ -44,7 +44,10 @@ export class AuthGuard implements CanActivate {
 			throw new UnauthorizedException();
 		}
 
-		request.user = this.userMapper.toUserDto(user);
+		const stepUpHeader = request.headers['x-step-up'];
+		const forceUserRole = !stepUpHeader || stepUpHeader !== 'true';
+
+		request.user = this.userMapper.toUserDto(user, forceUserRole);
 		return true;
 	}
 }
