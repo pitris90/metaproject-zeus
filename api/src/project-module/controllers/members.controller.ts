@@ -12,7 +12,6 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { MemberService } from '../services/member.service';
-import { MemberListDto } from '../dtos/member-list.dto';
 import { MemberRequestListDto } from '../dtos/input/member-request.dto';
 import { ProjectInvalidStatusApiException } from '../../error-module/errors/projects/project-invalid-status.api-exception';
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
@@ -21,12 +20,17 @@ import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting'
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { PerunFacade } from '../../perun-module/perun.facade';
+import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
+import { MemberDto } from '../dtos/member.dto';
+import { PaginatedResultDto } from '../../config-module/dtos/paginated-result.dto';
+import { MemberListDto } from '../dtos/member-list.dto';
 
 @ApiTags('Project')
 @Controller('/project')
 export class MembersController {
 	public constructor(
 		private readonly memberService: MemberService,
+		private readonly paginationMapper: PaginationMapper,
 		private readonly memberMapper: MemberMapper,
 		private readonly perunFacade: PerunFacade
 	) {}
@@ -39,7 +43,7 @@ export class MembersController {
 	})
 	@ApiOkResponse({
 		description: 'Members of the project.',
-		type: [MemberListDto]
+		type: MemberListDto
 	})
 	@ApiNotFoundResponse({
 		description: 'Project not found or user has no access to this project.',
@@ -50,16 +54,10 @@ export class MembersController {
 		@RequestUser() user: UserDto,
 		@GetPagination() pagination: Pagination,
 		@GetSorting() sorting: Sorting | null
-	): Promise<MemberListDto> {
+	): Promise<PaginatedResultDto<MemberDto>> {
 		const [members, count] = await this.memberService.getProjectMembers(id, user, pagination, sorting);
-		return {
-			metadata: {
-				page: pagination.page,
-				recordsPerPage: members.length,
-				totalRecords: count
-			},
-			members: members.map((member) => this.memberMapper.toMemberDto(member))
-		};
+		const items = members.map((member) => this.memberMapper.toMemberDto(member));
+		return this.paginationMapper.toPaginatedResult<MemberDto>(pagination, count, items);
 	}
 
 	@Post(':id/members')

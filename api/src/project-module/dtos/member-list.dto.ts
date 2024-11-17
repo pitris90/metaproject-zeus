@@ -10,5 +10,5 @@ export class MemberListDto {
 	/**
 	 * Members of the project.
 	 */
-	members: MemberDto[];
+	data: MemberDto[];
 }

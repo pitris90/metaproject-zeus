@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ProjectModule } from '../project-module/project.module';
+import { ApiConfigModule } from '../config-module/api-config.module';
 import { ResourceTypeController } from './controllers/resource-type.controller';
 import { ResourceTypeService } from './services/resource-type.service';
 import { ResourceMapper } from './mappers/resource.mapper';
@@ -14,7 +15,7 @@ import { AllocationService } from './services/allocation.service';
 import { AllocationMapper } from './mappers/allocation.mapper';
 
 @Module({
-	imports: [ProjectModule],
+	imports: [ProjectModule, ApiConfigModule],
 	controllers: [
 		ResourceTypeController,
 		ResourceAdminController,

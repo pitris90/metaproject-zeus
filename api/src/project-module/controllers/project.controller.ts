@@ -24,6 +24,8 @@ import { ProjectRequestsDto } from '../dtos/project-requests.dto';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
+import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
+import { PaginatedResultDto } from '../../config-module/dtos/paginated-result.dto';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -33,6 +35,7 @@ import { RoleEnum } from '../../permission-module/models/role.enum';
 export class ProjectController {
 	constructor(
 		private readonly projectService: ProjectService,
+		private readonly paginationMapper: PaginationMapper,
 		private readonly projectMapper: ProjectMapper
 	) {}
 
@@ -57,7 +60,7 @@ export class ProjectController {
 		@Query('status') status: 'new' | 'active' | 'archived' | 'rejected' | null,
 		@GetPagination() pagination: Pagination,
 		@GetSorting() sorting: Sorting
-	): Promise<MyProjectsDto> {
+	): Promise<PaginatedResultDto<ProjectDto>> {
 		const projectStatus = this.projectMapper.toProjectStatus(status);
 		const [projects, count] = await this.projectService.getUserProjects(
 			user.id,
@@ -65,14 +68,7 @@ export class ProjectController {
 			pagination,
 			sorting
 		);
-		return {
-			metadata: {
-				page: pagination.page,
-				recordsPerPage: pagination.limit,
-				totalRecords: count
-			},
-			projects
-		};
+		return this.paginationMapper.toPaginatedResult(pagination, count, projects);
 	}
 
 	@Get('requests')
@@ -87,14 +83,7 @@ export class ProjectController {
 	})
 	async getProjectRequests(@GetPagination() pagination: Pagination) {
 		const [projects, count] = await this.projectService.getProjectRequests(pagination);
-		return {
-			metadata: {
-				page: pagination.page,
-				recordsPerPage: pagination.limit,
-				totalRecords: count
-			},
-			projects
-		};
+		return this.paginationMapper.toPaginatedResult(pagination, count, projects);
 	}
 
 	@Get(':id')

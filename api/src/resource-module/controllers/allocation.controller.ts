@@ -10,12 +10,14 @@ import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting'
 import { AllocationMapper } from '../mappers/allocation.mapper';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
+import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
 
 @Controller('/allocation')
 @ApiTags('Allocation')
 export class AllocationController {
 	constructor(
 		private readonly allocationService: AllocationService,
+		private readonly paginationMapper: PaginationMapper,
 		private readonly allocationMapper: AllocationMapper
 	) {}
 
@@ -62,13 +64,7 @@ export class AllocationController {
 	) {
 		const [allocations, count] = await this.allocationService.list(projectId, user.id, pagination, sorting);
 
-		return {
-			metadata: {
-				page: pagination.page,
-				recordsPerPage: allocations.length,
-				totalRecords: count
-			},
-			allocations: allocations.map((allocation) => this.allocationMapper.toAllocationDto(allocation))
-		};
+		const items = allocations.map((allocation) => this.allocationMapper.toAllocationDto(allocation));
+		return this.paginationMapper.toPaginatedResult(pagination, count, items);
 	}
 }

@@ -11,12 +11,14 @@ import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting'
 import { PublicationMapper } from '../mapper/publication.mapper';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
+import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
 
 @Controller('/publication')
 @ApiTags('Publication')
 export class PublicationController {
 	constructor(
 		private readonly publicationService: PublicationService,
+		private readonly paginationMapper: PaginationMapper,
 		private readonly publicationMapper: PublicationMapper
 	) {}
 
@@ -47,16 +49,10 @@ export class PublicationController {
 			sorting
 		);
 
-		return {
-			metadata: {
-				page: pagination.page,
-				recordsPerPage: publications.length,
-				totalRecords: count
-			},
-			publications: publications.map((publication) =>
-				this.publicationMapper.mapPublicationToPublicationDetailDto(publication)
-			)
-		};
+		const items = publications.map((publication) =>
+			this.publicationMapper.mapPublicationToPublicationDetailDto(publication)
+		);
+		return this.paginationMapper.toPaginatedResult(pagination, count, items);
 	}
 
 	@Delete('/:publicationId')
