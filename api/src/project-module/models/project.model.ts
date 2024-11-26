@@ -135,9 +135,12 @@ export class ProjectModel {
 		const projectQuery = this.dataSource
 			.createQueryBuilder(Project, 'project')
 			.innerJoinAndSelect('project.pi', 'pi')
-			.where('project.status = :status', { status })
 			.offset(pagination.offset)
 			.limit(pagination.limit);
+
+		if (status) {
+			projectQuery.where('project.status = :status', { status });
+		}
 
 		switch (sorting.columnAccessor) {
 			case 'title':
