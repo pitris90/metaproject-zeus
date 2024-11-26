@@ -6,6 +6,7 @@ import { ProjectPermissionService } from '../../project-module/services/project-
 import { ProjectPermissionEnum } from '../../project-module/enums/project-permission.enum';
 import { Sorting } from '../../config-module/decorators/get-sorting';
 import { Pagination } from '../../config-module/decorators/get-pagination';
+import { AllocationNotFoundError } from '../../error-module/errors/allocations/allocation-not-found.error';
 
 @Injectable()
 export class AllocationService {
@@ -48,6 +49,61 @@ export class AllocationService {
 				})
 				.execute();
 		});
+	}
+
+	async getDetail(userId: number, allocationId: number): Promise<Allocation> {
+		const allocation = await this.dataSource.getRepository(Allocation).findOne({
+			select: {
+				id: true,
+				project: {
+					id: true,
+					title: true
+				},
+				resource: {
+					id: true,
+					name: true,
+					resourceType: {
+						name: true
+					}
+				},
+				justification: true,
+				startDate: true,
+				endDate: true,
+				status: true,
+				description: true,
+				quantity: true,
+				isLocked: true,
+				time: {
+					updatedAt: true
+				},
+				allocationUsers: {
+					userId: true,
+					user: {
+						id: true,
+						name: true,
+						email: true
+					}
+				}
+			},
+			where: {
+				id: allocationId
+			},
+			relations: ['resource', 'resource.resourceType', 'project', 'allocationUsers', 'allocationUsers.user']
+		});
+
+		const projectId = allocation?.project?.id;
+		if (!allocation || !projectId) {
+			throw new AllocationNotFoundError();
+		}
+
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+		const userHasAccess = allocation.allocationUsers.some((au) => au.userId === userId);
+
+		if (!userPermissions.has(ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS) && !userHasAccess) {
+			throw new AllocationNotFoundError();
+		}
+
+		return allocation;
 	}
 
 	async list(projectId: number, userId: number, pagination: Pagination, sorting: Sorting | null) {

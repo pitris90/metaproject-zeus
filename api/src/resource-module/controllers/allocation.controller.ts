@@ -67,4 +67,22 @@ export class AllocationController {
 		const items = allocations.map((allocation) => this.allocationMapper.toAllocationDto(allocation));
 		return this.paginationMapper.toPaginatedResult(pagination, count, items);
 	}
+
+	@Get('/detail/:id')
+	@MinRoleCheck(RoleEnum.USER)
+	@ApiOperation({
+		summary: 'Get allocation detail',
+		description: 'Get allocation detail if user has access to allocation.'
+	})
+	@ApiOkResponse({
+		description: 'Allocation detail.'
+	})
+	@ApiNotFoundResponse({
+		description: 'Project not found or user has no access to this project.',
+		type: ProjectNotFoundApiException
+	})
+	async allocationDetail(@Param('id') id: number, @RequestUser() user: UserDto) {
+		const allocation = await this.allocationService.getDetail(user.id, id);
+		return this.allocationMapper.toAllocationDetailDto(allocation);
+	}
 }
