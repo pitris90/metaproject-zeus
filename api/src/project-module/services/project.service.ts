@@ -38,6 +38,15 @@ export class ProjectService {
 		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
 	}
 
+	async getProjects(
+		projectStatus: ProjectStatus | null,
+		pagination: Pagination,
+		sorting: Sorting
+	): Promise<[ProjectDto[], number]> {
+		const [projects, count] = await this.projectModel.getProjects(projectStatus, pagination, sorting);
+		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
+	}
+
 	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDetailDto> {
 		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
 		const project = await this.projectModel.getProject(projectId);
@@ -55,11 +64,6 @@ export class ProjectService {
 			: null;
 
 		return this.projectMapper.toProjectDetailDto(project, userPermissions, archivalInfo, rejectedComments);
-	}
-
-	async getProjectRequests(pagination: Pagination): Promise<[ProjectDto[], number]> {
-		const [projects, count] = await this.projectModel.getProjectRequests(pagination);
-		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
 	}
 
 	async requestProject(requestProjectDto: RequestProjectDto, piId: number): Promise<ProjectDto> {

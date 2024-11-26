@@ -13,14 +13,13 @@ import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { ProjectService } from '../services/project.service';
 import { ProjectDto } from '../dtos/project.dto';
-import { MyProjectsDto } from '../dtos/my-projects.dto';
+import { ProjectsDto } from '../dtos/my-projects.dto';
 import { ProjectExistsApiException } from '../../error-module/errors/projects/project-exists.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { ProjectDetailDto } from '../dtos/project-detail.dto';
 import { GetPagination, Pagination } from '../../config-module/decorators/get-pagination';
 import { GetSorting, Sorting } from '../../config-module/decorators/get-sorting';
-import { ProjectRequestsDto } from '../dtos/project-requests.dto';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
@@ -47,7 +46,7 @@ export class ProjectController {
 	})
 	@ApiOkResponse({
 		description: 'The projects were successfully retrieved.',
-		type: [MyProjectsDto]
+		type: [ProjectsDto]
 	})
 	@ApiQuery({
 		name: 'status',
@@ -71,18 +70,29 @@ export class ProjectController {
 		return this.paginationMapper.toPaginatedResult(pagination, count, projects);
 	}
 
-	@Get('requests')
+	@Get('all')
 	@MinRoleCheck(RoleEnum.DIRECTOR)
 	@ApiOperation({
-		summary: 'Get project requests',
-		description: 'Get all project requests.'
+		summary: 'Get all projects',
+		description: 'Get all projects. Can filter by status.'
 	})
 	@ApiOkResponse({
-		description: 'The project requests were successfully retrieved.',
-		type: [ProjectRequestsDto]
+		description: 'The projects were successfully retrieved.',
+		type: [ProjectsDto]
 	})
-	async getProjectRequests(@GetPagination() pagination: Pagination) {
-		const [projects, count] = await this.projectService.getProjectRequests(pagination);
+	@ApiQuery({
+		name: 'status',
+		required: false,
+		description: 'Filter projects by status.',
+		enum: ['new', 'active', 'archived', 'rejected']
+	})
+	async getAllProjects(
+		@Query('status') status: 'new' | 'active' | 'archived' | 'rejected' | null,
+		@GetPagination() pagination: Pagination,
+		@GetSorting() sorting: Sorting
+	) {
+		const projectStatus = this.projectMapper.toProjectStatus(status);
+		const [projects, count] = await this.projectService.getProjects(projectStatus, pagination, sorting);
 		return this.paginationMapper.toPaginatedResult(pagination, count, projects);
 	}
 

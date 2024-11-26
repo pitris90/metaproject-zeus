@@ -127,15 +127,31 @@ export class ProjectModel {
 		return projectQuery.getManyAndCount();
 	}
 
-	public async getProjectRequests(pagination: Pagination): Promise<[Project[], number]> {
-		return this.dataSource
+	public async getProjects(
+		status: ProjectStatus | null,
+		pagination: Pagination,
+		sorting: Sorting
+	): Promise<[Project[], number]> {
+		const projectQuery = this.dataSource
 			.createQueryBuilder(Project, 'project')
 			.innerJoinAndSelect('project.pi', 'pi')
-			.where('project.status = :status', { status: ProjectStatus.NEW })
+			.where('project.status = :status', { status })
 			.offset(pagination.offset)
-			.limit(pagination.limit)
-			.orderBy('project.createdAt', 'ASC')
-			.getManyAndCount();
+			.limit(pagination.limit);
+
+		switch (sorting.columnAccessor) {
+			case 'title':
+				projectQuery.orderBy('project.title', sorting.direction);
+				break;
+			case 'id':
+				projectQuery.orderBy('project.id', sorting.direction);
+				break;
+			default:
+				projectQuery.orderBy('project.createdAt', sorting.direction);
+				break;
+		}
+
+		return projectQuery.getManyAndCount();
 	}
 
 	public async updateProject(
