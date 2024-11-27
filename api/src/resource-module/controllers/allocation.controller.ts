@@ -11,6 +11,7 @@ import { AllocationMapper } from '../mappers/allocation.mapper';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
+import { AllocationStatusDto } from '../dtos/input/allocation-status.dto';
 
 @Controller('/allocation')
 @ApiTags('Allocation')
@@ -84,5 +85,24 @@ export class AllocationController {
 	async allocationDetail(@Param('id') id: number, @RequestUser() user: UserDto) {
 		const allocation = await this.allocationService.getDetail(user.id, id);
 		return this.allocationMapper.toAllocationDetailDto(allocation);
+	}
+
+	@MinRoleCheck(RoleEnum.ADMIN)
+	@Post('/detail/:id')
+	@HttpCode(201)
+	@ApiOperation({
+		summary: 'Change allocation status',
+		description:
+			'Change allocation status. If allocation is denied, end date is not needed. Otherwise, end date is required.'
+	})
+	@ApiCreatedResponse({
+		description: 'Allocation changed.'
+	})
+	@ApiNotFoundResponse({
+		description: 'Project not found or user has no access to this project.',
+		type: ProjectNotFoundApiException
+	})
+	async setAllocationStatus(@Param('id') allocationId: number, @Body() allocationStatus: AllocationStatusDto) {
+		await this.allocationService.setStatus(allocationId, allocationStatus);
 	}
 }

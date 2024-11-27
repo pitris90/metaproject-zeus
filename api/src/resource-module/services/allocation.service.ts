@@ -7,6 +7,7 @@ import { ProjectPermissionEnum } from '../../project-module/enums/project-permis
 import { Sorting } from '../../config-module/decorators/get-sorting';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { AllocationNotFoundError } from '../../error-module/errors/allocations/allocation-not-found.error';
+import { AllocationStatusDto } from '../dtos/input/allocation-status.dto';
 
 @Injectable()
 export class AllocationService {
@@ -149,5 +150,24 @@ export class AllocationService {
 		}
 
 		return allocationBuilder.getManyAndCount();
+	}
+
+	async setStatus(allocationId: number, data: AllocationStatusDto) {
+		const date = new Date();
+		date.setFullYear(date.getFullYear() + 1);
+
+		const newDate = data.status === 'denied' ? undefined : date;
+
+		await this.dataSource.getRepository(Allocation).update(
+			{
+				id: allocationId
+			},
+			{
+				status: data.status as AllocationStatus,
+				startDate: data.startDate,
+				endDate: data.endDate ? data.endDate : newDate,
+				description: data.description
+			}
+		);
 	}
 }
