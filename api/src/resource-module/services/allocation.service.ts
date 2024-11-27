@@ -170,4 +170,45 @@ export class AllocationService {
 			}
 		);
 	}
+
+	async getAll(status: 'new' | null, pagination: Pagination, sorting: Sorting) {
+		const allocationQuery = this.dataSource
+			.createQueryBuilder(Allocation, 'allocation')
+			.innerJoinAndSelect('allocation.project', 'project')
+			.innerJoinAndSelect('project.pi', 'pi')
+			.innerJoinAndSelect('allocation.resource', 'resource')
+			.innerJoinAndSelect('resource.resourceType', 'resourceType')
+			.offset(pagination.offset)
+			.limit(pagination.limit);
+
+		if (status) {
+			allocationQuery.where('allocation.status = :status', { status: AllocationStatus.NEW });
+		}
+
+		switch (sorting.columnAccessor) {
+			case 'project':
+				allocationQuery.orderBy('project.title', sorting.direction);
+				break;
+			case 'id':
+				allocationQuery.orderBy('allocation.id', sorting.direction);
+				break;
+			case 'pi':
+				allocationQuery.orderBy('pi.name', sorting.direction);
+				break;
+			case 'status':
+				allocationQuery.orderBy('allocation.status', sorting.direction);
+				break;
+			case 'resource':
+				allocationQuery.orderBy('resource.name', sorting.direction);
+				break;
+			case 'endDate':
+				allocationQuery.orderBy('allocation.endDate', sorting.direction);
+				break;
+			default:
+				allocationQuery.orderBy('allocation.createdAt', sorting.direction);
+				break;
+		}
+
+		return allocationQuery.getManyAndCount();
+	}
 }

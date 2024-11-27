@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
@@ -104,5 +104,30 @@ export class AllocationController {
 	})
 	async setAllocationStatus(@Param('id') allocationId: number, @Body() allocationStatus: AllocationStatusDto) {
 		await this.allocationService.setStatus(allocationId, allocationStatus);
+	}
+
+	@MinRoleCheck(RoleEnum.DIRECTOR)
+	@Get('/all')
+	@ApiOperation({
+		summary: 'Get all allocations',
+		description: 'Gets all allocations. Filterable by new for allocation requests. This method supports pagination.'
+	})
+	@ApiOkResponse({
+		description: 'Allocations.'
+	})
+	@ApiNotFoundResponse({
+		description: 'Project not found or user has no access to this project.',
+		type: ProjectNotFoundApiException
+	})
+	async getAllAllocations(
+		@Query('status') status: 'new' | null,
+		@GetPagination() pagination: Pagination,
+		@GetSorting() sorting: Sorting
+	) {
+		const [allocations, count] = await this.allocationService.getAll(status, pagination, sorting);
+		const allocationsMapped = allocations.map((allocation) =>
+			this.allocationMapper.toAllocationAdminDto(allocation)
+		);
+		return this.paginationMapper.toPaginatedResult(pagination, count, allocationsMapped);
 	}
 }
