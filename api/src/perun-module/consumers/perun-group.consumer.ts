@@ -54,6 +54,20 @@ export class PerunGroupConsumer extends WorkerHost {
 
 			const lastStage = await this.failedStageService.getLastStage(projectId);
 
+			// copy application form
+			currentStage = 'copy_form';
+			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
+				this.logger.log('Copying application form from template group');
+				await this.perunRegistrarService.copyForm(group.id);
+			}
+
+			// copy mail templates
+			currentStage = 'copy_mails';
+			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
+				this.logger.log('Copying notifications from template group');
+				await this.perunRegistrarService.copyMails(group.id);
+			}
+
 			const pi = project.pi;
 
 			// set group attributes
@@ -85,20 +99,6 @@ export class PerunGroupConsumer extends WorkerHost {
 			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
 				this.logger.log(`Setting user with Perun ID ${perunUser.userId}`);
 				await this.perunAuthzService.setRole('GROUPADMIN', perunUser.userId, group);
-			}
-
-			// copy application form
-			currentStage = 'copy_form';
-			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
-				this.logger.log('Copying application form from template group');
-				await this.perunRegistrarService.copyForm(group.id);
-			}
-
-			// copy mail templates
-			currentStage = 'copy_mails';
-			if (this.failedStageService.shouldRunStage(currentStage, lastStage)) {
-				this.logger.log('Copying notifications from template group');
-				await this.perunRegistrarService.copyMails(group.id);
 			}
 
 			// everything successful, remove failed stage

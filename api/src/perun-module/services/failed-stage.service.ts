@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { FailedStageModel } from '../models/failed-stage.model';
 import { FailedStageMapper } from '../mappers/failed-stage.mapper';
 
-const stages = ['create_group', 'set_attributes', 'set_user', 'copy_form', 'copy_mails'] as const;
+const stages = ['create_group', 'copy_form', 'copy_mails', 'set_attributes', 'set_user'] as const;
 export type Stage = (typeof stages)[number];
 const isStage = (x: any): x is Stage => stages.includes(x);
 
