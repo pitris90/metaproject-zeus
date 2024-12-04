@@ -12,6 +12,7 @@ import { PublicationMapper } from '../mapper/publication.mapper';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
+import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
 
 @Controller('/publication')
 @ApiTags('Publication')
@@ -40,13 +41,15 @@ export class PublicationController {
 		@Param('projectId') projectId: number,
 		@RequestUser() user: UserDto,
 		@GetPagination() pagination: Pagination,
-		@GetSorting() sorting: Sorting | null
+		@GetSorting() sorting: Sorting | null,
+		@IsStepUp() isStepUp: boolean
 	) {
 		const [publications, count] = await this.publicationService.getProjectPublications(
 			projectId,
 			user.id,
 			pagination,
-			sorting
+			sorting,
+			isStepUp
 		);
 
 		const items = publications.map((publication) =>
@@ -65,8 +68,12 @@ export class PublicationController {
 	@ApiNotFoundResponse({
 		description: 'Publication with provided ID not found or user has no permission to access it.'
 	})
-	public async deletePublication(@Param('publicationId') publicationId: number, @RequestUser() user: UserDto) {
-		await this.publicationService.deleteProjectPublication(publicationId, user.id);
+	public async deletePublication(
+		@Param('publicationId') publicationId: number,
+		@RequestUser() user: UserDto,
+		@IsStepUp() isStepUp: boolean
+	) {
+		await this.publicationService.deleteProjectPublication(publicationId, user.id, isStepUp);
 	}
 
 	@Post('/:projectId')
@@ -82,8 +89,14 @@ export class PublicationController {
 	public async getPublicationByDoi(
 		@Param('projectId') projectId: number,
 		@RequestUser() user: UserDto,
-		@Body() publicationsBody: PublicationRequestListDto
+		@Body() publicationsBody: PublicationRequestListDto,
+		@IsStepUp() isStepUp: boolean
 	) {
-		await this.publicationService.addPublicationToProject(user.id, projectId, publicationsBody.publications);
+		await this.publicationService.addPublicationToProject(
+			user.id,
+			projectId,
+			publicationsBody.publications,
+			isStepUp
+		);
 	}
 }

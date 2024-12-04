@@ -16,13 +16,14 @@ export class AllocationService {
 		private readonly projectPermissionService: ProjectPermissionService
 	) {}
 
-	async request(projectId: number, userId: number, allocation: AllocationRequestDto) {
+	async request(projectId: number, userId: number, allocation: AllocationRequestDto, isStepUp: boolean) {
 		await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
 				projectId,
 				userId,
-				ProjectPermissionEnum.REQUEST_ALLOCATION
+				ProjectPermissionEnum.REQUEST_ALLOCATION,
+				isStepUp
 			);
 
 			// create allocation
@@ -52,7 +53,7 @@ export class AllocationService {
 		});
 	}
 
-	async getDetail(userId: number, allocationId: number): Promise<Allocation> {
+	async getDetail(userId: number, allocationId: number, isStepUp: boolean): Promise<Allocation> {
 		const allocation = await this.dataSource.getRepository(Allocation).findOne({
 			select: {
 				id: true,
@@ -97,7 +98,7 @@ export class AllocationService {
 			throw new AllocationNotFoundError();
 		}
 
-		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId, isStepUp);
 		const userHasAccess = allocation.allocationUsers.some((au) => au.userId === userId);
 
 		if (!userPermissions.has(ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS) && !userHasAccess) {
@@ -107,8 +108,8 @@ export class AllocationService {
 		return allocation;
 	}
 
-	async list(projectId: number, userId: number, pagination: Pagination, sorting: Sorting | null) {
-		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+	async list(projectId: number, userId: number, pagination: Pagination, sorting: Sorting | null, isStepUp: boolean) {
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId, isStepUp);
 
 		const allocationBuilder = this.dataSource
 			.createQueryBuilder()

@@ -46,6 +46,7 @@ export class AuthGuard implements CanActivate {
 
 		const stepUpHeader = request.headers['x-step-up'];
 		const forceUserRole = !stepUpHeader || stepUpHeader !== 'true';
+		request.isStepUp = forceUserRole;
 
 		request.user = this.userMapper.toUserDto(user, forceUserRole);
 		return true;

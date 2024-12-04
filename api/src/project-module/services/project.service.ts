@@ -47,8 +47,8 @@ export class ProjectService {
 		return [projects.map((project) => this.projectMapper.toProjectDto(project)), count];
 	}
 
-	async getProjectDetail(projectId: number, userId: number): Promise<ProjectDetailDto> {
-		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+	async getProjectDetail(projectId: number, userId: number, isStepUp: boolean): Promise<ProjectDetailDto> {
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId, isStepUp);
 		const project = await this.projectModel.getProject(projectId);
 
 		if (!userPermissions.has(ProjectPermissionEnum.VIEW_PROJECT) || !project) {
@@ -97,13 +97,19 @@ export class ProjectService {
 		});
 	}
 
-	async requestProjectAgain(projectId: number, userId: number, requestProjectDto: RequestProjectDto): Promise<void> {
+	async requestProjectAgain(
+		projectId: number,
+		userId: number,
+		requestProjectDto: RequestProjectDto,
+		isStepUp: boolean
+	): Promise<void> {
 		await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
 				projectId,
 				userId,
-				ProjectPermissionEnum.EDIT_PROJECT
+				ProjectPermissionEnum.EDIT_PROJECT,
+				isStepUp
 			);
 
 			const project = await manager.getRepository(Project).findOne({

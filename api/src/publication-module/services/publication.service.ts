@@ -21,8 +21,14 @@ export class PublicationService {
 		private readonly publicationModel: PublicationModel
 	) {}
 
-	async getProjectPublications(projectId: number, userId: number, pagination: Pagination, sorting: Sorting | null) {
-		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId);
+	async getProjectPublications(
+		projectId: number,
+		userId: number,
+		pagination: Pagination,
+		sorting: Sorting | null,
+		isStepUp: boolean
+	) {
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, userId, isStepUp);
 		const project = await this.projectModel.getProject(projectId);
 
 		if (!userPermissions.has(ProjectPermissionEnum.VIEW_PROJECT) || !project) {
@@ -32,7 +38,7 @@ export class PublicationService {
 		return this.publicationModel.getProjectPublications(projectId, pagination, sorting);
 	}
 
-	async deleteProjectPublication(publicationId: number, userId: number) {
+	async deleteProjectPublication(publicationId: number, userId: number, isStepUp: boolean) {
 		const publication = await this.publicationModel.findById(publicationId);
 
 		// validation if publication exists and user has permissions to delete it
@@ -40,7 +46,11 @@ export class PublicationService {
 			throw new PublicationNotFoundApiException();
 		}
 
-		const permissions = await this.projectPermissionService.getUserPermissions(publication.projectId, userId);
+		const permissions = await this.projectPermissionService.getUserPermissions(
+			publication.projectId,
+			userId,
+			isStepUp
+		);
 
 		if (!permissions.has(ProjectPermissionEnum.EDIT_PUBLICATIONS)) {
 			throw new PublicationNotFoundApiException();
@@ -57,14 +67,16 @@ export class PublicationService {
 	async addPublicationToProject(
 		userId: number,
 		projectId: number,
-		publications: PublicationInputDto[]
+		publications: PublicationInputDto[],
+		isStepUp: boolean
 	): Promise<void> {
 		await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
 				projectId,
 				userId,
-				ProjectPermissionEnum.EDIT_PUBLICATIONS
+				ProjectPermissionEnum.EDIT_PUBLICATIONS,
+				isStepUp
 			);
 
 			// add publications to project

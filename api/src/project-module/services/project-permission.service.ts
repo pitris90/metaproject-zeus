@@ -19,9 +19,9 @@ import { RoleEnum } from '../../permission-module/models/role.enum';
 export class ProjectPermissionService {
 	public constructor(private readonly dataSource: DataSource) {}
 
-	async getUserPermissions(projectId: number, userId: number) {
+	async getUserPermissions(projectId: number, userId: number, isStepUp: boolean) {
 		const manager = this.dataSource.manager;
-		return this.userPermissionsHelper(manager, projectId, userId);
+		return this.userPermissionsHelper(manager, projectId, userId, isStepUp);
 	}
 
 	/**
@@ -31,14 +31,16 @@ export class ProjectPermissionService {
 	 * @param projectId ID of the project
 	 * @param userId ID of the user
 	 * @param permission permission to validate
+	 * @param isStepUp if user has step-up permissions
 	 */
 	async validateUserPermissions(
 		manager: EntityManager,
 		projectId: number,
 		userId: number,
-		permission: ProjectPermissionEnum
+		permission: ProjectPermissionEnum,
+		isStepUp: boolean
 	) {
-		const userPermissions = await this.userPermissionsHelper(manager, projectId, userId);
+		const userPermissions = await this.userPermissionsHelper(manager, projectId, userId, isStepUp);
 
 		if (!userPermissions.has(permission)) {
 			throw new InvalidPermissionException(permission);
@@ -53,7 +55,7 @@ export class ProjectPermissionService {
 	 * @param projectId ID of the project
 	 * @param userId ID of the user
 	 */
-	private async userPermissionsHelper(manager: EntityManager, projectId: number, userId: number) {
+	private async userPermissionsHelper(manager: EntityManager, projectId: number, userId: number, isStepUp: boolean) {
 		const project = await manager.getRepository(Project).findOne({
 			relations: {
 				pi: true
@@ -81,7 +83,7 @@ export class ProjectPermissionService {
 		}
 
 		// fill with default permissions
-		const permissions = new Set(this.getDefaultPermissions(user.role));
+		const permissions = new Set(this.getDefaultPermissions(user.role, isStepUp));
 
 		// user is PI
 		if (project.pi.id === userId) {
@@ -135,7 +137,11 @@ export class ProjectPermissionService {
 		return permissions;
 	}
 
-	private getDefaultPermissions(role: Role): ProjectPermissionEnum[] {
+	private getDefaultPermissions(role: Role, isStepUp: boolean): ProjectPermissionEnum[] {
+		if (!isStepUp) {
+			return [];
+		}
+
 		if (role.codeName === RoleEnum.ADMIN) {
 			return [
 				ProjectPermissionEnum.EDIT_PROJECT,

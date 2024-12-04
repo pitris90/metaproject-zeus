@@ -11,6 +11,7 @@ import { ProjectModel } from '../models/project.model';
 import { ProjectInvalidResourceApiException } from '../../error-module/errors/projects/project-invalid-resource.api-exception';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
+import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -37,9 +38,10 @@ export class ProjectFileController {
 	async getArchivalFile(
 		@Res({ passthrough: true }) res: Response,
 		@Param('id') id: number,
-		@RequestUser() user: UserDto
+		@RequestUser() user: UserDto,
+		@IsStepUp() isStepUp: boolean
 	): Promise<StreamableFile> {
-		const userPermissions = await this.projectPermissionService.getUserPermissions(id, user.id);
+		const userPermissions = await this.projectPermissionService.getUserPermissions(id, user.id, isStepUp);
 
 		if (!userPermissions.has(ProjectPermissionEnum.VIEW_ADVANCED_DETAILS)) {
 			throw new ProjectNotFoundApiException();

@@ -24,9 +24,10 @@ export class MemberService {
 		projectId: number,
 		user: UserDto,
 		pagination: Pagination,
-		sorting: Sorting | null
+		sorting: Sorting | null,
+		isStepUp: boolean
 	): Promise<[ProjectUser[], number]> {
-		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, user.id);
+		const userPermissions = await this.projectPermissionService.getUserPermissions(projectId, user.id, isStepUp);
 		const project = await this.projectModel.getProject(projectId);
 
 		if (!userPermissions.has(ProjectPermissionEnum.VIEW_PROJECT) || !project) {
@@ -41,14 +42,15 @@ export class MemberService {
 		);
 	}
 
-	async addProjectMembers(projectId: number, userId: number, members: MemberRequestDto[]) {
+	async addProjectMembers(projectId: number, userId: number, members: MemberRequestDto[], isStepUp: boolean) {
 		const usesManagerRole = members.some((member) => member.role === 'manager');
 		await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
 				projectId,
 				userId,
-				usesManagerRole ? ProjectPermissionEnum.EDIT_MANAGERS : ProjectPermissionEnum.EDIT_MEMBERS
+				usesManagerRole ? ProjectPermissionEnum.EDIT_MANAGERS : ProjectPermissionEnum.EDIT_MEMBERS,
+				isStepUp
 			);
 
 			for (const member of members) {
@@ -57,13 +59,14 @@ export class MemberService {
 		});
 	}
 
-	async deleteProjectMember(projectId: number, userId: number, memberId: number) {
+	async deleteProjectMember(projectId: number, userId: number, memberId: number, isStepUp: boolean) {
 		await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
 				projectId,
 				userId,
-				ProjectPermissionEnum.EDIT_MEMBERS
+				ProjectPermissionEnum.EDIT_MEMBERS,
+				isStepUp
 			);
 			await this.memberModel.deleteMember(projectId, memberId);
 		});

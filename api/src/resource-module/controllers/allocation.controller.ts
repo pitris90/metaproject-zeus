@@ -12,6 +12,7 @@ import { MinRoleCheck } from '../../permission-module/decorators/min-role.decora
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
 import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
 import { AllocationStatusDto } from '../dtos/input/allocation-status.dto';
+import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
 
 @Controller('/allocation')
 @ApiTags('Allocation')
@@ -39,9 +40,10 @@ export class AllocationController {
 	async requestAllocation(
 		@Param('projectId') projectId: number,
 		@RequestUser() user: UserDto,
-		@Body() allocation: AllocationRequestDto
+		@Body() allocation: AllocationRequestDto,
+		@IsStepUp() isStepUp: boolean
 	) {
-		await this.allocationService.request(projectId, user.id, allocation);
+		await this.allocationService.request(projectId, user.id, allocation, isStepUp);
 	}
 
 	@Get('/list/:projectId')
@@ -61,9 +63,16 @@ export class AllocationController {
 		@Param('projectId') projectId: number,
 		@RequestUser() user: UserDto,
 		@GetPagination() pagination: Pagination,
-		@GetSorting() sorting: Sorting | null
+		@GetSorting() sorting: Sorting | null,
+		@IsStepUp() isStepUp: boolean
 	) {
-		const [allocations, count] = await this.allocationService.list(projectId, user.id, pagination, sorting);
+		const [allocations, count] = await this.allocationService.list(
+			projectId,
+			user.id,
+			pagination,
+			sorting,
+			isStepUp
+		);
 
 		const items = allocations.map((allocation) => this.allocationMapper.toAllocationDto(allocation));
 		return this.paginationMapper.toPaginatedResult(pagination, count, items);
@@ -82,8 +91,8 @@ export class AllocationController {
 		description: 'Project not found or user has no access to this project.',
 		type: ProjectNotFoundApiException
 	})
-	async allocationDetail(@Param('id') id: number, @RequestUser() user: UserDto) {
-		const allocation = await this.allocationService.getDetail(user.id, id);
+	async allocationDetail(@Param('id') id: number, @RequestUser() user: UserDto, @IsStepUp() isStepUp: boolean) {
+		const allocation = await this.allocationService.getDetail(user.id, id, isStepUp);
 		return this.allocationMapper.toAllocationDetailDto(allocation);
 	}
 

@@ -26,7 +26,8 @@ export class ProjectArchivalService {
 		userId: number,
 		projectId: number,
 		projectArchiveDto: ProjectArchiveDto,
-		file: Express.Multer.File
+		file: Express.Multer.File,
+		isStepUp: boolean
 	): Promise<ProjectDto> {
 		return this.dataSource.transaction(async (manager) => {
 			// lock project before manipulation
@@ -38,7 +39,8 @@ export class ProjectArchivalService {
 					manager,
 					projectId,
 					userId,
-					ProjectPermissionEnum.EDIT_PROJECT
+					ProjectPermissionEnum.EDIT_PROJECT,
+					isStepUp
 				);
 			} catch (error) {
 				if (error instanceof InvalidPermissionException) {

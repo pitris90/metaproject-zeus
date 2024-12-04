@@ -25,6 +25,7 @@ import { MinRoleCheck } from '../../permission-module/decorators/min-role.decora
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
 import { PaginatedResultDto } from '../../config-module/dtos/paginated-result.dto';
+import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
 
 /**
  * Project controller that contains basic methods for manipulating projects. Mainly methods like getting user projects and requesting a project.
@@ -110,8 +111,12 @@ export class ProjectController {
 		description: 'Project not found or user has no access to a project.',
 		type: ProjectNotFoundApiException
 	})
-	async projectDetail(@Param('id') id: number, @RequestUser() user: User): Promise<ProjectDetailDto> {
-		return this.projectService.getProjectDetail(id, user.id);
+	async projectDetail(
+		@Param('id') id: number,
+		@RequestUser() user: UserDto,
+		@IsStepUp() isStepUp: boolean
+	): Promise<ProjectDetailDto> {
+		return this.projectService.getProjectDetail(id, user.id, isStepUp);
 	}
 
 	@Post()
@@ -161,8 +166,9 @@ export class ProjectController {
 	async requestProjectAgain(
 		@Param('id') projectId: number,
 		@RequestUser() user: UserDto,
-		@Body() requestProjectDto: RequestProjectDto
+		@Body() requestProjectDto: RequestProjectDto,
+		@IsStepUp() isStepUp: boolean
 	) {
-		await this.projectService.requestProjectAgain(projectId, user.id, requestProjectDto);
+		await this.projectService.requestProjectAgain(projectId, user.id, requestProjectDto, isStepUp);
 	}
 }

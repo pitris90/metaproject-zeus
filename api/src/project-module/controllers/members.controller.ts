@@ -24,6 +24,7 @@ import { PaginationMapper } from '../../config-module/mappers/pagination.mapper'
 import { MemberDto } from '../dtos/member.dto';
 import { PaginatedResultDto } from '../../config-module/dtos/paginated-result.dto';
 import { MemberListDto } from '../dtos/member-list.dto';
+import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -53,9 +54,10 @@ export class MembersController {
 		@Param('id') id: number,
 		@RequestUser() user: UserDto,
 		@GetPagination() pagination: Pagination,
-		@GetSorting() sorting: Sorting | null
+		@GetSorting() sorting: Sorting | null,
+		@IsStepUp() isStepUp: boolean
 	): Promise<PaginatedResultDto<MemberDto>> {
-		const [members, count] = await this.memberService.getProjectMembers(id, user, pagination, sorting);
+		const [members, count] = await this.memberService.getProjectMembers(id, user, pagination, sorting, isStepUp);
 		const items = members.map((member) => this.memberMapper.toMemberDto(member));
 		return this.paginationMapper.toPaginatedResult<MemberDto>(pagination, count, items);
 	}
@@ -81,7 +83,8 @@ export class MembersController {
 		@Param('id') id: number,
 		@RequestUser() user: UserDto,
 		@Body() membersBody: MemberRequestListDto,
-		@Headers('Authorization') authorizationHeader: string
+		@Headers('Authorization') authorizationHeader: string,
+		@IsStepUp() isStepUp: boolean
 	) {
 		const accessToken = authorizationHeader.split(' ')[1]?.trim();
 
@@ -90,7 +93,7 @@ export class MembersController {
 		}
 
 		const membersToAdd = membersBody.members;
-		await this.memberService.addProjectMembers(id, user.id, membersToAdd);
+		await this.memberService.addProjectMembers(id, user.id, membersToAdd, isStepUp);
 		await this.perunFacade.inviteMembers(
 			accessToken,
 			membersToAdd.map((m) => m.email),
@@ -118,8 +121,9 @@ export class MembersController {
 	async removeProjectMember(
 		@Param('projectId') projectId: number,
 		@Param('userId') memberId: number,
-		@RequestUser() user: UserDto
+		@RequestUser() user: UserDto,
+		@IsStepUp() isStepUp: boolean
 	) {
-		await this.memberService.deleteProjectMember(projectId, user.id, memberId);
+		await this.memberService.deleteProjectMember(projectId, user.id, memberId, isStepUp);
 	}
 }
