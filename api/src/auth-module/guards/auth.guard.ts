@@ -32,6 +32,10 @@ export class AuthGuard implements CanActivate {
 			throw new UnauthorizedException();
 		}
 
+		const stepUpHeader = request.headers['x-step-up'];
+		const forceUserRole = !stepUpHeader || stepUpHeader !== 'true';
+		request.isStepUp = !forceUserRole;
+
 		const accessToken = authorizationHeader.split('Bearer ')[1].trim();
 		const externalId = await this.tokenService.getUserExternalId(accessToken);
 
@@ -43,10 +47,6 @@ export class AuthGuard implements CanActivate {
 		if (!user) {
 			throw new UnauthorizedException();
 		}
-
-		const stepUpHeader = request.headers['x-step-up'];
-		const forceUserRole = !stepUpHeader || stepUpHeader !== 'true';
-		request.isStepUp = forceUserRole;
 
 		request.user = this.userMapper.toUserDto(user, forceUserRole);
 		return true;

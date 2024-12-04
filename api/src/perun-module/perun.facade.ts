@@ -49,6 +49,11 @@ export class PerunFacade {
 			throw new ProjectNotFoundApiException();
 		}
 
-		await this.perunInvitationQueue.add('invite', { userToken, emails, groupId: project.perunId });
+		await this.perunInvitationQueue.add('invite', {
+			userToken,
+			emails,
+			groupId: project.perunId,
+			externalProjectId: project.perunId
+		});
 	}
 }

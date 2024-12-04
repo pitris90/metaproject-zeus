@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post, UnauthorizedException } from '@nestjs/common';
 import {
 	ApiCreatedResponse,
 	ApiForbiddenResponse,
@@ -124,5 +124,19 @@ export class MembersController {
 		@IsStepUp() isStepUp: boolean
 	) {
 		await this.memberService.deleteProjectMember(projectId, user.id, memberId, isStepUp);
+	}
+
+	@Post(':projectId/members/accept')
+	@MinRoleCheck(RoleEnum.USER)
+	@ApiOperation({
+		summary: 'Accepts invitation for this project',
+		description: 'Accepts invitation for user project.'
+	})
+	@ApiNoContentResponse({
+		description: 'Invitation accepted.'
+	})
+	@HttpCode(204)
+	public async acceptInvitation(@RequestUser() user: UserDto, @Param('projectId') projectId: number): Promise<void> {
+		await this.memberService.acceptInvitation(projectId, user.id);
 	}
 }

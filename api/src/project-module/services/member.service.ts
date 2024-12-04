@@ -42,6 +42,18 @@ export class MemberService {
 		);
 	}
 
+	async acceptInvitation(externalProjectId: number, userId: number) {
+		const project = await this.projectModel.getProjectByExternalId(externalProjectId);
+
+		if (!project) {
+			throw new ProjectNotFoundApiException();
+		}
+
+		// TODO check if user is member of group in Perun before accepting invitation
+
+		await this.memberModel.acceptInvitation(project.id, userId);
+	}
+
 	async addProjectMembers(
 		projectId: number,
 		userId: number,
