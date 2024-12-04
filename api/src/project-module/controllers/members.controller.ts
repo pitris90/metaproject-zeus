@@ -93,12 +93,11 @@ export class MembersController {
 		}
 
 		const membersToAdd = membersBody.members;
-		await this.memberService.addProjectMembers(id, user.id, membersToAdd, isStepUp);
-		await this.perunFacade.inviteMembers(
-			accessToken,
-			membersToAdd.map((m) => m.email),
-			id
-		);
+		const addedEmails = await this.memberService.addProjectMembers(id, user.id, membersToAdd, isStepUp);
+
+		if (addedEmails.length > 0) {
+			await this.perunFacade.inviteMembers(accessToken, addedEmails, id);
+		}
 	}
 
 	@Delete(':projectId/members/:userId')

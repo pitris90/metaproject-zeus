@@ -42,9 +42,14 @@ export class MemberService {
 		);
 	}
 
-	async addProjectMembers(projectId: number, userId: number, members: MemberRequestDto[], isStepUp: boolean) {
+	async addProjectMembers(
+		projectId: number,
+		userId: number,
+		members: MemberRequestDto[],
+		isStepUp: boolean
+	): Promise<string[]> {
 		const usesManagerRole = members.some((member) => member.role === 'manager');
-		await this.dataSource.transaction(async (manager) => {
+		return await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
 				projectId,
@@ -53,9 +58,23 @@ export class MemberService {
 				isStepUp
 			);
 
+			const existingMembers = await this.memberModel.getMembersByEmail(
+				projectId,
+				members.map((member) => member.email)
+			);
+
+			const existingEmails = new Set(existingMembers.map((member) => member.user.email));
+			const addedEmails: string[] = [];
+
 			for (const member of members) {
+				if (existingEmails.has(member.email)) {
+					continue;
+				}
 				await this.memberModel.addMember(manager, projectId, member.email, member.role);
+				addedEmails.push(member.email);
 			}
+
+			return addedEmails;
 		});
 	}
 

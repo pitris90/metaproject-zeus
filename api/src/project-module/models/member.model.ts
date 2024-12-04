@@ -18,6 +18,20 @@ export class MemberModel {
 			.getMany();
 	}
 
+	public async getMembersByEmail(projectId: number, emails: string[]) {
+		return this.dataSource
+			.createQueryBuilder()
+			.select(['pu.id', 'u.email'])
+			.from(ProjectUser, 'pu')
+			.innerJoin('pu.user', 'u')
+			.where('pu.projectId = :projectId AND u.email IN (:...emails) AND u.source = :source', {
+				projectId,
+				emails,
+				source: 'perun'
+			})
+			.getMany();
+	}
+
 	public async getProjectMembers(
 		projectId: number,
 		showAllMembers: boolean,
