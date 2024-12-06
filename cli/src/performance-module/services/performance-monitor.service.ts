@@ -23,13 +23,13 @@ export class PerformanceMonitorService {
 	async monitor(reportProvider: ReportProvider): Promise<PerformanceSchema> {
 		const responseTimesMs: number[] = [];
 
-		const route = reportProvider.getEndpoint();
-		const headers = await reportProvider.getHeaders();
-		const method = reportProvider.getMethod();
-		const body = reportProvider.getBody();
-
-		this.logger.log(`Monitoring ${route}...`);
+		this.logger.log(`Monitoring...`);
 		for (let i = 0; i < CALL_COUNT; i++) {
+			const route = await reportProvider.getEndpoint();
+			const headers = await reportProvider.getHeaders();
+			const method = reportProvider.getMethod();
+			const body = reportProvider.getBody();
+
 			const http$ = this.httpService.request({
 				url: `${this.apiUrl}${route}`,
 				method: method,

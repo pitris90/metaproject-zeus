@@ -1,32 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { User } from 'resource-manager-database';
 import { ReportProvider } from './report-provider.interface';
 
 @Injectable()
-export class AuthorizationReportProvider implements ReportProvider {
-	private externalId: string;
+export class AuthorizationReportProvider extends ReportProvider {
+	constructor(dataSource: DataSource) {
+		super(dataSource);
+	}
 
-	constructor(private readonly dataSource: DataSource) {}
-
-	getEndpoint(): string {
+	override getTemplate(): string {
 		return '/auth';
 	}
 
-	async getHeaders(): Promise<Record<string, string>> {
-		if (!this.externalId) {
-			const user = await this.dataSource
-				.getRepository(User)
-				.createQueryBuilder('user')
-				.select()
-				.orderBy('RANDOM()')
-				.getOneOrFail();
-			this.externalId = user.externalId;
-		}
-
-		return {
-			Authorization: `Bearer ${this.externalId}`
-		};
+	async getEndpoint(): Promise<string> {
+		return '/auth';
 	}
 
 	getBody(): Record<string, string> {

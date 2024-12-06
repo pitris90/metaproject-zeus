@@ -1,9 +1,39 @@
-export interface ReportProvider {
-	getEndpoint(): string;
+import { User } from 'resource-manager-database';
+import { DataSource } from 'typeorm';
 
-	getBody(): Record<string, string>;
+export abstract class ReportProvider {
+	protected savedUser: User | undefined;
 
-	getMethod(): string;
+	protected constructor(protected dataSource: DataSource) {}
 
-	getHeaders(): Promise<Record<string, string>>;
+	abstract getTemplate(): string;
+
+	abstract getEndpoint(): Promise<string>;
+
+	abstract getBody(): Record<string, string>;
+
+	abstract getMethod(): string;
+
+	async getHeaders(): Promise<Record<string, string>> {
+		if (!this.savedUser) {
+			this.savedUser = await this.getRandomUser();
+		}
+
+		return {
+			Authorization: `Bearer ${this.savedUser.externalId}`
+		};
+	}
+
+	async getRandomUser(): Promise<User> {
+		if (this.savedUser) {
+			return this.savedUser;
+		}
+
+		return this.dataSource
+			.getRepository(User)
+			.createQueryBuilder('user')
+			.select()
+			.orderBy('RANDOM()')
+			.getOneOrFail();
+	}
 }
