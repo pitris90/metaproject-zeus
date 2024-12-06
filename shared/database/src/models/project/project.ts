@@ -26,6 +26,9 @@ export class Project {
 	@ManyToOne(() => User, user => user.assignedProjects)
 	pi: User;
 
+	@Column({ nullable: false })
+	piId: number;
+
 	@Column("text")
 	description: string;
 

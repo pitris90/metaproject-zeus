@@ -1,17 +1,14 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { UsersModel } from '../../users-module/models/users.model';
-import { UserMapper } from '../../users-module/services/user.mapper';
 import { TokenService } from '../services/token.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
 	constructor(
-		private readonly usersModel: UsersModel,
+		// private readonly usersModel: UsersModel,
 		private readonly tokenService: TokenService,
-		private readonly reflector: Reflector,
-		private readonly userMapper: UserMapper
+		private readonly reflector: Reflector // private readonly userMapper: UserMapper
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -43,12 +40,12 @@ export class AuthGuard implements CanActivate {
 			throw new UnauthorizedException();
 		}
 
-		const user = await this.usersModel.findUserByExternalId(externalId);
-		if (!user) {
-			throw new UnauthorizedException();
-		}
-
-		request.user = this.userMapper.toUserDto(user, forceUserRole);
+		// const user = await this.usersModel.findUserByExternalId(externalId);
+		// if (!user) {
+		// 	throw new UnauthorizedException();
+		// }
+		//
+		// request.user = this.userMapper.toUserDto(user, forceUserRole);
 		return true;
 	}
 }
