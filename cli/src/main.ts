@@ -4,6 +4,7 @@ import * as minimist from 'minimist';
 import { AppModule } from './app.module';
 import { SeedCommand } from './seeders-module/seed.command';
 import { FakeDataService } from './performance-module/services/fake-data.service';
+import { PerformanceReportService } from './performance-module/services/performance-report.service';
 
 async function bootstrap() {
 	const app = await NestFactory.createApplicationContext(AppModule);
@@ -20,8 +21,12 @@ async function bootstrap() {
 			const fakeDataService = app.get(FakeDataService);
 			await fakeDataService.generate(count);
 			break;
+		case 'report':
+			const performanceReportService = app.get(PerformanceReportService);
+			await performanceReportService.generateReport();
+			break;
 		default:
-			throw new Error(`Command ${command} not found. Valid commands are: seed, generate`);
+			throw new Error(`Command ${command} not found. Valid commands are: seed, generate, report`);
 	}
 
 	await app.close();
