@@ -1,5 +1,14 @@
-import { Column, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
-import { TimeEntity } from '../time-entity';
+import {
+	Column,
+	CreateDateColumn,
+	Entity,
+	Index,
+	ManyToOne,
+	OneToMany,
+	OneToOne,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn
+} from 'typeorm';
 import { User } from '../user/user';
 import { ProjectUser } from './project-user';
 import { ProjectArchival } from './project-archival';
@@ -12,12 +21,12 @@ export enum ProjectStatus {
 }
 
 @Entity()
-@Unique(["title", "pi"])
 export class Project {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	@Column()
+	@Column({ unique: true })
+	@Index()
 	title: string;
 
 	@Column({ nullable: true })
@@ -27,6 +36,7 @@ export class Project {
 	pi: User;
 
 	@Column({ nullable: false })
+	@Index()
 	piId: number;
 
 	@Column("text")
@@ -42,8 +52,12 @@ export class Project {
 	@Column()
 	status: ProjectStatus;
 
-	@Column(() => TimeEntity)
-	time: TimeEntity;
+	@CreateDateColumn()
+	@Index()
+	createdAt: string;
+
+	@UpdateDateColumn()
+	updatedAt: string;
 
 	@OneToMany(() => ProjectUser, projectUser => projectUser.project)
 	members: ProjectUser[];

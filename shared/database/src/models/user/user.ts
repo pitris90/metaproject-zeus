@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Role } from './role';
 import { Project } from '../project/project';
@@ -15,9 +15,11 @@ export class User {
 	source: string;
 
 	@Column({nullable: true})
+	@Index()
 	externalId: string;
 
 	@Column({ nullable: false })
+	@Index()
 	email: string;
 
 	@Column({ default: false })

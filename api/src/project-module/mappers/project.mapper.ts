@@ -17,7 +17,7 @@ export class ProjectMapper {
 			description: project.description,
 			status: this.fromProjectStatus(project.status),
 			user: this.userMapper.toUserDto(project.pi),
-			createdAt: project.time.createdAt
+			createdAt: project.createdAt
 		};
 	}
 

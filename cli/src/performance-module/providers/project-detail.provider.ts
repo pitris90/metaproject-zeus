@@ -20,6 +20,7 @@ export class ProjectDetailProvider extends ReportProvider {
 		if (!savedUserId) {
 			const user = await this.getRandomUser();
 			savedUserId = user.id;
+			this.savedUser = user;
 		}
 
 		if (this.isUserPi) {

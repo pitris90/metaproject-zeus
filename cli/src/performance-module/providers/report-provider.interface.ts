@@ -15,7 +15,7 @@ export abstract class ReportProvider {
 	abstract getMethod(): string;
 
 	async getHeaders(): Promise<Record<string, string>> {
-		if (!this.savedUser) {
+		if (this.savedUser === undefined) {
 			this.savedUser = await this.getRandomUser();
 		}
 
@@ -25,7 +25,7 @@ export abstract class ReportProvider {
 	}
 
 	async getRandomUser(): Promise<User> {
-		if (this.savedUser) {
+		if (this.savedUser !== undefined) {
 			return this.savedUser;
 		}
 
@@ -35,5 +35,9 @@ export abstract class ReportProvider {
 			.select()
 			.orderBy('RANDOM()')
 			.getOneOrFail();
+	}
+
+	reset(): void {
+		this.savedUser = undefined;
 	}
 }

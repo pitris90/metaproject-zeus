@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { AllocationStatus } from '../../enums/allocation.status';
 import { Allocation } from './allocation';
@@ -11,9 +11,11 @@ export class AllocationUser {
 	id: number;
 
 	@Column()
+	@Index()
 	allocationId: number;
 
 	@Column()
+	@Index()
 	userId: number;
 
 	@Column()

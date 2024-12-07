@@ -26,9 +26,11 @@ export class PerformanceMonitorService {
 		this.logger.log(`Monitoring...`);
 		for (let i = 0; i < CALL_COUNT; i++) {
 			const route = await reportProvider.getEndpoint();
+			const body = reportProvider.getBody();
 			const headers = await reportProvider.getHeaders();
 			const method = reportProvider.getMethod();
-			const body = reportProvider.getBody();
+
+			this.logger.log(`--- Calling ${method} ${route}`);
 
 			const http$ = this.httpService.request({
 				url: `${this.apiUrl}${route}`,
@@ -42,6 +44,7 @@ export class PerformanceMonitorService {
 			const end = performance.now();
 
 			responseTimesMs.push(end - start);
+			reportProvider.reset();
 		}
 
 		const avg = responseTimesMs.reduce((acc, curr) => acc + curr, 0) / CALL_COUNT;

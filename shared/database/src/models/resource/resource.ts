@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { ResourceType } from './resource-type';
 import { ResourceToAttributeType } from './resource-to-attribute-type';
@@ -27,6 +27,7 @@ export class Resource {
 	parentResource: Resource;
 
 	@Column({ nullable: true })
+	@Index()
 	parentResourceId: number;
 
 	@OneToMany(() => Resource, resource => resource.parentResource)

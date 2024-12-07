@@ -28,8 +28,11 @@ export class FakeDataService {
 		// first create count users
 		this.logger.log(`Creating ${count} users`);
 		const usersData = Array.from({ length: count }, () => this.createRandomUser());
-		const users = await this.dataSource.getRepository(User).insert(usersData);
-		const userIds = users.identifiers.map((user) => user['id']);
+		let userIds: number[] = [];
+		for (const chunk of this.getChunks(usersData)) {
+			const users = await this.dataSource.getRepository(User).insert(chunk);
+			userIds = [...userIds, ...users.identifiers.map((user) => user['id'])];
+		}
 
 		// then pick PI for projects (only 1/10 of users should be PI)
 		const piUserIds = userIds.filter((_, index) => index % 10 === 0);
@@ -38,11 +41,16 @@ export class FakeDataService {
 		// then create count projects
 		this.logger.log(`Creating ${count} projects`);
 		const projectData = Array.from({ length: count }, (_, index) => {
-			const piId = piUserIds[index % 10] > piUserIds.length ? piUserIds[0] : piUserIds[index % 10];
+			const piId =
+				index % piUserIds.length > piUserIds.length ? piUserIds[0] : piUserIds[index % piUserIds.length];
 			return this.createRandomProject(piId);
 		});
-		const projects = await this.dataSource.getRepository(Project).insert(projectData);
-		const projectIds = projects.identifiers.map((project) => project['id']);
+
+		let projectIds: number[] = [];
+		for (const chunk of projectData) {
+			const projects = await this.dataSource.getRepository(Project).insert(chunk);
+			projectIds = [...projectIds, ...projects.identifiers.map((project) => project['id'])];
+		}
 
 		const normalUserIds = userIds.filter((userId) => !piUserIds.includes(userId));
 
@@ -60,7 +68,7 @@ export class FakeDataService {
 			const publicationData = Array.from({ length: 5 }, () => this.createRandomPublication(projectId));
 			await this.dataSource.getRepository(Publication).insert(publicationData);
 
-			const eligibleUsers = [...randomMemberIds, piUserIds[i]];
+			const eligibleUsers = [...randomMemberIds, piUserIds[i % piUserIds.length]];
 
 			// add random allocations to project
 			const allocationData = eligibleUsers.map(() => this.createRandomAllocation(projectId, resourceIds));
@@ -81,7 +89,7 @@ export class FakeDataService {
 		return {
 			source: 'perun',
 			externalId: faker.string.uuid(),
-			email: faker.internet.email(),
+			email: faker.lorem.words(1) + '@' + faker.internet.domainName() + faker.lorem.word(),
 			emailVerified: true,
 			username: faker.internet.username(),
 			name: faker.internet.displayName(),
@@ -147,5 +155,13 @@ export class FakeDataService {
 			userId: faker.helpers.arrayElement(userIds),
 			status: faker.helpers.enumValue(AllocationStatus)
 		};
+	}
+
+	private getChunks(array: any[]) {
+		const chunks: any[] = [];
+		for (let i = 0; i < array.length; i += 1000) {
+			chunks.push(array.slice(i, i + 1000));
+		}
+		return chunks;
 	}
 }

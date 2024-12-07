@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from './project';
 import { User } from '../user/user';
@@ -21,9 +21,11 @@ export class ProjectUser {
 	id: number;
 
 	@Column()
+	@Index()
 	projectId: number;
 
 	@Column()
+	@Index()
 	userId: number;
 
 	@Column()

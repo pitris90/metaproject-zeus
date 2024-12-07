@@ -14,7 +14,8 @@ export class UserProjectsProvider extends ReportProvider {
 	}
 
 	override async getEndpoint(): Promise<string> {
-		return '/project?status=active';
+		const page = this.getRandomPage(1, 100);
+		return `/project?status=active&page=${page}`;
 	}
 	override getBody(): Record<string, string> {
 		return {};
@@ -32,5 +33,9 @@ export class UserProjectsProvider extends ReportProvider {
 			.orderBy('RANDOM()')
 			.getOneOrFail();
 		return project.pi;
+	}
+
+	private getRandomPage(min: number, max: number): number {
+		return Math.floor(Math.random() * (max - min + 1) + min);
 	}
 }
