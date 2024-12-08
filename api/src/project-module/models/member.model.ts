@@ -8,13 +8,17 @@ import { Sorting } from '../../config-module/decorators/get-sorting';
 export class MemberModel {
 	public constructor(private readonly dataSource: DataSource) {}
 
-	public async getMembersByExternalId(projectId: number, externalIds: string[]) {
+	public async getMembersByEmail(projectId: number, emails: string[]) {
 		return this.dataSource
 			.createQueryBuilder()
-			.select(['pu.id', 'u.externalId'])
+			.select(['pu.id', 'u.email'])
 			.from(ProjectUser, 'pu')
 			.innerJoin('pu.user', 'u')
-			.where('pu.projectId = :projectId AND u.externalId IN (:...externalIds)', { projectId, externalIds })
+			.where('pu.projectId = :projectId AND u.email IN (:...emails) AND u.source = :source', {
+				projectId,
+				emails,
+				source: 'perun'
+			})
 			.getMany();
 	}
 
@@ -56,6 +60,15 @@ export class MemberModel {
 		}
 
 		return projectMemberBuilder.getManyAndCount();
+	}
+
+	public async acceptInvitation(projectId: number, userId: number) {
+		await this.dataSource
+			.createQueryBuilder()
+			.update(ProjectUser)
+			.set({ status: ProjectUserStatus.ACTIVE })
+			.where('projectId = :projectId AND userId = :userId', { projectId, userId })
+			.execute();
 	}
 
 	public async addMember(manager: EntityManager, projectId: number, email: string, role: string) {

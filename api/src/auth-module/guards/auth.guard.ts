@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { UsersModel } from '../../users-module/models/users.model';
 import { UserMapper } from '../../users-module/services/user.mapper';
+import { UsersModel } from '../../users-module/models/users.model';
 import { TokenService } from '../services/token.service';
 
 @Injectable()
@@ -32,6 +32,10 @@ export class AuthGuard implements CanActivate {
 			throw new UnauthorizedException();
 		}
 
+		const stepUpHeader = request.headers['x-step-up'];
+		const forceUserRole = !stepUpHeader || stepUpHeader !== 'true';
+		request.isStepUp = !forceUserRole;
+
 		const accessToken = authorizationHeader.split('Bearer ')[1].trim();
 		const externalId = await this.tokenService.getUserExternalId(accessToken);
 
@@ -43,9 +47,6 @@ export class AuthGuard implements CanActivate {
 		if (!user) {
 			throw new UnauthorizedException();
 		}
-
-		const stepUpHeader = request.headers['x-step-up'];
-		const forceUserRole = !stepUpHeader || stepUpHeader !== 'true';
 
 		request.user = this.userMapper.toUserDto(user, forceUserRole);
 		return true;

@@ -1,6 +1,7 @@
 import { Body, Controller, Param, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 import { ProjectDto } from '../dtos/project.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
@@ -9,6 +10,7 @@ import { ProjectArchiveDto } from '../dtos/input/project-archive.dto';
 import { ProjectArchivalService } from '../services/project-archival.service';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -43,8 +45,9 @@ export class ProjectArchiveController {
 		)
 		file: Express.Multer.File,
 		@Param('id') projectId: number,
-		@Body() projectArchiveDto: ProjectArchiveDto
+		@Body() projectArchiveDto: ProjectArchiveDto,
+		@IsStepUp() isStepUp: boolean
 	): Promise<ProjectDto> {
-		return this.projectArchivalService.archiveProject(user.id, projectId, projectArchiveDto, file);
+		return this.projectArchivalService.archiveProject(user.id, projectId, projectArchiveDto, file, isStepUp);
 	}
 }

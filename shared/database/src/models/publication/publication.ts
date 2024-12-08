@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from '../project/project';
 
@@ -33,6 +33,7 @@ export class Publication {
 	source: PublicationSource;
 
 	@Column()
+	@Index()
 	projectId: number;
 
 	@ManyToOne(() => Project)

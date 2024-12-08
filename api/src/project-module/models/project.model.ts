@@ -33,6 +33,14 @@ export class ProjectModel {
 		return projectBuilder.where('project.id = :projectId', { projectId }).getOne();
 	}
 
+	public async getProjectByExternalId(externalProjectId: number): Promise<Project | null> {
+		return this.dataSource.getRepository(Project).findOne({
+			where: {
+				perunId: externalProjectId
+			}
+		});
+	}
+
 	public async getArchivalInfo(projectId: number): Promise<ProjectArchival | null> {
 		return this.dataSource.getRepository(ProjectArchival).findOne({
 			where: {
@@ -87,7 +95,9 @@ export class ProjectModel {
 			.createQueryBuilder()
 			.select('1')
 			.from(ProjectUser, 'pu')
-			.where('pu.userId = :subUserId AND pu.status != :subStatus AND pu.role IN (:...allowedRoles)')
+			.where(
+				'pu.userId = :subUserId AND pu.status = :subStatus AND pu.role IN (:...allowedRoles) AND pu.projectId = project.id'
+			)
 			.getQuery();
 
 		const projectQuery = this.dataSource
@@ -95,10 +105,9 @@ export class ProjectModel {
 			.innerJoinAndSelect('project.pi', 'pi')
 			.where(
 				new Brackets((qb) => {
-					// TODO add project ID to exists query
 					qb.where('pi.id = :piId', { piId: userId }).orWhere(`EXISTS (${existsInProjectQuery})`, {
 						subUserId: userId,
-						subStatus: ProjectUserStatus.DENIED,
+						subStatus: ProjectUserStatus.ACTIVE,
 						allowedRoles: requireManagerPosition
 							? [ProjectUserRole.MANAGER]
 							: [ProjectUserRole.MANAGER, ProjectUserRole.USER]
@@ -127,15 +136,34 @@ export class ProjectModel {
 		return projectQuery.getManyAndCount();
 	}
 
-	public async getProjectRequests(pagination: Pagination): Promise<[Project[], number]> {
-		return this.dataSource
+	public async getProjects(
+		status: ProjectStatus | null,
+		pagination: Pagination,
+		sorting: Sorting
+	): Promise<[Project[], number]> {
+		const projectQuery = this.dataSource
 			.createQueryBuilder(Project, 'project')
 			.innerJoinAndSelect('project.pi', 'pi')
-			.where('project.status = :status', { status: ProjectStatus.NEW })
 			.offset(pagination.offset)
-			.limit(pagination.limit)
-			.orderBy('project.createdAt', 'ASC')
-			.getManyAndCount();
+			.limit(pagination.limit);
+
+		if (status) {
+			projectQuery.where('project.status = :status', { status });
+		}
+
+		switch (sorting.columnAccessor) {
+			case 'title':
+				projectQuery.orderBy('project.title', sorting.direction);
+				break;
+			case 'id':
+				projectQuery.orderBy('project.id', sorting.direction);
+				break;
+			default:
+				projectQuery.orderBy('project.createdAt', sorting.direction);
+				break;
+		}
+
+		return projectQuery.getManyAndCount();
 	}
 
 	public async updateProject(

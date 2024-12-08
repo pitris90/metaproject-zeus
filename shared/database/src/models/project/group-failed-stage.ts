@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Project } from './project';
 import { TimeEntity } from '../time-entity';
 
@@ -17,6 +17,7 @@ export class GroupFailedStage {
 	isRunning: boolean;
 
 	@Column({ unique: true })
+	@Index()
 	projectId: number;
 
 	@ManyToOne(() => Project)

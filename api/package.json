@@ -9,7 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "lint": "eslint \"./**/*.{ts,tsx,js}\" && tsc --noEmit",
     "lint:fix": "eslint --fix \"./**/*.{ts,tsx,js}\"",
     "lint:ci": "eslint \"./**/*.{ts,tsx,js}\"  --format junit --output-file test/_output/eslint.xml && tsc --noEmit",

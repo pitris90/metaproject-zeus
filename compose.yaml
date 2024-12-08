@@ -68,6 +68,7 @@ services:
       - POSTGRES_USER
       - POSTGRES_PASSWORD
       - POSTGRES_DATABASE
+      - API_URL
     volumes:
       - ./shared:/app/shared
       - ./cli/src:/app/cli/src

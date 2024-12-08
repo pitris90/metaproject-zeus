@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users-module/users.module';
 import { PerunModule } from '../perun-module/perun.module';
 import { AppService } from '../app.service';
+import { ApiConfigModule } from '../config-module/api-config.module';
 import { ProjectService } from './services/project.service';
 import { ProjectController } from './controllers/project.controller';
 import { ProjectMapper } from './mappers/project.mapper';
@@ -25,6 +26,7 @@ import { ProjectFileController } from './controllers/project-file.controller';
 	imports: [
 		forwardRef(() => UsersModule),
 		PerunModule,
+		ApiConfigModule,
 		MulterModule.registerAsync({
 			imports: [ConfigModule],
 			useFactory: async (configService: ConfigService) => {

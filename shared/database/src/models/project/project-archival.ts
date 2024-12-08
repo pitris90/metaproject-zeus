@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from './project';
 import { File } from '../file';
@@ -13,6 +13,7 @@ export class ProjectArchival {
 	project: Project;
 
 	@Column()
+	@Index()
 	projectId: number;
 
 	@Column("text", { default: null, nullable: true })

@@ -1,9 +1,8 @@
-import { Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from '../project/project';
 import { Resource } from '../resource/resource';
 import { AllocationStatus } from '../../enums/allocation.status';
-import { User } from '../user/user';
 import { AllocationUser } from './allocation-user';
 
 @Entity()
@@ -21,9 +20,11 @@ export class Allocation {
 	quantity: number;
 
 	@Column()
+	@Index()
 	projectId: number;
 
 	@Column()
+	@Index()
 	resourceId: number;
 
 	@Column()

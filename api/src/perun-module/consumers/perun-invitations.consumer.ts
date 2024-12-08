@@ -7,6 +7,7 @@ type JobData = {
 	userToken: string;
 	groupId: number;
 	emails: string[];
+	externalProjectId: number;
 };
 
 @Processor('perunInvitations')
@@ -18,12 +19,12 @@ export class PerunInvitationsConsumer extends WorkerHost {
 	}
 
 	async process(job: Job<JobData>) {
-		const { userToken, emails, groupId } = job.data;
+		const { userToken, emails, groupId, externalProjectId } = job.data;
 		this.logger.log(`Starting to send invitations for group ${groupId}`);
 
 		for (const email of emails) {
 			this.logger.log(`Sending invitation to mail ${email}`);
-			await this.perunInvitationsService.inviteToGroup(userToken, groupId, email, email, 'cs');
+			await this.perunInvitationsService.inviteToGroup(userToken, groupId, email, email, 'cs', externalProjectId);
 		}
 	}
 }

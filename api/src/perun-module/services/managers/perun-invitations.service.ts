@@ -16,19 +16,27 @@ export class PerunInvitationsService {
 		private readonly configService: ConfigService
 	) {}
 
-	async inviteToGroup(token: string, groupId: number, receiverName: string, receiverEmail: string, language: string) {
+	async inviteToGroup(
+		token: string,
+		groupId: number,
+		receiverName: string,
+		receiverEmail: string,
+		language: string,
+		externalProjectId: number
+	) {
 		const date = new Date();
 		date.setDate(date.getDate() + EXPIRATION_DAYS);
 
 		try {
-			await this.perunApiService.callOauth(token, PerunManager.INVITATIONS, 'inviteToGroup', {
+			// TODO use oauth after reference token "Reference token could not be introspected" error is solved
+			await this.perunApiService.callBasic(PerunManager.INVITATIONS, 'inviteToGroup', {
 				vo: VO_ID,
 				group: groupId,
 				receiverName,
 				receiverEmail,
 				language,
 				expiration: date.toISOString().split('T')[0],
-				redirectUrl: this.configService.getOrThrow('FRONTEND_URL')
+				redirectUrl: `${this.configService.getOrThrow('FRONTEND_URL')}/project/invitation/${externalProjectId}`
 			});
 		} catch (e) {
 			if (e instanceof PerunApiException) {

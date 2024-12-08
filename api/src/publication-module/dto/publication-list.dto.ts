@@ -10,5 +10,5 @@ export class PublicationListDto {
 	/**
 	 * Publications of the project.
 	 */
-	publications: PublicationDto[];
+	data: PublicationDto[];
 }
