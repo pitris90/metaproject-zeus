@@ -1,4 +1,4 @@
-ARG BASE_IMAGE
+ARG BASE_IMAGE=node:21-alpine3.17
 
 FROM $BASE_IMAGE AS node_modules
 

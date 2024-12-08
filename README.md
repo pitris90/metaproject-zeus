@@ -1,29 +1,78 @@
-# Resource manager BE
 
-This application provides REST API interface for resource manager.
+# MetaProject Zeus
 
-## Description
+This application provides REST API interface for MetaProject Zeus.
 
-Resource manager BE.
 
-## First setup
-1. Create `.env` file in root of the folder with default values from `.env.example`. Change your values accordingly.
+## Authors
 
-## Running the API
+- [Adam Valalský (@adamvalalsky)](https://www.github.com/adamvalalsky)
 
-1. Run bash script `./.build/prepare-dev.sh`
-2. Run `docker compose up`
 
-* changes in `api/` folder will be reflected while running the app.
-* changes in `shared/` folder will need to be updated manually. After changing files in `shared/` folder you should run `.build/prepare-dev.sh` and restart docker container.
+## Run Locally
 
-# Running CLI application
-1. Run bash script `./.build/prepare-dev.sh`
-2. Run `docker compose --profile cli up`
-3. Run `docker exec nest-js-cli sh` and `npm run execude <command_name>` (optionally you can run `docker compose exec nest-js-cli npm run execute <command_name>`)
+First, clone project and navigate to the project directory.
 
-## Test
+If you are using UNIX-based system or you are using WSL (have access to bash), you can run following helper script:
 
-Unit tests: `./.build/tests-unit.sh` or `npm run test:unit` from `api/` folder
+```bash
+.build/prepare-dev.sh
+```
 
-E2E tests: `./.build/test-e2e.sh` or `npm run test:e2e` from `api/` folder
+This script should automatically install `node_modules` in all projects.
+
+(If you don't have UNIX based system or something fails, you need to run `npm install` in this directories manually: `api`, `cli`, `shared/database`).
+
+Then create `.env.example` to `.env` and fill relevant variables (more in section about environment variables)
+
+
+Then start server
+
+```bash
+  docker compose up
+```
+
+(If you want to have access to CLI console, start project with `docker compose up --profile cli`)
+
+## Environment Variables
+
+If you want to test this project, you need to copy variables from `.env.example` to `.env` and fill some variables with your values. Most values are fine for local testing and don't have to be changed, but some values should be registered correctly. This is list of variables that should be changed for local development:
+
+```
+IDENTITY_CLIENT_ID=my-client-id
+IDENTITY_CLIENT_SECRET=my-client-secret
+```
+Need to use correct e-infra OIDC server. Values for MetaProject Zeus server won't be public and will be provided by other channel.
+
+```
+API_PUBLICATION_MAIL_TO=test@mail.com
+```
+Contact mail where some logs from Crossreg API will be sent.
+
+```
+PERUN_URL=https://perun-dev.cesnet.cz/
+PERUN_USER=user
+PERUN_PASSWORD=password
+```
+Need to use for group synchronization. Requires some configuration in Perun, correct values can be provided by other channel.
+
+
+## Deployment
+
+When deploying this project only production docker image is provided for API application. If you want to run CLI commands on production later, you can create similar Dockerfile.
+
+When deploying, application needs PostgreSQL 16.0 and Redis 7.4 to function properly (it is possible to use other versions, if you test it first). You can deploy these services separately or in containers depending on the environment. You can also use Nginx, but it is not required.
+
+To create production image run
+
+```bash
+  docker build -t nest-js-prod -f api/docker/nest-js-prod/Dockerfile .
+```
+
+You can use this image via `docker run nest-js-prod` and provide correct enviornment variables.
+
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)
+

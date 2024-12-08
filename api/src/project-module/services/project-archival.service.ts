@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ProjectStatus, File, ProjectArchival } from 'resource-manager-database';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { Express } from 'express';
 import { ProjectDto } from '../dtos/project.dto';
 import { ProjectModel } from '../models/project.model';
 import { ProjectMapper } from '../mappers/project.mapper';

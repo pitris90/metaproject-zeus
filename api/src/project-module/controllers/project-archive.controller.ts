@@ -1,6 +1,7 @@
 import { Body, Controller, Param, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 import { ProjectDto } from '../dtos/project.dto';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
