@@ -18,7 +18,7 @@ export class ProjectArchiveController {
 	constructor(private readonly projectArchivalService: ProjectArchivalService) {}
 
 	@Post('/:id/archive')
-	@MinRoleCheck(RoleEnum.ADMIN)
+	@MinRoleCheck(RoleEnum.USER)
 	@ApiOperation({
 		summary: 'Archive project',
 		description: 'Archive project request.'
