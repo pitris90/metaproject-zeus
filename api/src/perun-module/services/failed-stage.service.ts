@@ -44,8 +44,8 @@ export class FailedStageService {
 		await this.failedStageModel.removeFailedStage(projectId);
 	}
 
-	async setLastStage(projectId: number, stage: Stage) {
-		await this.failedStageModel.setLastStage(projectId, stage);
+	async setLastStage(projectId: number, stage: Stage, message?: string) {
+		await this.failedStageModel.setLastStage(projectId, stage, message);
 	}
 
 	async isJobRunning(projectId: number) {

@@ -89,7 +89,7 @@ export class PerunGroupConsumer extends WorkerHost {
 			const richMembers = await this.perunMembersService.findCompleteRichMembers(pi.externalId);
 
 			if (richMembers.length !== 1) {
-				throw new Error('Should found exactly one member with specific externalId');
+				throw new Error('Should found exactly one member with specific externalId - no member found in VO');
 			}
 
 			const perunUser = richMembers[0];
@@ -106,7 +106,7 @@ export class PerunGroupConsumer extends WorkerHost {
 		} catch (e) {
 			// set that something failed
 			this.logger.warn(`Job for project ${projectId} failed.`);
-			await this.failedStageService.setLastStage(projectId, currentStage);
+			await this.failedStageService.setLastStage(projectId, currentStage, e?.message);
 			throw e;
 		} finally {
 			this.logger.log(`Marking stage for project ${job.data.projectId} as not running`);

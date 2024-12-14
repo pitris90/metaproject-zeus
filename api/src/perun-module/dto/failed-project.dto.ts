@@ -15,6 +15,11 @@ export class FailedProjectDto {
 	lastStage: string;
 
 	/**
+	 * Message with details about failure.
+	 */
+	message?: string;
+
+	/**
 	 * Date at which failed.
 	 */
 	updatedAt: string;
