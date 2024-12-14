@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Resource, ResourceAttributeType, ResourceType } from 'resource-manager-database';
+import { Resource, ResourceAttributeType, ResourceToAttributeType, ResourceType } from 'resource-manager-database';
 import { ResourceTypeDto } from '../dtos/resource-type.dto';
 import { ResourceDto } from '../dtos/input/resource.dto';
 import { ResourceDetailDto } from '../dtos/resource-detail.dto';
@@ -29,7 +29,7 @@ export class ResourceMapper {
 		};
 	}
 
-	toResourceDetailDto(resource: Resource): ResourceDetailDto {
+	toResourceDetailDto(resource: Resource, attributes: ResourceToAttributeType[]): ResourceDetailDto {
 		return {
 			id: resource.id,
 			name: resource.name,
@@ -43,7 +43,7 @@ export class ResourceMapper {
 				id: resource.parentResource.id,
 				name: resource.parentResource.name
 			},
-			attributes: resource.resourceToResourceAttributes.map((a) => ({
+			attributes: attributes.map((a) => ({
 				key: a.resourceAttributeType.name,
 				value: a.value,
 				isPublic: a.resourceAttributeType.isPublic,

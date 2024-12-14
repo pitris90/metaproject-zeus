@@ -11,7 +11,8 @@ export enum ProjectUserRole {
 export enum ProjectUserStatus {
 	ACTIVE = "active",
 	PENDING = "pending",
-	DENIED = "denied"
+	DENIED = "denied",
+	REMOVED = "removed"
 }
 
 @Entity()

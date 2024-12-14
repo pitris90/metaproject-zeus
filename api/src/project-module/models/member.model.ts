@@ -109,8 +109,8 @@ export class MemberModel {
 	public async deleteMember(projectId: number, userId: number) {
 		await this.dataSource
 			.createQueryBuilder()
-			.delete()
-			.from(ProjectUser)
+			.update(ProjectUser)
+			.set({ status: ProjectUserStatus.REMOVED })
 			.where('projectId = :projectId AND id = :userId', { projectId, userId })
 			.execute();
 	}

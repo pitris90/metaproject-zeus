@@ -115,6 +115,8 @@ export class AllocationService {
 			.createQueryBuilder()
 			.select('a')
 			.from(Allocation, 'a')
+			.innerJoinAndSelect('a.allocationUsers', 'allUsers')
+			.innerJoinAndSelect('allUsers.user', 'u')
 			.leftJoinAndSelect('a.resource', 'r')
 			.leftJoinAndSelect('r.resourceType', 'rt')
 			.where('a.projectId = :projectId', { projectId })
@@ -122,15 +124,17 @@ export class AllocationService {
 			.limit(pagination.limit);
 
 		if (!userPermissions.has(ProjectPermissionEnum.VIEW_ALL_ALLOCATIONS)) {
-			allocationBuilder.andWhereExists(
-				this.dataSource
-					.createQueryBuilder()
-					.select('au')
-					.from(AllocationUser, 'au')
-					.where('au.allocationId = a.id')
-					.andWhere('au.userId = :userId', { userId })
-					.subQuery()
-			);
+			const existsInAllocationQuery = this.dataSource
+				.createQueryBuilder()
+				.select('au')
+				.from(AllocationUser, 'au')
+				.where('au.allocationId = a.id')
+				.andWhere('au.userId = :userId')
+				.getQuery();
+
+			allocationBuilder.andWhere(`EXISTS (${existsInAllocationQuery})`, {
+				userId
+			});
 		}
 
 		if (sorting) {
