@@ -90,7 +90,7 @@ export class ProjectMapper {
 						size: archivalInfo.reportFile.size,
 						mime: archivalInfo.reportFile.mime,
 						createdAt: archivalInfo.reportFile.time.createdAt
-				  }
+					}
 				: undefined
 		};
 	}
