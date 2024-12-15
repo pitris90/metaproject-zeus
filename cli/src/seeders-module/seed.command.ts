@@ -24,7 +24,7 @@ export class SeedCommand {
 		for (const seeder of this.seeders) {
 			const entity = seeder.getInsertEntity();
 			const insertElements = await seeder.getInsertElements();
-			console.log(`Seeding data for ${this.getClassName(entity.toString())}...`);
+			console.log(`Seeding data for entity "${entity}"...`);
 			for (const element of insertElements) {
 				try {
 					console.log(`-- Inserting ${JSON.stringify(element)}...`);
@@ -45,9 +45,5 @@ export class SeedCommand {
 		}
 
 		console.log(`-- Done.`);
-	}
-
-	private getClassName(entity: string): string {
-		return entity.split('class ')[1].split(' ')[0];
 	}
 }
