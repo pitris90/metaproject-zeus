@@ -3,6 +3,8 @@
 
 This application provides REST API interface for MetaProject Zeus.
 
+MetaProject Zeus is project implemented as part of a master thesis for FI MUNI. It is a system used for managing projects related to HPC, their workflows and entities related to projects. Part of this system is integration with Perun and OIDC.
+
 
 ## Authors
 
@@ -23,7 +25,7 @@ This script should automatically install `node_modules` in all projects.
 
 (If you don't have UNIX based system or something fails, you need to run `npm install` in this directories manually: `api`, `cli`, `shared/database`).
 
-Then create `.env.example` to `.env` and fill relevant variables (more in section about environment variables)
+Then copy `.env.example` to `.env` and fill relevant variables (more in section about environment variables)
 
 
 Then start server
@@ -36,7 +38,9 @@ Then start server
 
 ## Environment Variables
 
-If you want to test this project, you need to copy variables from `.env.example` to `.env` and fill some variables with your values. Most values are fine for local testing and don't have to be changed, but some values should be registered correctly. This is list of variables that should be changed for local development:
+If you want to test this project, you need to copy variables from `.env.example` to `.env` and fill some variables with your values.
+
+Most values are fine for local testing and don't have to be changed, but some values should be registered correctly. This is list of variables that should be changed for local development:
 
 ```
 IDENTITY_CLIENT_ID=my-client-id
