@@ -1,12 +1,12 @@
 function run_docker_npm() {
   : "${REPOSITORY_ROOT?"Missing REPOSITORY_ROOT variable"}"
-  : "${COMPOSER_DOCKER_ARGS?"Missing COMPOSER_DOCKER_ARGS variable (need at least volume with project files)"}"
+  : "${NPM_DOCKER_ARGS?"Missing NPM_DOCKER_ARGS variable (need at least volume with project files)"}"
 
   source "${REPOSITORY_ROOT}/.env"
   mkdir -p "$DOCKER_NPM_CACHE_FOLDER"
 
   docker run --rm -it \
-    "${COMPOSER_DOCKER_ARGS[@]}" \
+    "${NPM_DOCKER_ARGS[@]}" \
     --volume "${DOCKER_NPM_CACHE_FOLDER}:/tmp/cache" \
     --env "npm_config_cache=/tmp/cache" \
     --user "$(id -u):$(id -g)" \
@@ -22,7 +22,7 @@ function run_docker_npm_shared() {
     exit 1
   )
 
-  COMPOSER_DOCKER_ARGS=(
+  NPM_DOCKER_ARGS=(
 		--volume "${REPOSITORY_ROOT}/shared:/app/shared"
 		--workdir "/app/shared/${PROJECT_NAME}"
 	)
