@@ -12,7 +12,12 @@ export class AllocationMapper {
 			resource: {
 				name: allocation.resource.name,
 				type: allocation.resource.resourceType.name
-			}
+			},
+			allocationUsers: allocation.allocationUsers.map((allocationUser) => ({
+				id: allocationUser.userId,
+				name: allocationUser.user.name,
+				email: allocationUser.user.email
+			}))
 		};
 	}
 

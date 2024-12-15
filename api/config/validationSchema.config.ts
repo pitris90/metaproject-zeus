@@ -23,7 +23,6 @@ export const validationSchema = Joi.object({
 	// session
 	SESSION_SECRET: Joi.string(),
 	// cache
-	CACHE_PROVIDER: Joi.string().valid('memory', 'redis'),
 	REDIS_HOST: Joi.string(),
 	REDIS_PORT: Joi.number()
 });

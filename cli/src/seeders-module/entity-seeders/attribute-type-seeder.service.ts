@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { AttributeType } from 'resource-manager-database';
-import { EntityTarget } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { EntitySeederInterface } from './entity-seeder.interface';
 
 @Injectable()
 export class AttributeTypeSeeder implements EntitySeederInterface<AttributeType> {
-	getInsertEntity(): EntityTarget<AttributeType> {
-		return AttributeType;
+	getInsertEntity(): string {
+		return AttributeType.name;
 	}
 
 	async getInsertElements(): Promise<QueryDeepPartialEntity<AttributeType>[]> {

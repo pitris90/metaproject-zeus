@@ -74,7 +74,6 @@ services:
       - ./cli/src:/app/cli/src
     depends_on:
       - postgres
-    entrypoint: tail -f
     networks:
       common:
         aliases:

@@ -13,34 +13,39 @@ export class ResourceService {
 	) {}
 
 	async getResource(id: number, onlyPublic: boolean) {
-		const where = {
-			id
-		};
+		const resourceQueryBuilder = this.dataSource
+			.createQueryBuilder()
+			.select('r')
+			.from(Resource, 'r')
+			.where('r.id = :id', { id })
+			.innerJoinAndSelect('r.resourceType', 'resourceType')
+			.leftJoinAndSelect('r.parentResource', 'parentResource');
 
 		if (onlyPublic) {
-			where['resourceToResourceAttributes'] = {
-				resourceAttributeType: {
-					isPublic: true
-				}
-			};
+			resourceQueryBuilder.andWhere('r.isAvailable = :isAvailable', { isAvailable: true });
 		}
 
-		const resource = await this.dataSource.getRepository(Resource).findOne({
-			where: where,
-			relations: [
-				'resourceType',
-				'parentResource',
-				'resourceToResourceAttributes',
-				'resourceToResourceAttributes.resourceAttributeType',
-				'resourceToResourceAttributes.resourceAttributeType.attributeType'
-			]
-		});
+		const resource = await resourceQueryBuilder.getOne();
 
 		if (!resource) {
 			throw new ResourceNotFoundError();
 		}
 
-		return this.resourceMapper.toResourceDetailDto(resource);
+		const attributesQueryBuilder = this.dataSource
+			.createQueryBuilder()
+			.select('rta')
+			.from(ResourceToAttributeType, 'rta')
+			.where('rta.resourceId = :id', { id })
+			.innerJoinAndSelect('rta.resourceAttributeType', 'resourceAttributeType')
+			.innerJoinAndSelect('resourceAttributeType.attributeType', 'attributeType');
+
+		if (onlyPublic) {
+			attributesQueryBuilder.andWhere('resourceAttributeType.isPublic = :isPublic', { isPublic: true });
+		}
+
+		const attributes = await attributesQueryBuilder.getMany();
+
+		return this.resourceMapper.toResourceDetailDto(resource, attributes);
 	}
 
 	async getResourceAttributes() {

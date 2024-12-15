@@ -29,11 +29,12 @@ export class FailedStageModel {
 		});
 	}
 
-	async setLastStage(projectId: number, stage: Stage) {
+	async setLastStage(projectId: number, stage: Stage, message?: string) {
 		await this.dataSource.getRepository(GroupFailedStage).upsert(
 			{
 				projectId: projectId,
-				lastStage: stage
+				lastStage: stage,
+				message
 			},
 			['projectId']
 		);

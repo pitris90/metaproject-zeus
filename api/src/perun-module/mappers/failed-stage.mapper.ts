@@ -9,6 +9,7 @@ export class FailedStageMapper {
 		return {
 			projectId: failedStage.projectId,
 			lastStage: failedStage.lastStage,
+			message: failedStage.message,
 			updatedAt: failedStage.time.updatedAt,
 			title: failedStage.project.title
 		};
