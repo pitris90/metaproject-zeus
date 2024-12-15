@@ -9,6 +9,10 @@ import { MemberModel } from '../models/member.model';
 import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { Sorting } from '../../config-module/decorators/get-sorting';
+import { PerunFacade } from '../../perun-module/perun.facade';
+import { UsersModel } from '../../users-module/models/users.model';
+import { InvalidUserApiException } from '../../error-module/errors/users/invalid-user.api-exception';
+import { UserNotInGroupException } from '../../error-module/errors/users/user-not-in-group.exception';
 import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
@@ -17,7 +21,9 @@ export class MemberService {
 		private readonly projectModel: ProjectModel,
 		private readonly memberModel: MemberModel,
 		private readonly dataSource: DataSource,
-		private readonly projectPermissionService: ProjectPermissionService
+		private readonly projectPermissionService: ProjectPermissionService,
+		private readonly perunFacade: PerunFacade,
+		private readonly userModel: UsersModel
 	) {}
 
 	async getProjectMembers(
@@ -49,7 +55,17 @@ export class MemberService {
 			throw new ProjectNotFoundApiException();
 		}
 
-		// TODO check if user is member of group in Perun before accepting invitation
+		const user = await this.userModel.findUserById(userId);
+
+		if (!user) {
+			throw new InvalidUserApiException();
+		}
+
+		const isUserInGroup = await this.perunFacade.isUserInGroup(project.perunId, user.externalId);
+
+		if (!isUserInGroup) {
+			throw new UserNotInGroupException();
+		}
 
 		await this.memberModel.acceptInvitation(project.id, userId);
 	}

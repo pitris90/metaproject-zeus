@@ -6,12 +6,14 @@ import { Project } from 'resource-manager-database';
 import { ProjectNotFoundApiException } from '../error-module/errors/projects/project-not-found.api-exception';
 import { Group } from './entities/group.entity';
 import { PerunGroupService } from './services/managers/perun-group.service';
+import { PerunMembersService } from './services/managers/perun-members.service';
 
 @Injectable()
 export class PerunFacade {
 	constructor(
 		private readonly dataSource: DataSource,
 		private readonly perunGroupService: PerunGroupService,
+		private readonly perunMembersService: PerunMembersService,
 		@InjectQueue('perunGroup') private readonly perunQueue: Queue,
 		@InjectQueue('perunInvitations') private readonly perunInvitationQueue: Queue
 	) {}
@@ -55,5 +57,10 @@ export class PerunFacade {
 			groupId: project.perunId,
 			externalProjectId: project.perunId
 		});
+	}
+
+	async isUserInGroup(groupId: number, externalId: string): Promise<boolean> {
+		const member = await this.perunMembersService.findMemberByExternalId(externalId);
+		return this.perunGroupService.isGroupMember(groupId, member.id);
 	}
 }

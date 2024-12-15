@@ -86,13 +86,7 @@ export class PerunGroupConsumer extends WorkerHost {
 
 			// find perun user
 			this.logger.log(`Getting Perun user`);
-			const richMembers = await this.perunMembersService.findCompleteRichMembers(pi.externalId);
-
-			if (richMembers.length !== 1) {
-				throw new Error('Should found exactly one member with specific externalId - no member found in VO');
-			}
-
-			const perunUser = richMembers[0];
+			const perunUser = await this.perunMembersService.findMemberByExternalId(pi.externalId);
 
 			// set PI as group manager
 			currentStage = 'set_user';

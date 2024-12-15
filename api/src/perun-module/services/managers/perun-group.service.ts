@@ -45,4 +45,20 @@ export class PerunGroupService {
 			throw e;
 		}
 	}
+
+	async isGroupMember(groupId: number, memberId: number): Promise<boolean> {
+		try {
+			const result = await this.perunApiService.callBasic<boolean>(PerunManager.GROUPS, 'isGroupMember', {
+				group: groupId,
+				member: memberId
+			});
+			return result;
+		} catch (e) {
+			if (e instanceof PerunApiException && e.getName() === 'GroupNotExistsException') {
+				throw new ProjectNotFoundApiException();
+			}
+
+			throw e;
+		}
+	}
 }
