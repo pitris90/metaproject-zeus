@@ -1,0 +1,111 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metaproject-zeus-api
+  labels:
+    app: metaproject-zeus-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metaproject-zeus-api
+  template:
+    metadata:
+      labels:
+        app: metaproject-zeus-api
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsNonRoot: true
+      containers:
+        - name: api
+          image: ghcr.io/adamvalalsky/metaproject-zeus/api:latest
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 3000
+          env:
+            - name: APPLICATION_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: bootstrap
+                  key: APPLICATION_MODE
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: database
+                  key: HOST
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: database
+                  key: NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: database
+                  key: USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database
+                  key: PASSWORD
+            - name: IDENTITY_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: identity
+                  key: ISSUER
+            - name: IDENTITY_CALLBACK_URL
+              valueFrom:
+                  configMapKeyRef:
+                    name: identity
+                    key: CALLBACK_URL
+            - name: IDENTITY_CLIENT_ID
+              valueFrom:
+                  secretKeyRef:
+                    name: identity
+                    key: CLIENT_ID
+            - name: IDENTITY_CLIENT_SECRET
+              valueFrom:
+                  secretKeyRef:
+                    name: identity
+                    key: CLIENT_SECRET
+            - name: API_PUBLICATION_MAIL_TO
+              value: "492900@mail.muni.cz"
+            - name: FRONTEND_URL
+              valueFrom:
+                  configMapKeyRef:
+                    name: gui
+                    key: URL
+            - name: REDOC_USERNAME
+              valueFrom:
+                  secretKeyRef:
+                    name: redoc
+                    key: USERNAME
+            - name: REDOC_PASSWORD
+              valueFrom:
+                  secretKeyRef:
+                    name: redoc
+                    key: PASSWORD
+            - name: CORS_ALLOW_ORIGIN
+              valueFrom:
+                  configMapKeyRef:
+                    name: gui
+                    key: URL
+            - name: PERUN_URL
+              valueFrom:
+                  configMapKeyRef:
+                      name: perun
+                      key: URL
+            - name: PERUN_USER
+              valueFrom:
+                  secretKeyRef:
+                      name: perun
+                      key: USER
+            - name: PERUN_PASSWORD
+              valueFrom:
+                  secretKeyRef:
+                      name: perun
+                      key: PASSWORD
