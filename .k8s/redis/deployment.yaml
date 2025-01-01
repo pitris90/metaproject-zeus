@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: metaproject-zeus-redis
+    component: cache
+  name: metaproject-zeus-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: metaproject-zeus-redis
+  template:
+    metadata:
+      labels:
+        name: metaproject-zeus-redis
+        component: cache
+    spec:
+      containers:
+        - name: redis
+          image: redis
+          imagePullPolicy: Always
+          args: ["--requirepass", "$(REDIS_PASS)"]
+          ports:
+            - containerPort: 6379
+              name: redis
+          env:
+            - name: MASTER
+              value: "true"
+            - name: REDIS_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: redis
+                  key: PASS

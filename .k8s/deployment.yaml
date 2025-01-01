@@ -109,3 +109,15 @@ spec:
                   secretKeyRef:
                       name: perun
                       key: PASSWORD
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: redis
+                  key: HOST
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                  secretKeyRef:
+                  name: redis
+                  key: PASS

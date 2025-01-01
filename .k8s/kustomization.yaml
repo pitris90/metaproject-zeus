@@ -28,3 +28,6 @@ configMapGenerator:
   - name: perun
     literals:
         - URL=https://perun-dev.cesnet.cz/
+  - name: redis
+    literals:
+      - HOST=metaproject-zeus-redis.valalsky-ns.svc.cluster.local
