@@ -29,7 +29,8 @@ import { ResourceModule } from './resource-module/resource.module';
 			socket: {
 				host: process.env['REDIS_HOST']!,
 				port: process.env['REDIS_PORT']!
-			}
+			},
+			password: process.env['REDIS_PASSWORD']!
 		}),
 		BullModule.forRootAsync({
 			imports: [ConfigModule],
@@ -37,7 +38,8 @@ import { ResourceModule } from './resource-module/resource.module';
 				return {
 					connection: {
 						host: configService.getOrThrow('REDIS_HOST'),
-						port: configService.getOrThrow('REDIS_PORT')
+						port: configService.getOrThrow('REDIS_PORT'),
+						password: configService.getOrThrow('REDIS_PASSWORD')
 					}
 				};
 			},
