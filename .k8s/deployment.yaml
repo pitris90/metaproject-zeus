@@ -24,6 +24,13 @@ spec:
           imagePullPolicy: "Always"
           ports:
             - containerPort: 3000
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: APPLICATION_MODE
               valueFrom:
@@ -45,12 +52,12 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: database
+                  name: database-zeus
                   key: USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database
+                  name: database-zeus
                   key: PASSWORD
             - name: IDENTITY_ISSUER
               valueFrom:
@@ -65,12 +72,12 @@ spec:
             - name: IDENTITY_CLIENT_ID
               valueFrom:
                   secretKeyRef:
-                    name: identity
+                    name: identity-zeus
                     key: CLIENT_ID
             - name: IDENTITY_CLIENT_SECRET
               valueFrom:
                   secretKeyRef:
-                    name: identity
+                    name: identity-zeus
                     key: CLIENT_SECRET
             - name: API_PUBLICATION_MAIL_TO
               value: "492900@mail.muni.cz"
@@ -82,12 +89,12 @@ spec:
             - name: REDOC_USERNAME
               valueFrom:
                   secretKeyRef:
-                    name: redoc
+                    name: redoc-zeus
                     key: USERNAME
             - name: REDOC_PASSWORD
               valueFrom:
                   secretKeyRef:
-                    name: redoc
+                    name: redoc-zeus
                     key: PASSWORD
             - name: CORS_ALLOW_ORIGIN
               valueFrom:
@@ -96,18 +103,18 @@ spec:
                     key: URL
             - name: PERUN_URL
               valueFrom:
-                  configMapKeyRef:
-                      name: perun
+                  secretKeyRef:
+                      name: perun-zeus
                       key: URL
             - name: PERUN_USER
               valueFrom:
                   secretKeyRef:
-                      name: perun
+                      name: perun-zeus
                       key: USER
             - name: PERUN_PASSWORD
               valueFrom:
                   secretKeyRef:
-                      name: perun
+                      name: perun-zeus
                       key: PASSWORD
             - name: REDIS_HOST
               valueFrom:
@@ -119,5 +126,9 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                   secretKeyRef:
-                  name: redis
-                  key: PASS
+                    name: redis-zeus
+                    key: PASS
+            - name: FILE_UPLOAD_FOLDER
+              value: "./uploads"
+      imagePullSecrets:
+        - name: regcred-zeus

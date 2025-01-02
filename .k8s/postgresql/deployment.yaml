@@ -28,19 +28,28 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: database
+                  name: database-zeus
                   key: USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: database
+                  name: database-zeus
                   key: PASSWORD
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
           ports:
             - containerPort: 5432
               name: postgres
           volumeMounts:
             - name: postgres-persistent-storage
-              mountPath: /var/lib/postgres/pg-data
+              mountPath: /var/lib/postgresql/data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
       volumes:
         - name: postgres-persistent-storage
           persistentVolumeClaim:
