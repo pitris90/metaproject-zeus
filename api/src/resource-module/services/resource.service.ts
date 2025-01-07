@@ -44,8 +44,14 @@ export class ResourceService {
 		}
 
 		const attributes = await attributesQueryBuilder.getMany();
+		const requiredAttributes = await this.dataSource.getRepository(ResourceAttributeType).find({
+			where: {
+				isRequired: true
+			},
+			relations: ['attributeType']
+		});
 
-		return this.resourceMapper.toResourceDetailDto(resource, attributes);
+		return this.resourceMapper.toResourceDetailDto(resource, attributes, requiredAttributes);
 	}
 
 	async getResourceAttributes() {
