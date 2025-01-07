@@ -49,5 +49,6 @@ COPY api/package*.json /app/api/
 COPY --from=shared_builder /app/shared/ /app/shared/
 COPY --from=build /app/api/dist /app/api/dist
 COPY --from=build /app/api/node_modules /app/api/node_modules
+RUN mkdir -p uploads
 
 ENTRYPOINT ["npm", "run", "start:prod"]

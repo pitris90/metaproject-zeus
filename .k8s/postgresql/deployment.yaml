@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metaproject-zeus-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metaproject-zeus-postgres
+  template:
+    metadata:
+      labels:
+        app: metaproject-zeus-postgres
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsNonRoot: true
+      containers:
+        - name: postgres
+          image: postgres:16.0
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: database
+                  key: NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: database-zeus
+                  key: USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-zeus
+                  key: PASSWORD
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: postgres-persistent-storage
+              mountPath: /var/lib/postgresql/data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: postgres-persistent-storage
+          persistentVolumeClaim:
+            claimName: metaproject-zeus-postgres-pvc

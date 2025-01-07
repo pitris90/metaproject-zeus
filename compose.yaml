@@ -30,6 +30,7 @@ services:
       - IDENTITY_CALLBACK_URL
       - REDIS_HOST
       - REDIS_PORT
+      - REDIS_PASSWORD
       - FRONTEND_URL
       - REDOC_USERNAME
       - REDOC_PASSWORD
@@ -99,8 +100,11 @@ services:
 
   redis:
     image: ${BASE_IMAGE_REDIS}
+    command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
     volumes:
       - redis-data:/data
+    env_file:
+      - .env
     expose:
       - ${REDIS_PORT}
     networks:
