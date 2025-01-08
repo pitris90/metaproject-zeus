@@ -1,4 +1,10 @@
-import { AttributeDto } from './attribute.dto';
+class AttributeDetailDto {
+	key: string;
+	value: string;
+	isPublic: boolean;
+	isRequired: boolean;
+	type: string;
+}
 
 export class ResourceDetailDto {
 	id: number;
@@ -13,5 +19,5 @@ export class ResourceDetailDto {
 		id: number;
 		name: string;
 	};
-	attributes?: AttributeDto[];
+	attributes?: AttributeDetailDto[];
 }

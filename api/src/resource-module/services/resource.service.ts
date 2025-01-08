@@ -44,8 +44,15 @@ export class ResourceService {
 		}
 
 		const attributes = await attributesQueryBuilder.getMany();
+		const requiredAttributes = await this.dataSource.getRepository(ResourceAttributeType).find({
+			where: {
+				isRequired: true,
+				isPublic: onlyPublic ? true : undefined
+			},
+			relations: ['attributeType']
+		});
 
-		return this.resourceMapper.toResourceDetailDto(resource, attributes);
+		return this.resourceMapper.toResourceDetailDto(resource, attributes, requiredAttributes);
 	}
 
 	async getResourceAttributes() {
@@ -82,11 +89,17 @@ export class ResourceService {
 
 			const resourceId = result.identifiers[0]['id'];
 
+			const names = resourceInputDto.attributes.map((a) => a.key) ?? [];
+
+			if (names.length === 0) {
+				return;
+			}
+
 			const attributeTypes = await manager
 				.createQueryBuilder()
 				.select('rat')
 				.from(ResourceAttributeType, 'rat')
-				.where('name IN (:...names)', { names: resourceInputDto.attributes.map((a) => a.key) })
+				.where('name IN (:...names)', { names })
 				.getMany();
 
 			const attributeValues = attributeTypes.flatMap((at) => {
@@ -130,12 +143,17 @@ export class ResourceService {
 				.where('id = :id', { id })
 				.execute();
 
-			const attributeTypes = await manager
-				.createQueryBuilder()
-				.select('rat')
-				.from(ResourceAttributeType, 'rat')
-				.where('name IN (:...names)', { names: resourceInputDto.attributes.map((a) => a.key) })
-				.getMany();
+			const names = resourceInputDto.attributes.map((a) => a.key) ?? [];
+
+			const attributeTypes =
+				names.length > 0
+					? await manager
+							.createQueryBuilder()
+							.select('rat')
+							.from(ResourceAttributeType, 'rat')
+							.where('name IN (:...names)', { names: names })
+							.getMany()
+					: [];
 
 			const attributeValues = attributeTypes.flatMap((at) => {
 				const value = resourceInputDto.attributes.find((a) => a.key === at['name'])?.value;

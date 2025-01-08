@@ -5,12 +5,17 @@ import { ResourceInputDto } from '../dtos/input/resource-input.dto';
 import { ResourceService } from '../services/resource.service';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { ResourceNotFoundError } from '../../error-module/errors/resources/resource-not-found.error';
+import { AttributeTypeService } from '../services/attribute-type.service';
+import { MissingResourceAttributeError } from '../../error-module/errors/resources/missing-resource-attribute.error';
 
 @MinRoleCheck(RoleEnum.ADMIN)
 @ApiTags('Resource')
 @Controller('/resource')
 export class ResourceAdminController {
-	constructor(private readonly resourceService: ResourceService) {}
+	constructor(
+		private readonly resourceService: ResourceService,
+		private readonly attributeTypeService: AttributeTypeService
+	) {}
 
 	@Post('/')
 	@HttpCode(201)
@@ -22,6 +27,7 @@ export class ResourceAdminController {
 		description: 'The resource was successfully created.'
 	})
 	async createResource(@Body() resourceInputDto: ResourceInputDto) {
+		await this.assertRequiredAttributes(resourceInputDto);
 		await this.resourceService.createResource(resourceInputDto);
 	}
 
@@ -39,6 +45,16 @@ export class ResourceAdminController {
 		type: ResourceNotFoundError
 	})
 	async updateResource(@Param('id') id: number, @Body() resourceInputDto: ResourceInputDto) {
+		await this.assertRequiredAttributes(resourceInputDto);
 		await this.resourceService.updateResource(id, resourceInputDto);
+	}
+
+	private async assertRequiredAttributes(resourceInputDto: ResourceInputDto) {
+		const hasRequiredAttributes = await this.attributeTypeService.hasRequiredAttributes(
+			resourceInputDto.attributes
+		);
+		if (!hasRequiredAttributes) {
+			throw new MissingResourceAttributeError();
+		}
 	}
 }
