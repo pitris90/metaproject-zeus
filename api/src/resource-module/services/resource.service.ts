@@ -169,8 +169,6 @@ export class ResourceService {
 				};
 			});
 
-			console.log(attributeValues);
-
 			await manager
 				.createQueryBuilder()
 				.delete()
