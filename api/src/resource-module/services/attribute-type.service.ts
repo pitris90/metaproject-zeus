@@ -24,7 +24,7 @@ export class AttributeTypeService {
 		});
 
 		for (const requiredAttribute of requiredResourceAttributes) {
-			if (!attributesToChange.find((a) => a.key === requiredAttribute.attributeType.name)) {
+			if (!attributesToChange.find((a) => a.key === requiredAttribute.name)) {
 				return false;
 			}
 		}
