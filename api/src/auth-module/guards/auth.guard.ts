@@ -34,7 +34,7 @@ export class AuthGuard implements CanActivate {
 			const stepUpHeader = request.headers['x-step-up'];
 			const forceUserRole = !stepUpHeader || stepUpHeader !== 'true';
 			request.isStepUp = !forceUserRole;
-			// Try to find first user in DB (deterministic) to keep relations functioning
+			/* // Try to find first user in DB (deterministic) to keep relations functioning
 			let user = await this.usersModel.findUserByExternalId('bypass-external-id');
 			if (!user) {
 				// Fallback: attempt to load user ID 1 (common seed) or create an inline mock shape
@@ -52,7 +52,28 @@ export class AuthGuard implements CanActivate {
 					name: 'Mock User',
 					role: { id: 0, codeName: 'admin', name: 'Admin', users: [], time: new Date() } as any
 				} as any;
-			}
+			} */
+			// Allow switching between multiple dev users via headers (optional)
+			// X-Mock-External-Id: custom external id
+			// X-Mock-Email: custom email
+			// X-Mock-Role: user|director|admin (defaults to admin)
+			const mockExternalId = request.headers['x-mock-external-id'] as string | undefined;
+			const mockEmail = request.headers['x-mock-email'] as string | undefined;
+			const mockRoleHeader = String(request.headers['x-mock-role'] || '').toLowerCase();
+			const allowedRoles = new Set(['admin', 'director', 'user']);
+			const mockRole = (allowedRoles.has(mockRoleHeader) ? mockRoleHeader : 'admin') as
+				| 'admin'
+				| 'director'
+				| 'user';
+			// Ensure a persisted dev user exists matching the requested identity
+			const user =
+				mockExternalId || mockEmail
+					? await this.usersModel.ensureDevUser({
+							externalId: mockExternalId,
+							email: mockEmail,
+							roleCode: mockRole
+						})
+					: await this.usersModel.ensureBypassUser(mockRole);
 			request.user = this.userMapper.toUserDto(user as any, forceUserRole);
 			return true;
 		}
