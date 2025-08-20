@@ -28,4 +28,9 @@ export class PublicationDetailDto {
 	 * Unique identifier of the publication. Either DOI, ISSN or ISBN.
 	 */
 	uniqueId: string;
+
+	/**
+	 * True if the current user is the owner of this publication.
+	 */
+	isOwner: boolean;
 }

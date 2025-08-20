@@ -32,7 +32,7 @@ export class UserPublicationController {
 		@GetSorting() sorting: Sorting | null
 	) {
 		const [publications, count] = await this.publicationService.getUserPublications(user.id, pagination, sorting);
-		const items = publications.map((p) => this.publicationMapper.mapPublicationToPublicationDetailDto(p));
+		const items = publications.map((p) => this.publicationMapper.mapPublicationToPublicationDetailDto(p, user.id));
 		return this.paginationMapper.toPaginatedResult(pagination, count, items);
 	}
 
