@@ -66,4 +66,13 @@ export class PublicationModel {
 			.where('p.id = :publicationId AND p.ownerId = :ownerId', { publicationId, ownerId })
 			.getOne();
 	}
+
+	async findByOwnerAndUniqueId(ownerId: number, uniqueId: string): Promise<Publication | null> {
+		return this.dataSource
+			.createQueryBuilder()
+			.select('p')
+			.from(Publication, 'p')
+			.where('p.ownerId = :ownerId AND p.uniqueId = :uniqueId', { ownerId, uniqueId })
+			.getOne();
+	}
 }

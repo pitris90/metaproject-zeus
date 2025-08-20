@@ -102,6 +102,21 @@ export class PublicationService {
 			throw new PublicationNotFoundApiException();
 		}
 
+		// Unassign from project instead of deleting the record
+		await this.dataSource
+			.createQueryBuilder()
+			.update(Publication)
+			.set({ projectId: null as any })
+			.where('id = :id', { id: publicationId })
+			.execute();
+	}
+
+	async deleteOwnedPublication(publicationId: number, userId: number) {
+		const publication = await this.publicationModel.findOwnedByUser(publicationId, userId);
+		if (!publication) {
+			throw new PublicationNotFoundApiException();
+		}
+
 		await this.dataSource
 			.createQueryBuilder()
 			.delete()
@@ -125,25 +140,40 @@ export class PublicationService {
 				isStepUp
 			);
 
-			// add publications to project
-			await manager
-				.createQueryBuilder()
-				.insert()
-				.into(Publication)
-				.values(
-					publications.map((publication) => ({
-						ownerId: userId,
-						projectId,
-						title: publication.title,
-						author: publication.authors,
-						year: publication.year,
-						journal: publication.journal,
-						source: publication.source,
-						uniqueId:
-							publication.source === 'doi' && publication.uniqueId ? publication.uniqueId : randomUUID()
-					})) as any
-				)
-				.execute();
+			// add or reuse publications for the project
+			for (const publication of publications) {
+				const uniqueId =
+					publication.source === 'doi' && publication.uniqueId ? publication.uniqueId : randomUUID();
+				// Try to reuse if same DOI exists for this owner
+				const existing = publication.uniqueId
+					? await this.publicationModel.findByOwnerAndUniqueId(userId, publication.uniqueId)
+					: null;
+
+				if (existing) {
+					await manager
+						.createQueryBuilder()
+						.update(Publication)
+						.set({ projectId })
+						.where('id = :id', { id: existing.id })
+						.execute();
+				} else {
+					await manager
+						.createQueryBuilder()
+						.insert()
+						.into(Publication)
+						.values({
+							ownerId: userId,
+							projectId,
+							title: publication.title,
+							author: publication.authors,
+							year: publication.year,
+							journal: publication.journal,
+							source: publication.source,
+							uniqueId
+						} as any)
+						.execute();
+				}
+			}
 		});
 	}
 }
