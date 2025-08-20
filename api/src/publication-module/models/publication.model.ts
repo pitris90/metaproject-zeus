@@ -35,4 +35,35 @@ export class PublicationModel {
 
 		return publicationsBuilder.getManyAndCount();
 	}
+
+	async getUserPublications(ownerId: number, pagination: Pagination, sorting: Sorting | null) {
+		const publicationsBuilder = this.dataSource
+			.createQueryBuilder()
+			.select('p')
+			.from(Publication, 'p')
+			.where('p.ownerId = :ownerId', { ownerId })
+			.offset(pagination.offset)
+			.limit(pagination.limit);
+
+		if (sorting) {
+			switch (sorting.columnAccessor) {
+				case 'year':
+					publicationsBuilder.orderBy('p.year', sorting.direction);
+					break;
+				default:
+					publicationsBuilder.orderBy('p.id', sorting.direction);
+			}
+		}
+
+		return publicationsBuilder.getManyAndCount();
+	}
+
+	async findOwnedByUser(publicationId: number, ownerId: number): Promise<Publication | null> {
+		return this.dataSource
+			.createQueryBuilder()
+			.select('p')
+			.from(Publication, 'p')
+			.where('p.id = :publicationId AND p.ownerId = :ownerId', { publicationId, ownerId })
+			.getOne();
+	}
 }

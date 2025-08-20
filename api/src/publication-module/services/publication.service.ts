@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Publication } from 'resource-manager-database';
 import { PublicationInputDto } from '../dto/input/publication-input.dto';
+import { AssignPublicationDto, CreateOwnedPublicationDto } from '../dto/input/publication-assign.dto';
 import { ProjectPermissionService } from '../../project-module/services/project-permission.service';
 import { ProjectPermissionEnum } from '../../project-module/enums/project-permission.enum';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
@@ -20,6 +21,51 @@ export class PublicationService {
 		private readonly projectModel: ProjectModel,
 		private readonly publicationModel: PublicationModel
 	) {}
+
+	async getUserPublications(userId: number, pagination: Pagination, sorting: Sorting | null) {
+		return this.publicationModel.getUserPublications(userId, pagination, sorting);
+	}
+
+	async createOwnedPublication(userId: number, input: CreateOwnedPublicationDto) {
+		await this.dataSource
+			.createQueryBuilder()
+			.insert()
+			.into(Publication)
+			.values({
+				ownerId: userId,
+				title: input.title,
+				author: input.authors,
+				year: input.year,
+				journal: input.journal,
+				source: input.source,
+				uniqueId: input.source === 'doi' && input.uniqueId ? input.uniqueId : randomUUID()
+			} as any)
+			.execute();
+	}
+
+	async assignOwnedPublication(userId: number, publicationId: number, dto: AssignPublicationDto, isStepUp: boolean) {
+		const publication = await this.publicationModel.findOwnedByUser(publicationId, userId);
+		if (!publication) {
+			throw new PublicationNotFoundApiException();
+		}
+
+		await this.dataSource.transaction(async (manager) => {
+			await this.projectPermissionService.validateUserPermissions(
+				manager,
+				dto.projectId,
+				userId,
+				ProjectPermissionEnum.EDIT_PUBLICATIONS,
+				isStepUp
+			);
+
+			await manager
+				.createQueryBuilder()
+				.update(Publication)
+				.set({ projectId: dto.projectId })
+				.where('id = :id', { id: publicationId })
+				.execute();
+		});
+	}
 
 	async getProjectPublications(
 		projectId: number,
@@ -86,6 +132,7 @@ export class PublicationService {
 				.into(Publication)
 				.values(
 					publications.map((publication) => ({
+						ownerId: userId,
 						projectId,
 						title: publication.title,
 						author: publication.authors,
@@ -94,7 +141,7 @@ export class PublicationService {
 						source: publication.source,
 						uniqueId:
 							publication.source === 'doi' && publication.uniqueId ? publication.uniqueId : randomUUID()
-					}))
+					})) as any
 				)
 				.execute();
 		});
