@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestUser } from '../../auth-module/decorators/user.decorator';
 import { UserDto } from '../../users-module/dtos/user.dto';
@@ -56,5 +56,13 @@ export class UserPublicationController {
 		@IsStepUp() isStepUp: boolean
 	) {
 		await this.publicationService.assignOwnedPublication(user.id, id, body, isStepUp);
+	}
+
+	@Delete('/:id')
+	@HttpCode(204)
+	@MinRoleCheck(RoleEnum.USER)
+	@ApiOperation({ summary: 'Delete my publication permanently' })
+	async deleteMine(@Param('id') id: number, @RequestUser() user: UserDto) {
+		await this.publicationService.deleteOwnedPublication(id, user.id);
 	}
 }
