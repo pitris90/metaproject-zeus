@@ -92,6 +92,11 @@ export class PublicationService {
 			throw new PublicationNotFoundApiException();
 		}
 
+		// publication must belong to a project to be unassigned by project context
+		if (publication.projectId == null) {
+			throw new PublicationNotFoundApiException();
+		}
+
 		const permissions = await this.projectPermissionService.getUserPermissions(
 			publication.projectId,
 			userId,
