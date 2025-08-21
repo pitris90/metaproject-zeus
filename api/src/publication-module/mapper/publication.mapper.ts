@@ -14,14 +14,18 @@ export class PublicationMapper {
 		};
 	}
 
-	public mapPublicationToPublicationDetailDto(publication: Publication): PublicationDetailDto {
+	public mapPublicationToPublicationDetailDto(
+		publication: Publication,
+		currentUserId?: number
+	): PublicationDetailDto {
 		return {
 			id: publication.id,
 			title: publication.title,
 			authors: publication.author,
 			journal: publication.journal,
 			uniqueId: publication.uniqueId,
-			year: publication.year
+			year: publication.year,
+			isOwner: currentUserId ? publication['ownerId'] === currentUserId : false
 		};
 	}
 }

@@ -53,7 +53,7 @@ export class PublicationController {
 		);
 
 		const items = publications.map((publication) =>
-			this.publicationMapper.mapPublicationToPublicationDetailDto(publication)
+			this.publicationMapper.mapPublicationToPublicationDetailDto(publication, user.id)
 		);
 		return this.paginationMapper.toPaginatedResult(pagination, count, items);
 	}

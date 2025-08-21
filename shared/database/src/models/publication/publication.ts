@@ -1,11 +1,14 @@
 import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from '../project/project';
+import { User } from '../user/user';
 
 export type PublicationSource = 'manual' | 'doi';
 
 @Entity()
-@Unique(['uniqueId', 'projectId'])
+// Original code:
+// @Unique(['uniqueId', 'projectId'])
+@Unique(['ownerId', 'uniqueId'])
 export class Publication {
 	@PrimaryGeneratedColumn()
 	id: number;
@@ -32,9 +35,18 @@ export class Publication {
 	@Column()
 	source: PublicationSource;
 
+	// Owner of the publication (who registered it)
 	@Column()
 	@Index()
-	projectId: number;
+	ownerId: number;
+
+	@ManyToOne(() => User)
+	owner: User;
+
+	// Project association is now optional
+	@Column({ nullable: true })
+	@Index()
+	projectId: number | null;
 
 	@ManyToOne(() => Project)
 	project: Project;
