@@ -12,6 +12,7 @@ import { ResourceType } from './models/resource/resource-type';
 import { ProjectArchival } from './models/project/project-archival';
 import { File } from './models/file';
 import { Publication, PublicationSource } from './models/publication/publication';
+import { ProjectPublication } from './models/publication/project-publication';
 import { ResourceAttributeType } from './models/resource/resource-attribute-type';
 import { ResourceToAttributeType } from './models/resource/resource-to-attribute-type';
 import { AttributeType } from './models/attribute-type';
@@ -27,6 +28,6 @@ export { ProjectUserRole, ProjectUserStatus }
 export { Resource, ResourceType, ResourceAttributeType, ResourceToAttributeType };
 export { ProjectArchival };
 export { File };
-export { Publication, PublicationSource }
+export { Publication, PublicationSource, ProjectPublication }
 export { AllocationStatus, Allocation, AllocationUser }
 export { GroupFailedStage }

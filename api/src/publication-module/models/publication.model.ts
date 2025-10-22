@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Publication } from 'resource-manager-database';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { Sorting } from '../../config-module/decorators/get-sorting';
 
@@ -8,36 +8,21 @@ import { Sorting } from '../../config-module/decorators/get-sorting';
 export class PublicationModel {
 	constructor(private readonly dataSource: DataSource) {}
 
-	async findById(publicationId: number): Promise<Publication | null> {
-		return this.dataSource.getRepository(Publication).findOneBy({
-			id: publicationId
+	async findById(publicationId: number, manager?: EntityManager): Promise<Publication | null> {
+		const runner = manager ?? this.dataSource.manager;
+		return runner.getRepository(Publication).findOne({
+			where: { id: publicationId }
 		});
 	}
 
-	async getProjectPublications(projectId: number, pagination: Pagination, sorting: Sorting | null) {
-		const publicationsBuilder = this.dataSource
-			.createQueryBuilder()
-			.select('p')
-			.from(Publication, 'p')
-			.where('p.projectId = :projectId', { projectId })
-			.offset(pagination.offset)
-			.limit(pagination.limit);
-
-		if (sorting) {
-			switch (sorting.columnAccessor) {
-				case 'year':
-					publicationsBuilder.orderBy('p.year', sorting.direction);
-					break;
-				default:
-					publicationsBuilder.orderBy('p.id', sorting.direction);
-			}
-		}
-
-		return publicationsBuilder.getManyAndCount();
-	}
-
-	async getUserPublications(ownerId: number, pagination: Pagination, sorting: Sorting | null) {
-		const publicationsBuilder = this.dataSource
+	async getUserPublications(
+		ownerId: number,
+		pagination: Pagination,
+		sorting: Sorting | null,
+		manager?: EntityManager
+	) {
+		const runner = manager ?? this.dataSource.manager;
+		const publicationsBuilder = runner
 			.createQueryBuilder()
 			.select('p')
 			.from(Publication, 'p')
@@ -58,8 +43,13 @@ export class PublicationModel {
 		return publicationsBuilder.getManyAndCount();
 	}
 
-	async findOwnedByUser(publicationId: number, ownerId: number): Promise<Publication | null> {
-		return this.dataSource
+	async findOwnedByUser(
+		publicationId: number,
+		ownerId: number,
+		manager?: EntityManager
+	): Promise<Publication | null> {
+		const runner = manager ?? this.dataSource.manager;
+		return runner
 			.createQueryBuilder()
 			.select('p')
 			.from(Publication, 'p')
@@ -67,8 +57,13 @@ export class PublicationModel {
 			.getOne();
 	}
 
-	async findByOwnerAndUniqueId(ownerId: number, uniqueId: string): Promise<Publication | null> {
-		return this.dataSource
+	async findByOwnerAndUniqueId(
+		ownerId: number,
+		uniqueId: string,
+		manager?: EntityManager
+	): Promise<Publication | null> {
+		const runner = manager ?? this.dataSource.manager;
+		return runner
 			.createQueryBuilder()
 			.select('p')
 			.from(Publication, 'p')

@@ -12,6 +12,7 @@ import { ProjectArchival } from '../models/project/project-archival';
 import { SnakeNamingStrategy } from '../strategies/snake-case.strategy';
 import { File } from '../models/file';
 import { Publication } from '../models/publication/publication';
+import { ProjectPublication } from '../models/publication/project-publication';
 import { AttributeType } from '../models/attribute-type';
 import { ResourceAttributeType } from '../models/resource/resource-attribute-type';
 import { ResourceToAttributeType } from '../models/resource/resource-to-attribute-type';
@@ -52,6 +53,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				AllocationUser,
 				// publications
 				Publication,
+				ProjectPublication,
 				// misc
 				File
 			],
