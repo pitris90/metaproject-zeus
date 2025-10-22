@@ -1,7 +1,8 @@
-import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from '../project/project';
 import { User } from '../user/user';
+import { ProjectPublication } from './project-publication';
 
 export type PublicationSource = 'manual' | 'doi';
 
@@ -50,6 +51,9 @@ export class Publication {
 
 	@ManyToOne(() => Project)
 	project: Project;
+
+	@OneToMany(() => ProjectPublication, (link) => link.publication)
+	projectLinks: ProjectPublication[];
 
 	@Column(() => TimeEntity)
 	time: TimeEntity;
