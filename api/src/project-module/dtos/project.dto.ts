@@ -33,6 +33,9 @@ export class ProjectDto {
 	 */
 	status: 'new' | 'active' | 'rejected' | 'archived';
 
+	@ApiProperty({ description: 'Identifies a non-removable project created automatically for the user.' })
+	isDefault: boolean;
+
 	/**
 	 * The project's creation date. ISO format.
 	 */
