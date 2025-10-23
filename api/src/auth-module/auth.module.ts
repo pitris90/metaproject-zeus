@@ -9,6 +9,7 @@ import { OidcService } from './services/oidc.service';
 import { TokenService } from './services/token.service';
 import { TokenCache } from './cache/token.cache';
 import { AuthMapper } from './mapper/auth.mapper';
+import { ProjectModule } from '../project-module/project.module';
 
 @Module({
 	providers: [
@@ -23,6 +24,6 @@ import { AuthMapper } from './mapper/auth.mapper';
 		AuthMapper
 	],
 	controllers: [AuthController],
-	imports: [UsersModule, HttpModule]
+	imports: [UsersModule, HttpModule, ProjectModule]
 })
 export class AuthModule {}

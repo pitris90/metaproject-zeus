@@ -10,7 +10,7 @@ import {
 	ProjectUserStatus,
 	User
 } from 'resource-manager-database';
-import { Brackets, DataSource, EntityManager } from 'typeorm';
+import { Brackets, DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { Pagination } from '../../config-module/decorators/get-pagination';
@@ -82,6 +82,98 @@ export class ProjectModel {
 			.execute();
 
 		return result.identifiers[0]['id'];
+	}
+
+	public async ensureDefaultProjectForUserId(userId: number): Promise<void> {
+		await this.dataSource.transaction(async (manager) => {
+			const user = await manager.getRepository(User).findOne({
+				where: {
+					id: userId
+				}
+			});
+
+			if (!user) {
+				return;
+			}
+
+			await this.ensureDefaultProject(manager, user);
+		});
+	}
+
+	public async ensureDefaultProject(manager: EntityManager, user: User): Promise<Project> {
+		const projectRepository = manager.getRepository(Project);
+		const existingDefault = await projectRepository.findOne({
+			relations: {
+				pi: true
+			},
+			where: {
+				piId: user.id,
+				isDefault: true
+			}
+		});
+
+		if (existingDefault) {
+			return existingDefault;
+		}
+
+		const title = this.buildDefaultProjectTitle(user);
+		const description = this.buildDefaultProjectDescription(user);
+
+		try {
+			const insertResult = await manager
+				.createQueryBuilder()
+				.insert()
+				.into(Project)
+				.values({
+					title,
+					description,
+					status: ProjectStatus.ACTIVE,
+					piId: user.id,
+					isDefault: true
+				})
+				.returning('id')
+				.execute();
+
+			const defaultProjectId = insertResult.identifiers[0]['id'];
+			return projectRepository.findOneOrFail({
+				relations: {
+					pi: true
+				},
+				where: {
+					id: defaultProjectId
+				}
+			});
+		} catch (error) {
+			if (
+				error instanceof QueryFailedError &&
+				error.message.includes('duplicate key value violates unique constraint')
+			) {
+				const defaultProject = await projectRepository.findOne({
+					relations: {
+						pi: true
+					},
+					where: {
+						piId: user.id,
+						isDefault: true
+					}
+				});
+
+				if (defaultProject) {
+					return defaultProject;
+				}
+			}
+
+			throw error;
+		}
+	}
+
+	private buildDefaultProjectTitle(user: User): string {
+		return `Default project #${user.id}`;
+	}
+
+	private buildDefaultProjectDescription(user: User): string {
+		const identifier = user.name ?? user.email ?? user.username ?? `ID ${user.id}`;
+		return `Default project created automatically for ${identifier}.`;
 	}
 
 	public async getUserProjects(
