@@ -14,6 +14,7 @@ import { ProjectInvalidStatusApiException } from '../../error-module/errors/proj
 import { ProjectArchiveDto } from '../dtos/input/project-archive.dto';
 import { ProjectLockService } from './project-lock.service';
 import { ProjectPermissionService } from './project-permission.service';
+import { ProjectDefaultImmutableApiException } from '../../error-module/errors/projects/project-default-immutable.api-exception';
 
 @Injectable()
 export class ProjectArchivalService {
@@ -57,6 +58,10 @@ export class ProjectArchivalService {
 
 			if (project === null) {
 				throw new ProjectNotFoundApiException();
+			}
+
+			if (project.isDefault) {
+				throw new ProjectDefaultImmutableApiException();
 			}
 
 			if (project.status !== ProjectStatus.ACTIVE) {

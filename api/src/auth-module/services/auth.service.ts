@@ -4,6 +4,7 @@ import { Role, User } from 'resource-manager-database';
 import { InvalidUserApiException } from '../../error-module/errors/users/invalid-user.api-exception';
 import { UserInfoDto } from '../dto/user-info.dto';
 import { UsersModel } from '../../users-module/models/users.model';
+import { ProjectModel } from '../../project-module/models/project.model';
 
 const PERUN_PREFIX = 'urn:geant:cesnet.cz:res:';
 const PERUN_SUFFIX = '#perun.cesnet.cz';
@@ -15,7 +16,8 @@ const DIRECTOR_ROLE_NAME = 'role:director';
 export class AuthService {
 	constructor(
 		private readonly dataSource: DataSource,
-		private readonly usersModel: UsersModel
+		private readonly usersModel: UsersModel,
+		private readonly projectModel: ProjectModel
 	) {}
 
 	async signIn(profile: UserInfoDto): Promise<User | null> {
@@ -25,28 +27,47 @@ export class AuthService {
 			throw new InvalidUserApiException();
 		}
 
-		const role = await this.dataSource.getRepository(Role).findOneBy({
-			codeName: this.getRole(profile.eduperson_entitlement)
+		const userId = await this.dataSource.transaction(async (manager) => {
+			const role = await manager.getRepository(Role).findOneBy({
+				codeName: this.getRole(profile.eduperson_entitlement)
+			});
+
+			if (!role) {
+				throw new InvalidUserApiException();
+			}
+
+			const userRepository = manager.getRepository(User);
+			let user = await userRepository.findOne({
+				where: {
+					source: 'perun',
+					externalId: profile.sub
+				}
+			});
+
+			if (!user) {
+				user = userRepository.create({
+					source: 'perun',
+					externalId: profile.sub,
+					email: profile.email,
+					emailVerified: profile.email_verified,
+					username: profile.preferred_username,
+					name: profile.name,
+					roleId: role.id
+				});
+			} else {
+				user.email = profile.email;
+				user.emailVerified = profile.email_verified;
+				user.username = profile.preferred_username;
+				user.name = profile.name;
+				user.roleId = role.id;
+			}
+
+			const savedUser = await userRepository.save(user);
+			await this.projectModel.ensureDefaultProject(manager, savedUser);
+			return savedUser.id;
 		});
 
-		if (!role) {
-			throw new InvalidUserApiException();
-		}
-
-		const insertResult = await this.dataSource.getRepository(User).upsert(
-			{
-				source: 'perun',
-				externalId: profile.sub,
-				email: profile.email,
-				emailVerified: profile.email_verified,
-				username: profile.preferred_username,
-				name: profile.name,
-				roleId: role.id
-			},
-			['source', 'email']
-		);
-
-		return this.usersModel.findUserById(insertResult.identifiers[0]['id']);
+		return this.usersModel.findUserById(userId);
 	}
 
 	private getRole(entitlements?: string[]): 'admin' | 'director' | 'user' {

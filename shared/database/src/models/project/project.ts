@@ -21,6 +21,7 @@ export enum ProjectStatus {
 }
 
 @Entity()
+@Index('IDX_project_default_per_user', ['piId'], { unique: true, where: '"is_default" = true' })
 export class Project {
 	@PrimaryGeneratedColumn()
 	id: number;
@@ -51,6 +52,10 @@ export class Project {
 
 	@Column()
 	status: ProjectStatus;
+
+	@Column({ default: false })
+	@Index()
+	isDefault: boolean;
 
 	@CreateDateColumn()
 	@Index()
