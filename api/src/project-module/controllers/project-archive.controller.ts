@@ -1,5 +1,5 @@
 import { Body, Controller, Param, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { ApiBody, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { ProjectDto } from '../dtos/project.dto';
@@ -11,6 +11,7 @@ import { ProjectArchivalService } from '../services/project-archival.service';
 import { RoleEnum } from '../../permission-module/models/role.enum';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
+import { ProjectDefaultImmutableApiException } from '../../error-module/errors/projects/project-default-immutable.api-exception';
 
 @ApiTags('Project')
 @Controller('/project')
@@ -26,6 +27,10 @@ export class ProjectArchiveController {
 	@ApiOkResponse({
 		description: 'The project was successfully archived.',
 		type: ProjectDto
+	})
+	@ApiForbiddenResponse({
+		description: 'Default project cannot be modified.',
+		type: ProjectDefaultImmutableApiException
 	})
 	@ApiNotFoundResponse({
 		description: 'Project does not exist.',
