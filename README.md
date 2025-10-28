@@ -41,6 +41,38 @@ Then, start server
 
 (If you want to have access to CLI console, start project with `docker compose up --profile cli`)
 
+## TimescaleDB Hypertables
+
+The development stack now runs on a pinned TimescaleDB image (`timescale/timescaledb:2.22.1-pg17`). The `@timescaledb/typeorm` integration automatically provisions the `timescaledb` and `timescaledb_toolkit` extensions whenever the connection starts. When upgrading from an older Postgres volume, remove the existing `pg-data` volume so the new major version can initialize its data directory.
+
+Time-series tables now rely on the official `@timescaledb/typeorm` integration (re-exported through `resource-manager-database`).
+
+```typescript
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Hypertable, TimeColumn } from 'resource-manager-database';
+
+@Entity()
+@Hypertable({
+  compression: {
+    compress: true,
+    compress_orderby: 'recordedAt',
+    policy: { schedule_interval: '7 days' }
+  }
+})
+export class ExampleMetric {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @TimeColumn()
+  recordedAt: Date;
+
+  @Column({ type: 'jsonb' })
+  payload: Record<string, unknown>;
+}
+```
+
+Decorating an entity with `@Hypertable` (and marking a single timestamp column with `@TimeColumn`) lets the library create the hypertable, manage compression policies, and wire in repository helpers such as `getTimeBucket`, `getCandlesticks`, and `getCompressionStats`. The integration is always active and executes during TypeORM initialization.
+
 ## Environment Variables
 
 If you want to test this project, you need to copy variables from `.env.example` to `.env` and fill some variables with your values.
@@ -74,7 +106,7 @@ Used for group synchronization. Requires some configuration in Perun to work pro
 
 When deploying this project only production docker image is provided for API application. If you want to run CLI commands on production later, you can create similar Dockerfile.
 
-When deploying, application needs PostgreSQL 16.0 and Redis 7.4 to function properly (it is possible to use other versions, if you test it first). You can deploy these services separately or in containers depending on the environment. You can also use Nginx, but it is not required.
+When deploying, application needs TimescaleDB (PostgreSQL 17 compatible build, we default to `timescale/timescaledb:2.22.1-pg17`) and Redis 7.4 to function properly (it is possible to use other versions, if you test it first). You can deploy these services separately or in containers depending on the environment. You can also use Nginx, but it is not required.
 
 To create production image run
 
