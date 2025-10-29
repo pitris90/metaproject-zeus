@@ -44,7 +44,7 @@
     "oidc-client-ts": "^3.0.1",
     "pg": "^8.11.3",
     "redis": "^4.7.0",
-    "reflect-metadata": "^0.2.2",
+    "reflect-metadata": "^0.1.14",
     "resource-manager-database": "../shared/database",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.27"
