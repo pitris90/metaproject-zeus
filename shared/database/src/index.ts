@@ -20,7 +20,6 @@ import { AllocationStatus } from './enums/allocation.status';
 import { Allocation } from './models/allocation/allocation';
 import { AllocationUser } from './models/allocation/allocation-user';
 import { GroupFailedStage } from './models/project/group-failed-stage';
-import { SystemMetric } from './models/metrics/system-metric';
 
 export { TypeormConfigService };
 export { AttributeType };
@@ -32,4 +31,3 @@ export { File };
 export { Publication, PublicationSource, ProjectPublication }
 export { AllocationStatus, Allocation, AllocationUser }
 export { GroupFailedStage }
-export { SystemMetric }
