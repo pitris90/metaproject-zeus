@@ -15,6 +15,21 @@ interface TagCatalogResult {
 	workplaceLabel: string;
 }
 
+export interface OpenstackCatalogEntry {
+	key: string;
+	label: string;
+}
+
+export interface OpenstackWorkplaceCatalogEntry extends OpenstackCatalogEntry {
+	organizationKey: string;
+}
+
+export interface OpenstackCatalogResponse {
+	customers: OpenstackCatalogEntry[];
+	organizations: OpenstackCatalogEntry[];
+	workplaces: OpenstackWorkplaceCatalogEntry[];
+}
+
 @Injectable()
 export class OpenstackTagsCatalogService {
 	private readonly logger = new Logger(OpenstackTagsCatalogService.name);
@@ -64,6 +79,16 @@ export class OpenstackTagsCatalogService {
 		this.loadCustomers(paths.customers);
 		this.loadOrganizations(paths.organizations);
 		this.loadWorkplaces(paths.workplaces);
+	}
+
+	public getCatalog(): OpenstackCatalogResponse {
+		return {
+			customers: Array.from(this.customerLabels.entries()).map(([key, label]) => ({ key, label })),
+			organizations: Array.from(this.organizationLabels.entries()).map(([key, label]) => ({ key, label })),
+			workplaces: Array.from(this.workplaceLabels.entries()).flatMap(([organizationKey, workplaces]) =>
+				Array.from(workplaces.entries()).map(([key, label]) => ({ organizationKey, key, label }))
+			)
+		};
 	}
 
 	private buildCatalogPaths(): TagCatalogPaths {
