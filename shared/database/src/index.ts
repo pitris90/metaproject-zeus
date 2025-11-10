@@ -20,6 +20,7 @@ import { AllocationStatus } from './enums/allocation.status';
 import { Allocation } from './models/allocation/allocation';
 import { AllocationUser } from './models/allocation/allocation-user';
 import { GroupFailedStage } from './models/project/group-failed-stage';
+import { AllocationOpenstackRequest, AllocationOpenstackPayload } from './models/allocation/allocation-openstack-request';
 
 export { TypeormConfigService };
 export { AttributeType };
@@ -29,5 +30,6 @@ export { Resource, ResourceType, ResourceAttributeType, ResourceToAttributeType 
 export { ProjectArchival };
 export { File };
 export { Publication, PublicationSource, ProjectPublication }
-export { AllocationStatus, Allocation, AllocationUser }
+export { AllocationStatus, Allocation, AllocationUser, AllocationOpenstackRequest }
 export { GroupFailedStage }
+export type { AllocationOpenstackPayload }

@@ -19,6 +19,7 @@ import { ResourceToAttributeType } from '../models/resource/resource-to-attribut
 import { Allocation } from '../models/allocation/allocation';
 import { AllocationUser } from '../models/allocation/allocation-user';
 import { GroupFailedStage } from '../models/project/group-failed-stage';
+import { AllocationOpenstackRequest } from '../models/allocation/allocation-openstack-request';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -51,6 +52,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				// allocations
 				Allocation,
 				AllocationUser,
+				AllocationOpenstackRequest,
 				// publications
 				Publication,
 				ProjectPublication,

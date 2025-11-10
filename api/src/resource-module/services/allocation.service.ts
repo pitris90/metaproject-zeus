@@ -1,6 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Allocation, AllocationStatus, AllocationUser } from 'resource-manager-database';
+import {
+	Allocation,
+	AllocationOpenstackPayload,
+	AllocationOpenstackRequest,
+	AllocationStatus,
+	AllocationUser,
+	Resource
+} from 'resource-manager-database';
 import { AllocationRequestDto } from '../dtos/allocation-request.dto';
 import { ProjectPermissionService } from '../../project-module/services/project-permission.service';
 import { ProjectPermissionEnum } from '../../project-module/enums/project-permission.enum';
@@ -8,15 +15,19 @@ import { Sorting } from '../../config-module/decorators/get-sorting';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { AllocationNotFoundError } from '../../error-module/errors/allocations/allocation-not-found.error';
 import { AllocationStatusDto } from '../dtos/input/allocation-status.dto';
+import { OpenstackAllocationService } from '../../openstack-module/services/openstack-allocation.service';
 
 @Injectable()
 export class AllocationService {
 	constructor(
 		private readonly dataSource: DataSource,
-		private readonly projectPermissionService: ProjectPermissionService
+		private readonly projectPermissionService: ProjectPermissionService,
+		private readonly openstackAllocationService: OpenstackAllocationService
 	) {}
 
 	async request(projectId: number, userId: number, allocation: AllocationRequestDto, isStepUp: boolean) {
+		const { openstack, ...allocationData } = allocation;
+
 		await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
 				manager,
@@ -26,30 +37,82 @@ export class AllocationService {
 				isStepUp
 			);
 
-			// create allocation
-			const result = await manager
+			const resource = await manager.getRepository(Resource).findOne({
+				relations: {
+					resourceType: true
+				},
+				where: {
+					id: allocationData.resourceId
+				}
+			});
+
+			if (!resource) {
+				throw new BadRequestException('Resource not found for allocation request.');
+			}
+
+			const resourceTypeName = resource.resourceType?.name ?? '';
+			const isOpenstackResource = resourceTypeName
+				? this.openstackAllocationService.isResourceTypeSupported(resourceTypeName)
+				: false;
+
+			if (isOpenstackResource && !openstack) {
+				throw new BadRequestException('OpenStack details are required for this resource.');
+			}
+
+			if (!isOpenstackResource && openstack) {
+				throw new BadRequestException('OpenStack details can be supplied only for OpenStack resources.');
+			}
+
+			const allocationInsertResult = await manager
 				.createQueryBuilder()
 				.insert()
 				.into(Allocation)
 				.values({
 					projectId,
-					...allocation,
+					resourceId: allocationData.resourceId,
+					justification: allocationData.justification,
+					quantity: allocationData.quantity,
 					status: AllocationStatus.NEW
 				})
 				.returning('id')
 				.execute();
 
-			// add user to allocation
+			const createdAllocationId = Number(allocationInsertResult.identifiers[0]['id']);
+
 			await manager
 				.createQueryBuilder()
 				.insert()
 				.into(AllocationUser)
 				.values({
 					userId,
-					allocationId: result.identifiers[0]['id'],
+					allocationId: createdAllocationId,
 					status: AllocationStatus.NEW
 				})
 				.execute();
+
+			if (isOpenstackResource && openstack) {
+				const payload: AllocationOpenstackPayload = {
+					domain: openstack.domain,
+					disableDate: openstack.disableDate,
+					projectDescription: openstack.projectDescription,
+					customerKey: openstack.customerKey,
+					organizationKey: openstack.organizationKey,
+					workplaceKey: openstack.workplaceKey,
+					quota: openstack.quota ?? {},
+					additionalTags: openstack.additionalTags
+				};
+
+				await manager
+					.createQueryBuilder()
+					.insert()
+					.into(AllocationOpenstackRequest)
+					.values({
+						allocationId: createdAllocationId,
+						resourceType: resourceTypeName,
+						payload
+					})
+					.execute();
+			}
 		});
 	}
 
@@ -162,6 +225,7 @@ export class AllocationService {
 		date.setFullYear(date.getFullYear() + 1);
 
 		const newDate = data.status === 'denied' ? undefined : date;
+ 		const isActivating = data.status === AllocationStatus.ACTIVE;
 
 		await this.dataSource.getRepository(Allocation).update(
 			{
@@ -174,6 +238,10 @@ export class AllocationService {
 				description: data.description
 			}
 		);
+
+		if (isActivating) {
+			await this.openstackAllocationService.processApprovedAllocation(allocationId);
+		}
 	}
 
 	async getAll(status: 'new' | null, pagination: Pagination, sorting: Sorting) {

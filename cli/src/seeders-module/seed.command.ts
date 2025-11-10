@@ -5,6 +5,7 @@ import { RoleSeeder } from './entity-seeders/role-seeder.service';
 import { ResourceTypeSeeder } from './entity-seeders/resource-type-seeder.service';
 import { AttributeTypeSeeder } from './entity-seeders/attribute-type-seeder.service';
 import { ResourceAttributeTypeSeeder } from './entity-seeders/resource-attribute-type-seeder.service';
+import { ResourceSeeder } from './entity-seeders/resource-seeder.service';
 
 @Injectable()
 export class SeedCommand {
@@ -14,10 +15,17 @@ export class SeedCommand {
 		private readonly dataSource: DataSource,
 		readonly roleSeeder: RoleSeeder,
 		readonly resourceTypeSeeder: ResourceTypeSeeder,
+		readonly resourceSeeder: ResourceSeeder,
 		readonly attributeTypeSeeder: AttributeTypeSeeder,
 		readonly resourceAttributeTypeSeeder: ResourceAttributeTypeSeeder
 	) {
-		this.seeders = [roleSeeder, resourceTypeSeeder, attributeTypeSeeder, resourceAttributeTypeSeeder];
+		this.seeders = [
+			roleSeeder,
+			resourceTypeSeeder,
+			resourceSeeder,
+			attributeTypeSeeder,
+			resourceAttributeTypeSeeder
+		];
 	}
 
 	async run(): Promise<void> {
