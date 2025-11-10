@@ -1,9 +1,10 @@
-import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from '../project/project';
 import { Resource } from '../resource/resource';
 import { AllocationStatus } from '../../enums/allocation.status';
 import { AllocationUser } from './allocation-user';
+import { AllocationOpenstackRequest } from './allocation-openstack-request';
 
 @Entity()
 export class Allocation {
@@ -53,4 +54,7 @@ export class Allocation {
 
 	@OneToMany(() => AllocationUser, allocationUser => allocationUser.allocation)
 	allocationUsers: AllocationUser[];
+
+	@OneToOne(() => AllocationOpenstackRequest, (openstackRequest) => openstackRequest.allocation)
+	openstackRequest: AllocationOpenstackRequest;
 }

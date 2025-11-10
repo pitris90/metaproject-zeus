@@ -12,6 +12,7 @@ export class ResourceTypeSeeder implements EntitySeederInterface<ResourceType> {
 	public async getInsertElements(): Promise<QueryDeepPartialEntity<ResourceType>[]> {
 		return [
 			{ name: 'Cloud', description: 'Cloud Computing' },
+			{ name: 'OpenStack cloud', description: 'OpenStack cloud resources' },
 			{ name: 'Cluster', description: 'Cluster servers' },
 			{ name: 'Cluster partition', description: 'Cluster partition' },
 			{ name: 'Compute node', description: 'Compute Node' },

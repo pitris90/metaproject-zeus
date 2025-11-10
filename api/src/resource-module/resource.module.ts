@@ -13,9 +13,10 @@ import { AttributeMapper } from './mappers/attribute.mapper';
 import { AllocationController } from './controllers/allocation.controller';
 import { AllocationService } from './services/allocation.service';
 import { AllocationMapper } from './mappers/allocation.mapper';
+import { OpenstackModule } from '../openstack-module/openstack.module';
 
 @Module({
-	imports: [ProjectModule, ApiConfigModule],
+	imports: [ProjectModule, ApiConfigModule, OpenstackModule],
 	controllers: [
 		ResourceTypeController,
 		ResourceAdminController,

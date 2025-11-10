@@ -25,5 +25,15 @@ export const validationSchema = Joi.object({
 	// cache
 	REDIS_HOST: Joi.string(),
 	REDIS_PORT: Joi.number(),
-	REDIS_PASSWORD: Joi.string()
+	REDIS_PASSWORD: Joi.string(),
+	// openstack integration
+	OPENSTACK_REPO_PATH: Joi.string(),
+	OPENSTACK_ALLOWED_DOMAINS: Joi.string(),
+	OPENSTACK_GIT_BASE_BRANCH: Joi.string(),
+	OPENSTACK_GIT_TARGET_BRANCH: Joi.string(),
+	OPENSTACK_GIT_AUTHOR_NAME: Joi.string(),
+	OPENSTACK_GIT_AUTHOR_EMAIL: Joi.string(),
+	OPENSTACK_GITLAB_PROJECT_ID: Joi.alternatives(Joi.number(), Joi.string()),
+	OPENSTACK_GITLAB_HOST: Joi.string(),
+	OPENSTACK_GITLAB_TOKEN: Joi.string()
 });
