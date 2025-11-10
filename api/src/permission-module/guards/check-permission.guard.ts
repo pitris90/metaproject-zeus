@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { MinRoleCheck } from '../decorators/min-role.decorator';
 import { UsersModel } from '../../users-module/models/users.model';
@@ -9,7 +10,8 @@ import { IS_PUBLIC_KEY } from '../../auth-module/decorators/public.decorator';
 export class CheckPermissionGuard implements CanActivate {
 	constructor(
 		private readonly usersModel: UsersModel,
-		private readonly reflector: Reflector
+		private readonly reflector: Reflector,
+		private readonly configService: ConfigService
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -19,6 +21,11 @@ export class CheckPermissionGuard implements CanActivate {
 		]);
 
 		if (isPublic) {
+			return true;
+		}
+
+		// BYPASS mode: skip permission checks entirely in local development
+		if (this.configService.get<boolean>('AUTH_BYPASS')) {
 			return true;
 		}
 
