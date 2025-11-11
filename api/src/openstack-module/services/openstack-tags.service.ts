@@ -47,7 +47,7 @@ export class OpenstackTagsCatalogService {
 		organizationKey: string,
 		workplaceKey: string
 	): TagCatalogResult {
-		const customerLabel = this.customerLabels.get(customerKey);
+		const customerLabel = this.customerLabels.get(customerKey) ?? (customerKey === 'meta' ? 'meta' : undefined);
 		if (!customerLabel) {
 			throw new BadRequestException(`Unknown OpenStack customer key "${customerKey}".`);
 		}
