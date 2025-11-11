@@ -17,6 +17,9 @@ RUN apk add --no-cache git openssh-client
 
 RUN git config --global --add safe.directory /app/api/src/openstack-module/openstack-external
 
+COPY api/scripts/start.sh /app/api/scripts/start.sh
+RUN chmod +x /app/api/scripts/start.sh
+
 # ----- copy shared modules
 COPY shared/ /app/shared
 
@@ -30,4 +33,4 @@ COPY api/nest-cli.json /app/api
 COPY api/config /app/api/config
 COPY api/src /app/api/src
 
-ENTRYPOINT npm run start:dev
+ENTRYPOINT ["/app/api/scripts/start.sh"]
