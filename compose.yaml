@@ -55,6 +55,7 @@ services:
       - ./api/config:/app/api/config
       - ./api/package.json:/app/api/package.json
       - ./api/package-lock.json:/app/api/package-lock.json
+      - ./.git:/app/.git
     depends_on:
       - postgres
     networks:
