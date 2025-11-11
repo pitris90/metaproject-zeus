@@ -222,11 +222,15 @@ export class AllocationService {
 	}
 
 	async setStatus(allocationId: number, data: AllocationStatusDto) {
+		const isActivating = data.status === AllocationStatus.ACTIVE;
+		if (isActivating) {
+			await this.openstackAllocationService.processApprovedAllocation(allocationId);
+		}
+
 		const date = new Date();
 		date.setFullYear(date.getFullYear() + 1);
 
 		const newDate = data.status === 'denied' ? undefined : date;
- 		const isActivating = data.status === AllocationStatus.ACTIVE;
 
 		await this.dataSource.getRepository(Allocation).update(
 			{
@@ -239,10 +243,6 @@ export class AllocationService {
 				description: data.description
 			}
 		);
-
-		if (isActivating) {
-			await this.openstackAllocationService.processApprovedAllocation(allocationId);
-		}
 	}
 
 	async getAll(status: 'new' | null, pagination: Pagination, sorting: Sorting) {

@@ -1,10 +1,9 @@
 #!/bin/sh
 set -e
 
-mkdir -p /root/.ssh
-
-if [ -n "$OPENSTACK_GITLAB_HOST" ]; then
-  ssh-keyscan "$OPENSTACK_GITLAB_HOST" >> /root/.ssh/known_hosts 2>/dev/null || true
+if [ -n "$OPENSTACK_GITLAB_TOKEN" ]; then
+  git config --global credential.helper \
+    "!f() { echo username=oauth2; echo password=$OPENSTACK_GITLAB_TOKEN; }; f"
 fi
 
 exec npm run start:dev

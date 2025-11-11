@@ -17,6 +17,8 @@ First, clone project and navigate to the project directory.
 
 Then copy `.env.example` to `.env` and fill relevant variables (more in section about environment variables)
 
+Make sure openstack-external submodule's origin is using https instead of ssh
+
 If you are using UNIX-based system or you are using WSL (and have access to bash), you can run following helper script:
 
 ```bash
