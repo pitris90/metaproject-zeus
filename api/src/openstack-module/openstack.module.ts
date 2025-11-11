@@ -5,6 +5,7 @@ import { OpenstackYamlBuilderService } from './services/openstack-yaml-builder.s
 import { OpenstackTagsCatalogService } from './services/openstack-tags.service';
 import { OpenstackGitService } from './services/openstack-git.service';
 import { OpenstackTagsController } from './controllers/openstack-tags.controller';
+import { OpenstackConstraintsService } from './services/openstack-constraints.service';
 
 @Module({
 	imports: [ConfigModule],
@@ -13,7 +14,8 @@ import { OpenstackTagsController } from './controllers/openstack-tags.controller
 		OpenstackAllocationService,
 		OpenstackYamlBuilderService,
 		OpenstackTagsCatalogService,
-		OpenstackGitService
+		OpenstackGitService,
+		OpenstackConstraintsService
 	],
 	exports: [OpenstackAllocationService]
 })

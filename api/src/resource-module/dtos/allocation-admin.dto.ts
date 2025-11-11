@@ -13,4 +13,10 @@ export class AllocationAdminDto {
 	};
 	status: string;
 	endDate: string | null;
+	openstack?: {
+		domain: string | null;
+		organizationKey: string | null;
+		processed: boolean;
+		mergeRequestUrl: string | null;
+	};
 }

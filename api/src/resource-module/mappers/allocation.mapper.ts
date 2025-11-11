@@ -22,6 +22,27 @@ export class AllocationMapper {
 	}
 
 	toAllocationDetailDto(allocation: Allocation): AllocationDetailDto {
+		const openstackRequest = allocation.openstackRequest;
+		const openstack = openstackRequest
+			? {
+				resourceType: openstackRequest.resourceType,
+				domain: openstackRequest.payload?.domain ?? '',
+				disableDate: openstackRequest.payload?.disableDate ?? null,
+				projectDescription: openstackRequest.payload?.projectDescription ?? '',
+				mainTag: openstackRequest.payload?.mainTag ?? '',
+				customerKey: openstackRequest.payload?.customerKey ?? '',
+				organizationKey: openstackRequest.payload?.organizationKey ?? '',
+				workplaceKey: openstackRequest.payload?.workplaceKey ?? '',
+				additionalTags: openstackRequest.payload?.additionalTags,
+				quota: openstackRequest.payload?.quota ?? {},
+				processed: openstackRequest.processed,
+				processedAt: openstackRequest.processedAt?.toISOString() ?? null,
+				mergeRequestUrl: openstackRequest.mergeRequestUrl,
+				branchName: openstackRequest.branchName,
+				yamlPath: openstackRequest.yamlPath
+			}
+			: undefined;
+
 		return {
 			id: allocation.id,
 			status: allocation.status,
@@ -45,11 +66,22 @@ export class AllocationMapper {
 				id: allocationUser.userId,
 				name: allocationUser.user.name,
 				email: allocationUser.user.email
-			}))
+			})),
+			openstack
 		};
 	}
 
 	toAllocationAdminDto(allocation: Allocation): AllocationAdminDto {
+		const openstackRequest = allocation.openstackRequest;
+		const openstack = openstackRequest
+			? {
+				domain: openstackRequest.payload?.domain ?? null,
+				organizationKey: openstackRequest.payload?.organizationKey ?? null,
+				processed: openstackRequest.processed,
+				mergeRequestUrl: openstackRequest.mergeRequestUrl
+			}
+			: undefined;
+
 		return {
 			id: allocation.id,
 			status: allocation.status,
@@ -64,7 +96,8 @@ export class AllocationMapper {
 				pi: {
 					name: allocation.project.pi.name
 				}
-			}
+			},
+			openstack
 		};
 	}
 }

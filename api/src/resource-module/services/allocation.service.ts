@@ -103,6 +103,8 @@ export class AllocationService {
 					additionalTags: openstack.additionalTags
 				};
 
+				this.openstackAllocationService.validateRequestPayload(payload);
+
 				await manager
 					.createQueryBuilder()
 					.insert()
@@ -149,12 +151,29 @@ export class AllocationService {
 						name: true,
 						email: true
 					}
+				},
+				openstackRequest: {
+					id: true,
+					resourceType: true,
+					payload: true,
+					processed: true,
+					processedAt: true,
+					mergeRequestUrl: true,
+					branchName: true,
+					yamlPath: true
 				}
 			},
 			where: {
 				id: allocationId
 			},
-			relations: ['resource', 'resource.resourceType', 'project', 'allocationUsers', 'allocationUsers.user']
+			relations: [
+				'resource',
+				'resource.resourceType',
+				'project',
+				'allocationUsers',
+				'allocationUsers.user',
+				'openstackRequest'
+			]
 		});
 
 		const projectId = allocation?.project?.id;
@@ -252,6 +271,7 @@ export class AllocationService {
 			.innerJoinAndSelect('project.pi', 'pi')
 			.innerJoinAndSelect('allocation.resource', 'resource')
 			.innerJoinAndSelect('resource.resourceType', 'resourceType')
+			.leftJoinAndSelect('allocation.openstackRequest', 'openstackRequest')
 			.offset(pagination.offset)
 			.limit(pagination.limit);
 
