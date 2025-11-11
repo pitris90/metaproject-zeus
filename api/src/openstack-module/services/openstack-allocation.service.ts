@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import {
 	AllocationOpenstackPayload,
@@ -10,6 +9,7 @@ import {
 import { OpenstackYamlBuilderService } from './openstack-yaml-builder.service';
 import { OpenstackTagsCatalogService } from './openstack-tags.service';
 import { OpenstackGitService } from './openstack-git.service';
+import { OpenstackConstraintsService } from './openstack-constraints.service';
 
 interface TagLabelBundle {
 	customerLabel: string;
@@ -20,22 +20,15 @@ interface TagLabelBundle {
 @Injectable()
 export class OpenstackAllocationService {
 	private readonly logger = new Logger(OpenstackAllocationService.name);
-	private readonly allowedDomains: Set<string>;
 	private readonly supportedResourceTypes: Set<string> = new Set(['openstack cloud']);
 
 	constructor(
 		private readonly dataSource: DataSource,
-		private readonly configService: ConfigService,
 		private readonly yamlBuilder: OpenstackYamlBuilderService,
 		private readonly tagsCatalog: OpenstackTagsCatalogService,
-		private readonly gitService: OpenstackGitService
+		private readonly gitService: OpenstackGitService,
+		private readonly constraints: OpenstackConstraintsService
 	) {
-		const rawDomains = this.configService.get<string>('OPENSTACK_ALLOWED_DOMAINS');
-		const parsedDomains = rawDomains
-			?.split(',')
-			.map((domain) => domain.trim())
-			.filter((domain) => domain.length > 0);
-		this.allowedDomains = new Set(parsedDomains && parsedDomains.length > 0 ? parsedDomains : ['einfra_cz']);
 	}
 
 	public isResourceTypeSupported(resourceTypeName: string): boolean {
@@ -94,7 +87,7 @@ export class OpenstackAllocationService {
 		}
 
 		const payload = request.payload;
-		this.ensureDomainSupported(payload.domain);
+		this.validateRequestPayload(payload);
 
 		const contacts = this.collectContacts(project);
 		if (contacts.length === 0) {
@@ -138,7 +131,7 @@ export class OpenstackAllocationService {
 			projectSlug,
 			domain: payload.domain,
 			yamlContent,
-			mergeRequestTitle: `feat: openstack allocation for ${project.title}`,
+			mergeRequestTitle: `${labels.organizationLabel}-${project.title}`,
 			mergeRequestDescription,
 			projectDisplayName: project.title
 		});
@@ -159,10 +152,9 @@ export class OpenstackAllocationService {
 		);
 	}
 
-	private ensureDomainSupported(domain: string): void {
-		if (!this.allowedDomains.has(domain)) {
-			throw new BadRequestException(`Unsupported OpenStack domain "${domain}".`);
-		}
+	public validateRequestPayload(payload: AllocationOpenstackPayload): void {
+		this.constraints.ensureDomainAllowed(payload.domain);
+		this.constraints.ensureQuotaKeysAllowed(payload.quota ?? {});
 	}
 
 	private collectContacts(project: Project): string[] {
@@ -182,12 +174,18 @@ export class OpenstackAllocationService {
 	}
 
 	private normalizeQuota(quota: Record<string, number>): Record<string, number> {
+		this.constraints.ensureQuotaKeysAllowed(quota ?? {});
+
 		const normalized: Record<string, number> = {};
 
 		for (const [key, value] of Object.entries(quota ?? {})) {
 			const numericValue = Number(value);
 			if (!Number.isFinite(numericValue)) {
 				throw new BadRequestException(`Quota value for "${key}" must be numeric.`);
+			}
+
+			if (numericValue < 0) {
+				throw new BadRequestException(`Quota value for "${key}" must be zero or positive.`);
 			}
 
 			normalized[key] = numericValue;
