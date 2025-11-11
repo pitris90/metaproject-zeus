@@ -89,12 +89,17 @@ export class OpenstackGitService {
 	}
 
 	private resolveRepositoryPath(): string {
+		const appRoot = AppService.APP_ROOT ?? path.resolve(__dirname, '..', '..', '..');
+		const workspaceRoot = path.resolve(appRoot, '..');
 		const configuredPath = this.configService.get<string>('OPENSTACK_REPO_PATH');
 		if (configuredPath) {
-			return configuredPath;
+			if (path.isAbsolute(configuredPath)) {
+				return configuredPath;
+			}
+
+			return path.resolve(workspaceRoot, configuredPath);
 		}
 
-		const appRoot = AppService.APP_ROOT ?? path.resolve(__dirname, '..', '..', '..');
 		return path.join(appRoot, 'src', 'openstack-module', 'openstack-external');
 	}
 
