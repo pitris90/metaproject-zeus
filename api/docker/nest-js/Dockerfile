@@ -13,7 +13,7 @@ WORKDIR /app/api
 
 ENV NODE_ENV=development
 
-RUN apk add --no-cache git openssh-client
+RUN apk add --no-cache git
 
 RUN git config --global --add safe.directory /app/api/src/openstack-module/openstack-external
 
