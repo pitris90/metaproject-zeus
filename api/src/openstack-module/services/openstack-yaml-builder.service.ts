@@ -7,6 +7,7 @@ interface OpenstackYamlBuilderInput {
 	domain: string;
 	contacts: string[];
 	disableDate?: string;
+	mainTag: string;
 	customerKey: string;
 	organizationKey: string;
 	workplaceKey: string;
@@ -77,17 +78,21 @@ export class OpenstackYamlBuilderService {
 	}
 
 	private buildTags(input: OpenstackYamlBuilderInput): string[] {
-		const tags = [
-			'meta',
+		const tags: string[] = [];
+		const primaryTag = input.mainTag?.trim() || 'meta';
+		tags.push(primaryTag);
+
+		tags.push(
 			`customer::${input.customerKey}`,
 			`organization::${input.organizationKey}`,
 			`workplace::${input.workplaceKey}`
-		];
+		);
 
 		if (input.additionalTags?.length) {
 			for (const tag of input.additionalTags) {
-				if (tag && !tags.includes(tag)) {
-					tags.push(tag);
+				const trimmed = tag.trim();
+				if (trimmed && !tags.includes(trimmed)) {
+					tags.push(trimmed);
 				}
 			}
 		}

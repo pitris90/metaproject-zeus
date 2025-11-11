@@ -6,6 +6,7 @@ export interface AllocationOpenstackPayload {
 	domain: string;
 	disableDate?: string;
 	projectDescription: string;
+	mainTag: string;
 	customerKey: string;
 	organizationKey: string;
 	workplaceKey: string;

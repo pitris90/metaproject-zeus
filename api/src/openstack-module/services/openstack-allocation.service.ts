@@ -117,6 +117,7 @@ export class OpenstackAllocationService {
 			domain: payload.domain,
 			contacts,
 			disableDate: payload.disableDate,
+			mainTag: payload.mainTag ?? 'meta',
 			customerKey: payload.customerKey,
 			organizationKey: payload.organizationKey,
 			workplaceKey: payload.workplaceKey,
@@ -204,6 +205,7 @@ export class OpenstackAllocationService {
 		labels: TagLabelBundle;
 	}): string {
 		const { allocationId, project, payload, contacts, quota, labels } = params;
+		const mainTag = payload.mainTag ?? 'meta';
 
 		const quotaLines = Object.entries(quota)
 			.sort(([a], [b]) => a.localeCompare(b))
@@ -211,6 +213,7 @@ export class OpenstackAllocationService {
 			.join('\n');
 
 		const tagLines: string[] = [
+			`- ${mainTag}`,
 			`- customer::${payload.customerKey} (${labels.customerLabel})`,
 			`- organization::${payload.organizationKey} (${labels.organizationLabel})`,
 			`- workplace::${payload.workplaceKey} (${labels.workplaceLabel})`
