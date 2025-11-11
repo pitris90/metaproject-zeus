@@ -13,6 +13,8 @@ WORKDIR /app/api
 
 ENV NODE_ENV=development
 
+RUN apk add --no-cache git openssh-client
+
 # ----- copy shared modules
 COPY shared/ /app/shared
 
