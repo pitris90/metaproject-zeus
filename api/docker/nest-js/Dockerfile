@@ -15,6 +15,8 @@ ENV NODE_ENV=development
 
 RUN apk add --no-cache git openssh-client
 
+RUN git config --global --add safe.directory /app/api/src/openstack-module/openstack-external
+
 # ----- copy shared modules
 COPY shared/ /app/shared
 
