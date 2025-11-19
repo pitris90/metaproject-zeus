@@ -128,7 +128,7 @@ export class OpenstackYamlBuilderService {
 
 		const nameNode = projectNode.get('name', true) as Scalar | undefined;
 		if (nameNode) {
-			nameNode.comment = `ZEUS project name: ${originalName}`;
+			nameNode.comment = ` ${originalName}`;
 		}
 	}
 
@@ -158,7 +158,7 @@ export class OpenstackYamlBuilderService {
 			}
 
 			if (commentParts.length > 0) {
-				item.comment = commentParts.join(' ');
+				item.comment = ` ${commentParts.join(' ')}`;
 			}
 		});
 	}

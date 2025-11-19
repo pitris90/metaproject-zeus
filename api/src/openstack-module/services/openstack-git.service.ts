@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { AppService } from '../../app.service';
 
 interface CommitAndMergeRequestParams {
-	projectSlug: string;
+	openstackProjectName: string;
 	domain: string;
 	yamlContent: string;
 	mergeRequestTitle: string;
@@ -52,40 +52,55 @@ export class OpenstackGitService {
 		await git.checkout(baseBranch);
 		await git.pull('origin', baseBranch);
 
-		const branchName = await this.prepareBranch(git, params.projectSlug, baseBranch);
+		const branchName = await this.prepareBranch(git, params.openstackProjectName);
 
-		const filePath = await this.writeYamlFile(repoPath, params.domain, params.projectSlug, params.yamlContent);
-		const relativeFilePath = path.relative(repoPath, filePath);
-
-		await git.add(relativeFilePath);
-
-		const status = await git.status();
-		if (status.isClean()) {
-			this.logger.warn(
-				`OpenStack repository has no changes for project "${params.projectDisplayName}". Skipping commit.`
+		try {
+			const filePath = await this.writeYamlFile(
+				repoPath,
+				params.domain,
+				params.openstackProjectName,
+				params.yamlContent
 			);
-		} else {
-			await git.commit(`feat: openstack allocation for ${params.projectDisplayName}`, undefined, {
-				'--author': `${gitAuthorName} <${gitAuthorEmail}>`
-			});
+			const relativeFilePath = path.relative(repoPath, filePath);
+
+			await git.add(relativeFilePath);
+
+			const status = await git.status();
+			if (status.isClean()) {
+				this.logger.warn(
+					`OpenStack repository has no changes for project "${params.projectDisplayName}". Skipping commit.`
+				);
+			} else {
+				await git.commit(`feat: openstack allocation for ${params.projectDisplayName}`, undefined, {
+					'--author': `${gitAuthorName} <${gitAuthorEmail}>`
+				});
+			}
+
+			await git.push(['-u', 'origin', branchName]);
+
+			const mergeRequest = await this.ensureMergeRequest(
+				gitlab,
+				projectId,
+				branchName,
+				targetBranch,
+				params.mergeRequestTitle,
+				params.mergeRequestDescription
+			);
+
+			return {
+				branch: branchName,
+				filePath: relativeFilePath,
+				mergeRequestUrl: mergeRequest.web_url
+			};
+		} finally {
+			try {
+				await git.checkout(baseBranch);
+			} catch (checkoutError) {
+				this.logger.error(
+					`Failed to checkout ${baseBranch} after preparing OpenStack merge request branch ${branchName}: ${checkoutError}`
+				);
+			}
 		}
-
-		await git.push(['-u', 'origin', branchName]);
-
-		const mergeRequest = await this.ensureMergeRequest(
-			gitlab,
-			projectId,
-			branchName,
-			targetBranch,
-			params.mergeRequestTitle,
-			params.mergeRequestDescription
-		);
-
-		return {
-			branch: branchName,
-			filePath: relativeFilePath,
-			mergeRequestUrl: mergeRequest.web_url
-		};
 	}
 
 	private resolveRepositoryPath(): string {
@@ -130,8 +145,8 @@ export class OpenstackGitService {
 		return new Gitlab({ host, token });
 	}
 
-	private async prepareBranch(git: SimpleGit, projectSlug: string, baseBranch: string): Promise<string> {
-		const base = this.sanitizeBranchName(projectSlug);
+	private async prepareBranch(git: SimpleGit, openstackProjectName: string): Promise<string> {
+		const base = this.buildBranchBase(openstackProjectName);
 
 		const conflicts = new Set<string>();
 		const localBranches = await git.branchLocal();
@@ -154,17 +169,29 @@ export class OpenstackGitService {
 		return candidate;
 	}
 
-	private sanitizeBranchName(branch: string): string {
-		const trimmed = branch.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-		const cleaned = trimmed.replace(/-+/g, '-').replace(/^-|-$/g, '');
-		const slug = cleaned.length > 0 ? cleaned : 'allocation';
-		return `openstack/${slug}`;
+	private sanitizeBranchComponent(value: string): string {
+		const trimmed = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+		return trimmed.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'allocation';
+	}
+
+	private buildBranchBase(openstackProjectName: string): string {
+		const projectSegment = this.sanitizeBranchComponent(openstackProjectName);
+		const dateSegment = this.currentDateSegment();
+		return `zeus/${projectSegment}-${dateSegment}`;
+	}
+
+	private currentDateSegment(): string {
+		const now = new Date();
+		const year = now.getFullYear();
+		const month = `${now.getMonth() + 1}`.padStart(2, '0');
+		const day = `${now.getDate()}`.padStart(2, '0');
+		return `${year}-${month}-${day}`;
 	}
 
 	private async writeYamlFile(
 		repoPath: string,
 		domain: string,
-		projectSlug: string,
+		openstackProjectName: string,
 		yamlContent: string
 	): Promise<string> {
 		const baseDirectory = path.join(
@@ -178,7 +205,7 @@ export class OpenstackGitService {
 
 		await fs.promises.mkdir(baseDirectory, { recursive: true });
 
-		const targetFile = path.join(baseDirectory, `${projectSlug}.yaml`);
+		const targetFile = path.join(baseDirectory, `${openstackProjectName}.yaml`);
 		await fs.promises.writeFile(targetFile, yamlContent, 'utf8');
 
 		return targetFile;
@@ -202,11 +229,17 @@ export class OpenstackGitService {
 			this.logger.log(
 				`Reusing existing OpenStack merge request #${existing[0].iid} for branch "${sourceBranch}".`
 			);
+			await gitlab.MergeRequests.edit(projectId, existing[0].iid, {
+				title,
+				description,
+				squash: true
+			});
 			return existing[0];
 		}
 
 		return gitlab.MergeRequests.create(projectId, sourceBranch, targetBranch, title, {
-			description
+			description,
+			squash: true
 		});
 	}
 }

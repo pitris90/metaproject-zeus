@@ -11,12 +11,6 @@ import { OpenstackTagsCatalogService } from './openstack-tags.service';
 import { OpenstackGitService } from './openstack-git.service';
 import { OpenstackConstraintsService } from './openstack-constraints.service';
 
-interface TagLabelBundle {
-	customerLabel: string;
-	organizationLabel: string;
-	workplaceLabel: string;
-}
-
 @Injectable()
 export class OpenstackAllocationService {
 	private readonly logger = new Logger(OpenstackAllocationService.name);
@@ -96,17 +90,12 @@ export class OpenstackAllocationService {
 			);
 		}
 
-		const labels = this.tagsCatalog.resolveLabels(
-			payload.customerKey,
-			payload.organizationKey,
-			payload.workplaceKey
-		);
+		this.tagsCatalog.resolveLabels(payload.customerKey, payload.organizationKey, payload.workplaceKey);
 
 		const normalizedQuota = this.normalizeQuota(payload.quota);
-		const projectSlug = this.yamlBuilder.slugifyProjectName(project.title);
-		const prefixedProjectName = this.yamlBuilder.buildPrefixedProjectName(payload.customerKey, project.title);
+		const openstackProjectName = this.yamlBuilder.buildPrefixedProjectName(payload.customerKey, project.title);
 		const yamlContent = this.yamlBuilder.buildYaml({
-			projectName: prefixedProjectName,
+			projectName: openstackProjectName,
 			originalProjectName: project.title,
 			projectDescription: payload.projectDescription,
 			domain: payload.domain,
@@ -119,20 +108,14 @@ export class OpenstackAllocationService {
 			additionalTags: payload.additionalTags
 		});
 
-		const mergeRequestDescription = this.buildMergeRequestDescription({
-			allocationId,
-			project,
-			payload,
-			contacts,
-			quota: normalizedQuota,
-			labels
-		});
+		const mergeRequestTitle = `feat: Project management via MetaCentrum ZEUS, project-name ${openstackProjectName}`;
+		const mergeRequestDescription = `Project management via MetaCentrum ZEUS, project-name ${openstackProjectName}`;
 
 		const result = await this.gitService.commitAndOpenMergeRequest({
-			projectSlug,
+			openstackProjectName,
 			domain: payload.domain,
 			yamlContent,
-			mergeRequestTitle: `${labels.organizationLabel}-${project.title}`,
+			mergeRequestTitle,
 			mergeRequestDescription,
 			projectDisplayName: project.title
 		});
@@ -211,51 +194,4 @@ export class OpenstackAllocationService {
 		return normalized;
 	}
 
-	private buildMergeRequestDescription(params: {
-		allocationId: number;
-		project: Project;
-		payload: AllocationOpenstackPayload;
-		contacts: OpenstackContactInfo[];
-		quota: Record<string, number>;
-		labels: TagLabelBundle;
-	}): string {
-		const { allocationId, project, payload, contacts, quota, labels } = params;
-
-		const quotaLines = Object.entries(quota)
-			.sort(([a], [b]) => a.localeCompare(b))
-			.map(([key, value]) => `- ${key}: ${value}`)
-			.join('\n');
-
-		const tagLines: string[] = [
-			`- customer::${payload.customerKey} (${labels.customerLabel})`,
-			`- organization::${payload.organizationKey} (${labels.organizationLabel})`,
-			`- workplace::${payload.workplaceKey} (${labels.workplaceLabel})`
-		];
-
-		if (payload.additionalTags?.length) {
-			for (const tag of payload.additionalTags) {
-				tagLines.push(`- ${tag}`);
-			}
-		} else {
-			tagLines.push('- additional tags: n/a');
-		}
-
-		return [
-			'### Allocation context',
-			`- Allocation ID: ${allocationId}`,
-			`- Project ID: ${project.id}`,
-			`- Project title: ${project.title}`,
-			`- Requested domain: ${payload.domain}`,
-			payload.disableDate ? `- Disable date: ${payload.disableDate}` : '- Disable date: not provided',
-			'',
-			'### Contact e-mails',
-			contacts.map((contact) => `- ${contact.email}`).join('\n'),
-			'',
-			'### Tags',
-			tagLines.join('\n'),
-			'',
-			'### Quota',
-			quotaLines.length > 0 ? quotaLines : '- n/a'
-		].join('\n');
-	}
 }
