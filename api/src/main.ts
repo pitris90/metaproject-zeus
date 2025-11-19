@@ -25,7 +25,22 @@ async function bootstrap() {
 	);
 
 	app.enableCors({
-		origin: configService.getOrThrow('CORS_ALLOW_ORIGIN').split(',')
+		origin: configService.getOrThrow('CORS_ALLOW_ORIGIN').split(','),
+		credentials: true,
+		methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+		allowedHeaders: [
+			'Content-Type',
+			'Authorization',
+			'X-Mock-External-Id',
+			'X-Mock-Email',
+			'X-Mock-User-Id',
+			'X-Mock-Username',
+			'X-Mock-Name',
+			'X-Mock-Locale',
+			'X-Mock-Role',
+			'X-Step-Up'
+		],
+		exposedHeaders: ['Content-Disposition']
 	});
 
 	app.use(json({ limit: '10mb' }));

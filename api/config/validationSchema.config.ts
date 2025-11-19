@@ -20,6 +20,8 @@ export const validationSchema = Joi.object({
 	IDENTITY_TOKEN_URL: Joi.string(),
 	IDENTITY_CALLBACK_URL: Joi.string(),
 	IDENTITY_USER_INFO_URL: Joi.string(),
+	// auth bypass (dev only)
+	AUTH_BYPASS: Joi.boolean(),
 	// session
 	SESSION_SECRET: Joi.string(),
 	// cache
