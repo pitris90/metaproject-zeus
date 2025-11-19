@@ -29,7 +29,6 @@ export class AllocationMapper {
 				domain: openstackRequest.payload?.domain ?? '',
 				disableDate: openstackRequest.payload?.disableDate ?? null,
 				projectDescription: openstackRequest.payload?.projectDescription ?? '',
-				mainTag: openstackRequest.payload?.mainTag ?? '',
 				customerKey: openstackRequest.payload?.customerKey ?? '',
 				organizationKey: openstackRequest.payload?.organizationKey ?? '',
 				workplaceKey: openstackRequest.payload?.workplaceKey ?? '',

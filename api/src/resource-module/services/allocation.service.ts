@@ -95,7 +95,6 @@ export class AllocationService {
 					domain: openstack.domain,
 					disableDate: openstack.disableDate,
 					projectDescription: openstack.projectDescription,
-					mainTag: openstack.mainTag,
 					customerKey: openstack.customerKey,
 					organizationKey: openstack.organizationKey,
 					workplaceKey: openstack.workplaceKey,

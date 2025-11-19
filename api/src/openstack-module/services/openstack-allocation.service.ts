@@ -6,7 +6,7 @@ import {
 	Project,
 	ProjectUserStatus
 } from 'resource-manager-database';
-import { OpenstackYamlBuilderService } from './openstack-yaml-builder.service';
+import { OpenstackContactInfo, OpenstackYamlBuilderService } from './openstack-yaml-builder.service';
 import { OpenstackTagsCatalogService } from './openstack-tags.service';
 import { OpenstackGitService } from './openstack-git.service';
 import { OpenstackConstraintsService } from './openstack-constraints.service';
@@ -104,13 +104,14 @@ export class OpenstackAllocationService {
 
 		const normalizedQuota = this.normalizeQuota(payload.quota);
 		const projectSlug = this.yamlBuilder.slugifyProjectName(project.title);
+		const prefixedProjectName = this.yamlBuilder.buildPrefixedProjectName(payload.customerKey, project.title);
 		const yamlContent = this.yamlBuilder.buildYaml({
-			projectName: project.title,
+			projectName: prefixedProjectName,
+			originalProjectName: project.title,
 			projectDescription: payload.projectDescription,
 			domain: payload.domain,
 			contacts,
 			disableDate: payload.disableDate,
-			mainTag: payload.mainTag ?? 'meta',
 			customerKey: payload.customerKey,
 			organizationKey: payload.organizationKey,
 			workplaceKey: payload.workplaceKey,
@@ -157,20 +158,36 @@ export class OpenstackAllocationService {
 		this.constraints.ensureQuotaKeysAllowed(payload.quota ?? {});
 	}
 
-	private collectContacts(project: Project): string[] {
-		const contacts = new Set<string>();
+	private collectContacts(project: Project): OpenstackContactInfo[] {
+		const contacts = new Map<string, OpenstackContactInfo>();
 
-		if (project.pi?.email) {
-			contacts.add(project.pi.email);
-		}
+		const registerContact = (user?: { email?: string | null; name?: string | null; externalId?: string | null }) => {
+			const email = user?.email?.trim();
+			if (!email) {
+				return;
+			}
+
+			const normalizedKey = email.toLowerCase();
+			if (contacts.has(normalizedKey)) {
+				return;
+			}
+
+			contacts.set(normalizedKey, {
+				email,
+				name: user?.name?.trim() || undefined,
+				externalId: user?.externalId?.trim() || undefined
+			});
+		};
+
+		registerContact(project.pi);
 
 		for (const member of project.members ?? []) {
-			if (member.status === ProjectUserStatus.ACTIVE && member.user?.email) {
-				contacts.add(member.user.email);
+			if (member.status === ProjectUserStatus.ACTIVE) {
+				registerContact(member.user);
 			}
 		}
 
-		return Array.from(contacts);
+		return Array.from(contacts.values());
 	}
 
 	private normalizeQuota(quota: Record<string, number>): Record<string, number> {
@@ -198,12 +215,11 @@ export class OpenstackAllocationService {
 		allocationId: number;
 		project: Project;
 		payload: AllocationOpenstackPayload;
-		contacts: string[];
+		contacts: OpenstackContactInfo[];
 		quota: Record<string, number>;
 		labels: TagLabelBundle;
 	}): string {
 		const { allocationId, project, payload, contacts, quota, labels } = params;
-		const mainTag = payload.mainTag ?? 'meta';
 
 		const quotaLines = Object.entries(quota)
 			.sort(([a], [b]) => a.localeCompare(b))
@@ -211,7 +227,6 @@ export class OpenstackAllocationService {
 			.join('\n');
 
 		const tagLines: string[] = [
-			`- ${mainTag}`,
 			`- customer::${payload.customerKey} (${labels.customerLabel})`,
 			`- organization::${payload.organizationKey} (${labels.organizationLabel})`,
 			`- workplace::${payload.workplaceKey} (${labels.workplaceLabel})`
@@ -234,7 +249,7 @@ export class OpenstackAllocationService {
 			payload.disableDate ? `- Disable date: ${payload.disableDate}` : '- Disable date: not provided',
 			'',
 			'### Contact e-mails',
-			contacts.map((email) => `- ${email}`).join('\n'),
+			contacts.map((contact) => `- ${contact.email}`).join('\n'),
 			'',
 			'### Tags',
 			tagLines.join('\n'),

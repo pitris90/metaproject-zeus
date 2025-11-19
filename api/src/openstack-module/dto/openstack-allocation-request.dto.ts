@@ -17,11 +17,6 @@ export class OpenstackAllocationRequestDto {
 
 	@IsString()
 	@IsNotEmpty()
-	@Matches(/^[a-z0-9][a-z0-9_.-]*$/)
-	mainTag: string;
-
-	@IsString()
-	@IsNotEmpty()
 	customerKey: string;
 
 	@IsString()

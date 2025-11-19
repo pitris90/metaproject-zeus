@@ -78,7 +78,6 @@ export class AllocationDetailDto {
 		domain: string;
 		disableDate?: string | null;
 		projectDescription: string;
-		mainTag: string;
 		customerKey: string;
 		organizationKey: string;
 		workplaceKey: string;

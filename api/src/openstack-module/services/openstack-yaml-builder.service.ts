@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { stringify } from 'yaml';
+import { Document, Scalar, YAMLMap, YAMLSeq, isScalar } from 'yaml';
+
+export interface OpenstackContactInfo {
+	email: string;
+	name?: string;
+	externalId?: string;
+}
 
 interface OpenstackYamlBuilderInput {
 	projectName: string;
+	originalProjectName: string;
 	projectDescription: string;
 	domain: string;
-	contacts: string[];
+	contacts: OpenstackContactInfo[];
 	disableDate?: string;
-	mainTag: string;
 	customerKey: string;
 	organizationKey: string;
 	workplaceKey: string;
@@ -21,7 +27,6 @@ interface OpenstackYamlPayload {
 		name: string;
 		domain: string;
 		description: string;
-		enabled: boolean;
 		parent: string;
 		tags: string[];
 	};
@@ -35,35 +40,30 @@ interface OpenstackYamlPayload {
 @Injectable()
 export class OpenstackYamlBuilderService {
 	public slugifyProjectName(projectName: string): string {
-		const base = projectName
-			.normalize('NFKD')
-			.replace(/[^\w\s-]/g, '')
-			.trim()
-			.replace(/[\s_-]+/g, '-')
-			.replace(/-+/g, '-')
-			.toLowerCase();
+		return this.slugify(projectName, 'project');
+	}
 
-		return base.length > 0 ? base : 'project';
+	public buildPrefixedProjectName(customerKey: string, originalProjectName: string): string {
+		const customerSlug = this.slugify(customerKey, '');
+		const projectSlug = this.slugify(originalProjectName, 'project');
+		return customerSlug ? `${customerSlug}-${projectSlug}` : projectSlug;
 	}
 
 	public buildYaml(input: OpenstackYamlBuilderInput): string {
-		const contacts = Array.from(new Set(input.contacts.filter(Boolean))).sort((a, b) =>
-			a.localeCompare(b)
-		);
+		const contacts = this.normalizeContacts(input.contacts);
 
-			const payload: OpenstackYamlPayload = {
+		const payload: OpenstackYamlPayload = {
 			metadata: {
-				contacts
+				contacts: contacts.map((contact) => contact.email)
 			},
 			project: {
 				name: input.projectName,
 				domain: input.domain,
 				description: input.projectDescription,
-				enabled: true,
 				parent: 'group-projects',
 				tags: this.buildTags(input)
 			},
-				quota: (input.quota ?? {}) as Record<string, number>,
+			quota: (input.quota ?? {}) as Record<string, number>,
 			acls: {
 				flavors: [],
 				'user-role-mappings': []
@@ -71,32 +71,112 @@ export class OpenstackYamlBuilderService {
 			};
 
 		if (input.disableDate) {
-				payload.metadata['disable-date'] = input.disableDate;
+			payload.metadata['disable-date'] = input.disableDate;
 		}
 
-		return stringify(payload, { indent: 2, lineWidth: 120 });
+		const document = new Document(payload);
+		this.attachProjectNameComment(document, input.originalProjectName);
+		this.attachContactComments(document, contacts);
+
+		return document.toString({ indent: 2, lineWidth: 120 });
 	}
 
 	private buildTags(input: OpenstackYamlBuilderInput): string[] {
-		const tags: string[] = [];
-		const primaryTag = input.mainTag?.trim() || 'meta';
-		tags.push(primaryTag);
-
-		tags.push(
+		const tags = new Set<string>([
 			`customer::${input.customerKey}`,
 			`organization::${input.organizationKey}`,
 			`workplace::${input.workplaceKey}`
-		);
+		]);
 
-		if (input.additionalTags?.length) {
-			for (const tag of input.additionalTags) {
-				const trimmed = tag.trim();
-				if (trimmed && !tags.includes(trimmed)) {
-					tags.push(trimmed);
-				}
+		for (const tag of input.additionalTags ?? []) {
+			const trimmed = tag.trim();
+			if (trimmed.length > 0) {
+				tags.add(trimmed);
 			}
 		}
 
-		return tags;
+		return Array.from(tags);
+	}
+
+	private normalizeContacts(contacts: OpenstackContactInfo[]): OpenstackContactInfo[] {
+		const unique = new Map<string, OpenstackContactInfo>();
+
+		for (const contact of contacts ?? []) {
+			const email = contact.email?.trim();
+			if (!email) {
+				continue;
+			}
+
+			const normalizedKey = email.toLowerCase();
+			if (!unique.has(normalizedKey)) {
+				unique.set(normalizedKey, {
+					email,
+					name: contact.name?.trim(),
+					externalId: contact.externalId?.trim()
+				});
+			}
+		}
+
+		return Array.from(unique.values()).sort((a, b) => a.email.localeCompare(b.email));
+	}
+
+	private attachProjectNameComment(document: Document, originalName: string): void {
+		const projectNode = document.get('project', true) as YAMLMap | undefined;
+		if (!projectNode) {
+			return;
+		}
+
+		const nameNode = projectNode.get('name', true) as Scalar | undefined;
+		if (nameNode) {
+			nameNode.comment = `ZEUS project name: ${originalName}`;
+		}
+	}
+
+	private attachContactComments(document: Document, contacts: OpenstackContactInfo[]): void {
+		const metadataNode = document.get('metadata', true) as YAMLMap | undefined;
+		if (!metadataNode) {
+			return;
+		}
+
+		const contactsNode = metadataNode.get('contacts', true) as YAMLSeq | undefined;
+		if (!contactsNode) {
+			return;
+		}
+
+		contactsNode.items.forEach((item, index) => {
+			const contact = contacts[index];
+			if (!contact || !item || !isScalar(item)) {
+				return;
+			}
+
+			const commentParts = [] as string[];
+			if (contact.name) {
+				commentParts.push(contact.name);
+			}
+			if (contact.externalId) {
+				commentParts.push(contact.externalId);
+			}
+
+			if (commentParts.length > 0) {
+				item.comment = commentParts.join(' ');
+			}
+		});
+	}
+
+	private slugify(value: string, fallback: string): string {
+		const base = (value ?? '').normalize('NFKD');
+		const normalized = base
+			.replace(/[^\w\s-]/g, '')
+			.trim()
+			.replace(/[\s_-]+/g, '-')
+			.replace(/-+/g, '-')
+			.replace(/^-|-$/g, '')
+			.toLowerCase();
+
+		if (normalized && normalized.length > 0) {
+			return normalized;
+		}
+
+		return fallback;
 	}
 }
