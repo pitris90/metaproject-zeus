@@ -7,6 +7,7 @@ import { PerformanceReportService } from './services/performance-report.service'
 import { RequestProjectProvider } from './providers/request-project.provider';
 import { UserProjectsProvider } from './providers/user-projects.provider';
 import { ProjectDetailProvider } from './providers/project-detail.provider';
+import { ResourceUsageUserFakerService } from './services/resource-usage-user-faker.service';
 
 @Module({
 	imports: [HttpModule],
@@ -17,7 +18,8 @@ import { ProjectDetailProvider } from './providers/project-detail.provider';
 		PerformanceReportService,
 		RequestProjectProvider,
 		UserProjectsProvider,
-		ProjectDetailProvider
+		ProjectDetailProvider,
+		ResourceUsageUserFakerService
 	]
 })
 export class PerformanceModule {}

@@ -13,6 +13,7 @@ import { AuthModule } from './auth-module/auth.module';
 import { ProjectModule } from './project-module/project.module';
 import { PublicationModule } from './publication-module/publication.module';
 import { ResourceModule } from './resource-module/resource.module';
+import { ResourceUsageModule } from './resource-usage-module/resource-usage.module';
 
 @Module({
 	imports: [
@@ -50,7 +51,8 @@ import { ResourceModule } from './resource-module/resource.module';
 		UsersModule,
 		ProjectModule,
 		PublicationModule,
-		ResourceModule
+		ResourceModule,
+		ResourceUsageModule
 	],
 	controllers: [AppController]
 })

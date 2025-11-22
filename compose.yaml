@@ -46,6 +46,7 @@ services:
       - OPENSTACK_GITLAB_PROJECT_ID
       - OPENSTACK_GITLAB_HOST
       - OPENSTACK_GITLAB_TOKEN
+      - COLLECTOR_API_KEY
     expose:
       - 3000
     volumes:
