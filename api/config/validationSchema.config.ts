@@ -35,5 +35,7 @@ export const validationSchema = Joi.object({
 	OPENSTACK_GIT_AUTHOR_EMAIL: Joi.string(),
 	OPENSTACK_GITLAB_PROJECT_ID: Joi.alternatives(Joi.number(), Joi.string()),
 	OPENSTACK_GITLAB_HOST: Joi.string(),
-	OPENSTACK_GITLAB_TOKEN: Joi.string()
+	OPENSTACK_GITLAB_TOKEN: Joi.string(),
+	// collector integration
+	COLLECTOR_API_KEY: Joi.string()
 });
