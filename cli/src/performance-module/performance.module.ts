@@ -7,7 +7,7 @@ import { PerformanceReportService } from './services/performance-report.service'
 import { RequestProjectProvider } from './providers/request-project.provider';
 import { UserProjectsProvider } from './providers/user-projects.provider';
 import { ProjectDetailProvider } from './providers/project-detail.provider';
-import { ResourceUsageUserFakerService } from './services/resource-usage-user-faker.service';
+import { ResourceUsageFakerService } from './services/resource-usage-faker.service';
 
 @Module({
 	imports: [HttpModule],
@@ -19,7 +19,7 @@ import { ResourceUsageUserFakerService } from './services/resource-usage-user-fa
 		RequestProjectProvider,
 		UserProjectsProvider,
 		ProjectDetailProvider,
-		ResourceUsageUserFakerService
+		ResourceUsageFakerService
 	]
 })
 export class PerformanceModule {}

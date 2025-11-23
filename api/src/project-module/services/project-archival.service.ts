@@ -12,9 +12,9 @@ import { ProjectPermissionEnum } from '../enums/project-permission.enum';
 import { InvalidPermissionException } from '../exceptions/invalid-permission.exception';
 import { ProjectInvalidStatusApiException } from '../../error-module/errors/projects/project-invalid-status.api-exception';
 import { ProjectArchiveDto } from '../dtos/input/project-archive.dto';
+import { ProjectDefaultImmutableApiException } from '../../error-module/errors/projects/project-default-immutable.api-exception';
 import { ProjectLockService } from './project-lock.service';
 import { ProjectPermissionService } from './project-permission.service';
-import { ProjectDefaultImmutableApiException } from '../../error-module/errors/projects/project-default-immutable.api-exception';
 
 @Injectable()
 export class ProjectArchivalService {
@@ -60,7 +60,7 @@ export class ProjectArchivalService {
 				throw new ProjectNotFoundApiException();
 			}
 
-			if (project.isDefault) {
+			if (project.isPersonal) {
 				throw new ProjectDefaultImmutableApiException();
 			}
 

@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { AppService } from '../../app.service';
 
 interface TagCatalogPaths {
@@ -42,11 +42,7 @@ export class OpenstackTagsCatalogService {
 		this.bootstrapCatalog();
 	}
 
-	public resolveLabels(
-		customerKey: string,
-		organizationKey: string,
-		workplaceKey: string
-	): TagCatalogResult {
+	public resolveLabels(customerKey: string, organizationKey: string, workplaceKey: string): TagCatalogResult {
 		const customerLabel = this.customerLabels.get(customerKey) ?? (customerKey === 'meta' ? 'meta' : undefined);
 		if (!customerLabel) {
 			throw new BadRequestException(`Unknown OpenStack customer key "${customerKey}".`);
@@ -140,9 +136,7 @@ export class OpenstackTagsCatalogService {
 			this.workplaceLabels.get(organizationKey)!.set(workplaceKey, workplaceText ?? workplaceKey);
 		}
 
-		this.logger.debug(
-			`Loaded OpenStack workplaces for ${this.workplaceLabels.size} organizations.`
-		);
+		this.logger.debug(`Loaded OpenStack workplaces for ${this.workplaceLabels.size} organizations.`);
 	}
 
 	private readTwoColumnCsv(filePath: string): Array<[string, string]> {

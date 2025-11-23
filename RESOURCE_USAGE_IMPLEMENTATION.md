@@ -99,7 +99,7 @@ COLLECTOR_INTERVAL_SECONDS=86400
 - Purpose: keep the original resource usage payload immutable while storing the resolved relationships (user ↔ identities, project ↔ context, allocation ↔ project) in a separate, query-friendly table.
 - Workflow: after `ResourceUsageEvent` rows are persisted, the API runs `ResourceUsageMappingService` which:
   - resolves users directly from identities (`oidc_sub` → `externalId`, `user_email` → `email`, `perun_username` → `username`)
-  - infers projects from the event context (plain PBS project names, `_pbs_project_default` → user default project, OpenStack prefixed names → reverse lookup using allocation payloads)
+  - infers projects from the event context (plain PBS project names, `_pbs_project_default` → user personal project, OpenStack prefixed names → reverse lookup using allocation payloads)
   - attaches the best-fit allocation (OpenStack GitOps record if present, otherwise latest allocation for that project)
 - The resulting association triples are written to `resource_usage_event_links`, allowing manual corrections or re-runs without rewriting the Timescale hypertable rows.
 - Benefits: keeps domain mapping logic auditable, enables joins from analytics/GUIs without touching raw JSON, and lets us re-run or override mappings independently from ingestion.

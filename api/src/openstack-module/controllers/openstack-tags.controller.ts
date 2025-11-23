@@ -1,9 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 
-import {
-	OpenstackCatalogResponse,
-	OpenstackTagsCatalogService
-} from '../services/openstack-tags.service';
+import { OpenstackCatalogResponse, OpenstackTagsCatalogService } from '../services/openstack-tags.service';
 import { OpenstackConstraintsService } from '../services/openstack-constraints.service';
 
 type ExtendedOpenstackCatalogResponse = OpenstackCatalogResponse & {

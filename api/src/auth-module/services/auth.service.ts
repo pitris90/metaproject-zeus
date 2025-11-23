@@ -37,6 +37,8 @@ export class AuthService {
 			}
 
 			const userRepository = manager.getRepository(User);
+
+			// First, try to find user by externalId
 			let user = await userRepository.findOne({
 				where: {
 					source: 'perun',
@@ -44,7 +46,19 @@ export class AuthService {
 				}
 			});
 
+			// If not found by externalId, try to find by email
+			// This handles users created by faker/seeder without externalId
 			if (!user) {
+				user = await userRepository.findOne({
+					where: {
+						source: 'perun',
+						email: profile.email
+					}
+				});
+			}
+
+			if (!user) {
+				// Create new user
 				user = userRepository.create({
 					source: 'perun',
 					externalId: profile.sub,
@@ -55,6 +69,8 @@ export class AuthService {
 					roleId: role.id
 				});
 			} else {
+				// Update existing user
+				user.externalId = profile.sub; // Update externalId if it was null
 				user.email = profile.email;
 				user.emailVerified = profile.email_verified;
 				user.username = profile.preferred_username;
@@ -63,7 +79,7 @@ export class AuthService {
 			}
 
 			const savedUser = await userRepository.save(user);
-			await this.projectModel.ensureDefaultProject(manager, savedUser);
+			await this.projectModel.ensurePersonalProject(manager, savedUser);
 			return savedUser.id;
 		});
 
