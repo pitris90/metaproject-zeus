@@ -1,4 +1,6 @@
 import {
+	BeforeInsert,
+	BeforeUpdate,
 	Column,
 	CreateDateColumn,
 	Entity,
@@ -21,7 +23,7 @@ export enum ProjectStatus {
 }
 
 @Entity()
-@Index('IDX_project_default_per_user', ['piId'], { unique: true, where: '"is_default" = true' })
+@Index('IDX_project_personal_per_user', ['piId'], { unique: true, where: '"is_personal" = true' })
 export class Project {
 	@PrimaryGeneratedColumn()
 	id: number;
@@ -29,6 +31,10 @@ export class Project {
 	@Column({ unique: true })
 	@Index()
 	title: string;
+
+	@Column({ unique: true })
+	@Index()
+	projectSlug: string;
 
 	@Column({ nullable: true })
 	link: string;
@@ -53,9 +59,9 @@ export class Project {
 	@Column()
 	status: ProjectStatus;
 
-	@Column({ default: false })
+	@Column({ default: false, name: 'is_personal' })
 	@Index()
-	isDefault: boolean;
+	isPersonal: boolean;
 
 	@CreateDateColumn()
 	@Index()
@@ -69,4 +75,25 @@ export class Project {
 
 	@OneToOne(() => ProjectArchival, archivalInfo => archivalInfo.project)
 	archivalInfo: ProjectArchival;
+
+	@BeforeInsert()
+	@BeforeUpdate()
+	generateSlug() {
+		if (this.title) {
+			this.projectSlug = this.slugify(this.title);
+		}
+	}
+
+	private slugify(value: string): string {
+		if (!value) return '';
+
+		const base = value.normalize('NFKD');
+		return base
+			.replace(/[^\w\s-]/g, '')
+			.trim()
+			.replace(/[\s_-]+/g, '-')
+			.replace(/-+/g, '-')
+			.replace(/^-|-$/g, '')
+			.toLowerCase();
+	}
 }

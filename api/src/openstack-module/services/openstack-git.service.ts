@@ -1,9 +1,9 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Gitlab } from '@gitbeaker/rest';
 import { simpleGit, SimpleGit } from 'simple-git';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { AppService } from '../../app.service';
 
 interface CommitAndMergeRequestParams {
@@ -27,15 +27,12 @@ export class OpenstackGitService {
 
 	constructor(private readonly configService: ConfigService) {}
 
-	public async commitAndOpenMergeRequest(
-		params: CommitAndMergeRequestParams
-	): Promise<CommitAndMergeRequestResult> {
+	public async commitAndOpenMergeRequest(params: CommitAndMergeRequestParams): Promise<CommitAndMergeRequestResult> {
 		const repoPath = this.resolveRepositoryPath();
 		const baseBranch = this.configService.get<string>('OPENSTACK_GIT_BASE_BRANCH') ?? 'master';
 		const targetBranch = this.configService.get<string>('OPENSTACK_GIT_TARGET_BRANCH') ?? 'master';
 		const gitAuthorName = this.configService.get<string>('OPENSTACK_GIT_AUTHOR_NAME') ?? 'Zeus Bot';
-		const gitAuthorEmail =
-			this.configService.get<string>('OPENSTACK_GIT_AUTHOR_EMAIL') ?? 'zeus-bot@example.com';
+		const gitAuthorEmail = this.configService.get<string>('OPENSTACK_GIT_AUTHOR_EMAIL') ?? 'zeus-bot@example.com';
 
 		const gitlab = this.instantiateGitlabClient();
 		const projectId = this.resolveGitlabProjectId();
@@ -170,7 +167,10 @@ export class OpenstackGitService {
 	}
 
 	private sanitizeBranchComponent(value: string): string {
-		const trimmed = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+		const trimmed = value
+			.trim()
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-');
 		return trimmed.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'allocation';
 	}
 

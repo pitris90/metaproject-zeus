@@ -68,7 +68,7 @@ export class OpenstackYamlBuilderService {
 				flavors: [],
 				'user-role-mappings': []
 			}
-			};
+		};
 
 		if (input.disableDate) {
 			payload.metadata['disable-date'] = input.disableDate;

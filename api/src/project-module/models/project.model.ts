@@ -84,7 +84,7 @@ export class ProjectModel {
 		return result.identifiers[0]['id'];
 	}
 
-	public async ensureDefaultProjectForUserId(userId: number): Promise<void> {
+	public async ensurePersonalProjectForUserId(userId: number): Promise<void> {
 		await this.dataSource.transaction(async (manager) => {
 			const user = await manager.getRepository(User).findOne({
 				where: {
@@ -96,29 +96,29 @@ export class ProjectModel {
 				return;
 			}
 
-			await this.ensureDefaultProject(manager, user);
+			await this.ensurePersonalProject(manager, user);
 		});
 	}
 
-	public async ensureDefaultProject(manager: EntityManager, user: User): Promise<Project> {
+	public async ensurePersonalProject(manager: EntityManager, user: User): Promise<Project> {
 		const projectRepository = manager.getRepository(Project);
-		const existingDefault = await projectRepository.findOne({
+		const existingPersonal = await projectRepository.findOne({
 			relations: {
 				pi: true
 			},
 			where: {
 				piId: user.id,
-				isDefault: true
+				isPersonal: true
 			}
 		});
 
-		if (existingDefault) {
-			await this.ensureDefaultProjectMetadata(manager, existingDefault, user);
-			return existingDefault;
+		if (existingPersonal) {
+			await this.ensurePersonalProjectMetadata(manager, existingPersonal, user);
+			return existingPersonal;
 		}
 
-		const title = this.buildDefaultProjectTitle(user);
-		const description = this.buildDefaultProjectDescription(user);
+		const title = this.buildPersonalProjectTitle(user);
+		const description = this.buildPersonalProjectDescription(user);
 
 		try {
 			const insertResult = await manager
@@ -130,42 +130,42 @@ export class ProjectModel {
 					description,
 					status: ProjectStatus.ACTIVE,
 					piId: user.id,
-					isDefault: true
+					isPersonal: true
 				})
 				.returning('id')
 				.execute();
 
-			const defaultProjectId = insertResult.identifiers[0]['id'];
-			const defaultProject = await projectRepository.findOneOrFail({
+			const personalProjectId = insertResult.identifiers[0]['id'];
+			const personalProject = await projectRepository.findOneOrFail({
 				relations: {
 					pi: true
 				},
 				where: {
-					id: defaultProjectId
+					id: personalProjectId
 				}
 			});
 
-			defaultProject.title = title;
-			defaultProject.description = description;
-			return defaultProject;
+			personalProject.title = title;
+			personalProject.description = description;
+			return personalProject;
 		} catch (error) {
 			if (
 				error instanceof QueryFailedError &&
 				error.message.includes('duplicate key value violates unique constraint')
 			) {
-				const defaultProject = await projectRepository.findOne({
+				const personalProject = await projectRepository.findOne({
 					relations: {
 						pi: true
 					},
 					where: {
 						piId: user.id,
-						isDefault: true
+						isPersonal: true
 					}
 				});
 
-				if (defaultProject) {
-					await this.ensureDefaultProjectMetadata(manager, defaultProject, user);
-					return defaultProject;
+				if (personalProject) {
+					await this.ensurePersonalProjectMetadata(manager, personalProject, user);
+					return personalProject;
 				}
 			}
 
@@ -173,9 +173,9 @@ export class ProjectModel {
 		}
 	}
 
-	private async ensureDefaultProjectMetadata(manager: EntityManager, project: Project, user: User): Promise<void> {
-		const expectedTitle = this.buildDefaultProjectTitle(user);
-		const expectedDescription = this.buildDefaultProjectDescription(user);
+	private async ensurePersonalProjectMetadata(manager: EntityManager, project: Project, user: User): Promise<void> {
+		const expectedTitle = this.buildPersonalProjectTitle(user);
+		const expectedDescription = this.buildPersonalProjectDescription(user);
 
 		if (project.title === expectedTitle && project.description === expectedDescription) {
 			return;
@@ -195,15 +195,15 @@ export class ProjectModel {
 		project.description = expectedDescription;
 	}
 
-	private buildDefaultProjectTitle(user: User): string {
+	private buildPersonalProjectTitle(user: User): string {
 		const email = user.email ?? `user-${user.id}`;
 		const source = user.source ?? 'unknown';
-		return `Default project ${email}:${source}`;
+		return `Personal project ${email}:${source}`;
 	}
 
-	private buildDefaultProjectDescription(user: User): string {
+	private buildPersonalProjectDescription(user: User): string {
 		const identifier = user.name ?? user.email ?? user.username ?? `ID ${user.id}`;
-		return `Default project created automatically for ${identifier}.`;
+		return `Personal project created automatically for ${identifier}.`;
 	}
 
 	public async getUserProjects(

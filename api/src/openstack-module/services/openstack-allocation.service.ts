@@ -22,8 +22,7 @@ export class OpenstackAllocationService {
 		private readonly tagsCatalog: OpenstackTagsCatalogService,
 		private readonly gitService: OpenstackGitService,
 		private readonly constraints: OpenstackConstraintsService
-	) {
-	}
+	) {}
 
 	public isResourceTypeSupported(resourceTypeName: string): boolean {
 		return Boolean(resourceTypeName) && this.supportedResourceTypes.has(resourceTypeName.trim().toLowerCase());
@@ -131,9 +130,7 @@ export class OpenstackAllocationService {
 			}
 		);
 
-		this.logger.log(
-			`OpenStack merge request created for project "${project.title}" at ${result.mergeRequestUrl}.`
-		);
+		this.logger.log(`OpenStack merge request created for project "${project.title}" at ${result.mergeRequestUrl}.`);
 	}
 
 	public validateRequestPayload(payload: AllocationOpenstackPayload): void {
@@ -144,7 +141,11 @@ export class OpenstackAllocationService {
 	private collectContacts(project: Project): OpenstackContactInfo[] {
 		const contacts = new Map<string, OpenstackContactInfo>();
 
-		const registerContact = (user?: { email?: string | null; name?: string | null; externalId?: string | null }) => {
+		const registerContact = (user?: {
+			email?: string | null;
+			name?: string | null;
+			externalId?: string | null;
+		}) => {
 			const email = user?.email?.trim();
 			if (!email) {
 				return;
@@ -193,5 +194,4 @@ export class OpenstackAllocationService {
 
 		return normalized;
 	}
-
 }

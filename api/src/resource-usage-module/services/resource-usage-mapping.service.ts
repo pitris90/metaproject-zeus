@@ -150,14 +150,14 @@ export class ResourceUsageMappingService {
 		}
 
 		if (projectName === '_pbs_project_default' && user) {
-			const defaultProject = await this.projectRepository.findOne({
+			const personalProject = await this.projectRepository.findOne({
 				where: {
 					piId: user.id,
-					isDefault: true
+					isPersonal: true
 				}
 			});
-			if (defaultProject) {
-				return { project: defaultProject, strategy: 'default_project' };
+			if (personalProject) {
+				return { project: personalProject, strategy: 'personal_project' };
 			}
 		}
 
@@ -199,7 +199,7 @@ export class ResourceUsageMappingService {
 		return { byTitle, bySlug };
 	}
 
-		private async buildOpenstackAllocationCache(): Promise<Map<string, OpenstackAllocationCacheEntry>> {
+	private async buildOpenstackAllocationCache(): Promise<Map<string, OpenstackAllocationCacheEntry>> {
 		const requests = await this.allocationOpenstackRepository.find({
 			relations: {
 				allocation: {

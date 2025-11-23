@@ -13,6 +13,7 @@ import { Hypertable, TimeColumn } from '@timescaledb/typeorm';
   },
 })
 @Index(['source', 'time_window_start'])
+@Index(['projectName'])
 export class ResourceUsageEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -31,6 +32,9 @@ export class ResourceUsageEvent {
 
   @Column({ type: 'text', nullable: false })
   source: string;
+
+  @Column({ type: 'text', nullable: true, name: 'project_name' })
+  projectName: string | null;
 
   @Column({ type: 'jsonb', nullable: false })
   metrics: {

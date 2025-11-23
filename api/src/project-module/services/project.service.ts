@@ -28,7 +28,7 @@ export class ProjectService {
 		pagination: Pagination,
 		sorting: Sorting
 	): Promise<[ProjectDto[], number]> {
-		await this.projectModel.ensureDefaultProjectForUserId(userId);
+		await this.projectModel.ensurePersonalProjectForUserId(userId);
 		const [projects, count] = await this.projectModel.getUserProjects(
 			userId,
 			projectStatus,
