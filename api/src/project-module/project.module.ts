@@ -4,6 +4,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users-module/users.module';
 import { PerunModule } from '../perun-module/perun.module';
+import { ResourceUsageModule } from '../resource-usage-module/resource-usage.module';
 import { AppService } from '../app.service';
 import { ApiConfigModule } from '../config-module/api-config.module';
 import { ProjectService } from './services/project.service';
@@ -26,6 +27,7 @@ import { ProjectFileController } from './controllers/project-file.controller';
 	imports: [
 		forwardRef(() => UsersModule),
 		PerunModule,
+		ResourceUsageModule,
 		ApiConfigModule,
 		MulterModule.registerAsync({
 			imports: [ConfigModule],

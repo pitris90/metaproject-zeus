@@ -20,10 +20,17 @@ export class ResourceUsageScopeOptionDto {
 	source?: string;
 }
 
+export class ResourceUsageAllocationOptionDto {
+	id: string;
+	label: string;
+	source: string;
+}
+
 export class ResourceUsageSummaryResponseDto {
 	scope: ResourceUsageScopeOptionDto;
 	availableScopes: ResourceUsageScopeOptionDto[];
 	availableSources: string[];
+	availableAllocations: ResourceUsageAllocationOptionDto[];
 	totals: ResourceUsageTotalsDto;
 	series: ResourceUsageSeriesPointDto[];
 }

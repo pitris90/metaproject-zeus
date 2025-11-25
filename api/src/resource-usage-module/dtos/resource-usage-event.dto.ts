@@ -1,4 +1,13 @@
-import { IsString, IsDateString, IsObject, IsOptional, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import {
+	IsString,
+	IsDateString,
+	IsObject,
+	IsOptional,
+	IsArray,
+	IsEnum,
+	ValidateNested,
+	IsBoolean
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ResourceUsageMetricsDto } from './resource-usage-metrics.dto';
@@ -93,6 +102,15 @@ export class ResourceUsageEventDto {
 	@ValidateNested({ each: true })
 	@Type(() => ResourceIdentityDto)
 	identities: ResourceIdentityDto[] = [];
+
+	@ApiPropertyOptional({
+		description: 'Whether this is a personal project',
+		example: false,
+		default: false
+	})
+	@IsOptional()
+	@IsBoolean()
+	is_personal?: boolean;
 
 	@ApiProperty({
 		description: 'Additional contextual information (e.g., project identifiers, job metadata, cloud region)',

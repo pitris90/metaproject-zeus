@@ -10,8 +10,9 @@ export class ResourceUsageSummaryController {
 	async getSummary(
 		@Query('scopeType') scopeType?: 'user' | 'project' | 'allocation',
 		@Query('scopeId') scopeId?: string,
-		@Query('source') source?: string
+		@Query('source') source?: string,
+		@Query('allocationId') allocationId?: string
 	): Promise<ResourceUsageSummaryResponseDto> {
-		return this.summaryService.getSummary({ scopeType, scopeId, source });
+		return this.summaryService.getSummary({ scopeType, scopeId, source, allocationId });
 	}
 }
