@@ -1,6 +1,5 @@
 import { Controller, Post, UnauthorizedException, Headers } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { Public } from '../decorators/public.decorator';
 import { TokenService } from '../services/token.service';
 import { AuthService } from '../services/auth.service';
