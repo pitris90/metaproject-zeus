@@ -15,6 +15,7 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { Sorting } from '../../config-module/decorators/get-sorting';
+import { slugify } from '../../common/utils/slugify.util';
 
 @Injectable()
 export class ProjectModel {
@@ -68,12 +69,17 @@ export class ProjectModel {
 		user: User
 	): Promise<number> {
 		const status = ProjectStatus.NEW;
+
+		// Generate projectSlug from title
+		const projectSlug = slugify(requestProjectDto.title);
+
 		const result = await manager
 			.createQueryBuilder()
 			.insert()
 			.into(Project)
 			.values({
 				title: requestProjectDto.title,
+				projectSlug: projectSlug,
 				description: requestProjectDto.description,
 				link: requestProjectDto.link,
 				status,
@@ -121,33 +127,24 @@ export class ProjectModel {
 		const description = this.buildPersonalProjectDescription(user);
 
 		try {
-			const insertResult = await manager
-				.createQueryBuilder()
-				.insert()
-				.into(Project)
-				.values({
-					title,
-					description,
-					status: ProjectStatus.ACTIVE,
-					piId: user.id,
-					isPersonal: true
-				})
-				.returning('id')
-				.execute();
+			const newProject = projectRepository.create({
+				title,
+				description,
+				status: ProjectStatus.ACTIVE,
+				piId: user.id,
+				isPersonal: true
+			});
 
-			const personalProjectId = insertResult.identifiers[0]['id'];
-			const personalProject = await projectRepository.findOneOrFail({
+			const personalProject = await projectRepository.save(newProject);
+
+			return await projectRepository.findOneOrFail({
 				relations: {
 					pi: true
 				},
 				where: {
-					id: personalProjectId
+					id: personalProject.id
 				}
 			});
-
-			personalProject.title = title;
-			personalProject.description = description;
-			return personalProject;
 		} catch (error) {
 			if (
 				error instanceof QueryFailedError &&

@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { Hypertable, TimeColumn } from '@timescaledb/typeorm';
+import { Project } from '../project/project';
 
 @Entity('resource_usage_events')
 @Hypertable({
@@ -36,6 +37,16 @@ export class ResourceUsageEvent {
   @Column({ type: 'text', nullable: true, name: 'project_name' })
   projectName: string | null;
 
+  @Column({ type: 'boolean', nullable: false, default: false, name: 'is_personal' })
+  isPersonal: boolean;
+
+  @Column({ type: 'integer', nullable: true, name: 'project_id' })
+  projectId: number | null;
+
+  @ManyToOne(() => Project, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
+
   @Column({ type: 'jsonb', nullable: false })
   metrics: {
     cpu_time_seconds: number;
@@ -44,6 +55,7 @@ export class ResourceUsageEvent {
     ram_bytes_used?: number;
     storage_bytes_allocated?: number;
     vcpus_allocated?: number;
+    disk_allocated?: number;
     used_cpu_percent?: number;
     walltime_allocated?: number;
     walltime_used?: number;

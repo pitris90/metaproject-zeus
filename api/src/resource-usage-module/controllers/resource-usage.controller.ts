@@ -36,7 +36,7 @@ export class ResourceUsageController {
 		description: 'Bad request - validation failed'
 	})
 	async submitEvents(@Body() payload: ResourceUsageEventsPayloadDto) {
-		await this.resourceUsageService.createEvents(payload.events);
+		await this.resourceUsageService.createEvents(payload.events, payload.is_last_batch ?? false);
 		return {
 			received: payload.events.length,
 			message: 'Events successfully processed'

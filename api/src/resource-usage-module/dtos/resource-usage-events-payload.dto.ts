@@ -1,6 +1,6 @@
-import { IsArray, ValidateNested } from 'class-validator';
+import { IsArray, ValidateNested, IsBoolean, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ResourceUsageEventDto } from './resource-usage-event.dto';
 
 export class ResourceUsageEventsPayloadDto {
@@ -12,4 +12,13 @@ export class ResourceUsageEventsPayloadDto {
 	@ValidateNested({ each: true })
 	@Type(() => ResourceUsageEventDto)
 	events: ResourceUsageEventDto[];
+
+	@ApiPropertyOptional({
+		description: 'Whether this is the last batch in the sequence (triggers aggregation)',
+		example: false,
+		default: false
+	})
+	@IsOptional()
+	@IsBoolean()
+	is_last_batch?: boolean;
 }
