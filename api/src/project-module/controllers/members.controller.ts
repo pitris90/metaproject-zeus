@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post } from '@nestjs/common';
+// Original code:
+// import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post, UnauthorizedException } from '@nestjs/common';
 import {
 	ApiCreatedResponse,
 	ApiForbiddenResponse,
@@ -86,16 +88,18 @@ export class MembersController {
 		@Headers('Authorization') authorizationHeader: string,
 		@IsStepUp() isStepUp: boolean
 	) {
-		const accessToken = authorizationHeader.split(' ')[1]?.trim();
-
-		if (!accessToken) {
-			throw new UnauthorizedException();
-		}
+		// Original code:
+		// const accessToken = authorizationHeader.split(' ')[1]?.trim();
+		// if (!accessToken) {
+		//     throw new UnauthorizedException();
+		// }
+		const accessToken = authorizationHeader?.split(' ')[1]?.trim();
 
 		const membersToAdd = membersBody.members;
 		const addedEmails = await this.memberService.addProjectMembers(id, user.id, membersToAdd, isStepUp);
-
-		if (addedEmails.length > 0) {
+		// Original code:
+		// if (addedEmails.length > 0) {
+		if (addedEmails.length > 0 && accessToken) {
 			await this.perunFacade.inviteMembers(accessToken, addedEmails, id);
 		}
 	}

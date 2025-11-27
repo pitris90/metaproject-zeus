@@ -13,6 +13,7 @@ services:
         BASE_IMAGE: ${BASE_IMAGE_NODE}
     environment:
       - APPLICATION_MODE=development
+      - AUTH_BYPASS
       - POSTGRES_HOST
       - POSTGRES_PORT
       - POSTGRES_USER
