@@ -3,6 +3,8 @@ import * as path from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { AppService } from '../../app.service';
+
 /**
  * Represents a parsed OpenStack flavor from Terraform files.
  */
@@ -108,9 +110,7 @@ export class OpenstackTerraformParserService {
 	 * To add more environments, add entries here.
 	 */
 	private buildEnvironmentConfigs(): EnvironmentConfig[] {
-		const repoPath =
-			this.configService.get<string>('OPENSTACK_REPO_PATH') ?? './api/src/openstack-module/openstack-external';
-		const absoluteRepoPath = path.isAbsolute(repoPath) ? repoPath : path.resolve(process.cwd(), repoPath);
+		const absoluteRepoPath = this.resolveRepositoryPath();
 
 		// Currently supported environments - extend this array to add more
 		const supportedEnvironments = ['prod-brno'] as const;
@@ -119,6 +119,24 @@ export class OpenstackTerraformParserService {
 			name: envName,
 			basePath: path.join(absoluteRepoPath, 'environments', envName, 'openstack')
 		}));
+	}
+
+	/**
+	 * Resolves the repository path using the same logic as OpenstackGitService.
+	 */
+	private resolveRepositoryPath(): string {
+		const appRoot = AppService.APP_ROOT ?? path.resolve(__dirname, '..', '..', '..');
+		const workspaceRoot = path.resolve(appRoot, '..');
+		const configuredPath = this.configService.get<string>('OPENSTACK_REPO_PATH');
+
+		if (configuredPath) {
+			if (path.isAbsolute(configuredPath)) {
+				return configuredPath;
+			}
+			return path.resolve(workspaceRoot, configuredPath);
+		}
+
+		return path.join(appRoot, 'src', 'openstack-module', 'openstack-external');
 	}
 
 	/**
