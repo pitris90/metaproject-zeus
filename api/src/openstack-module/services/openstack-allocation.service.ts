@@ -3,6 +3,8 @@ import { DataSource } from 'typeorm';
 import {
 	AllocationOpenstackPayload,
 	AllocationOpenstackRequest,
+	AllocationUser,
+	AllocationStatus,
 	Project,
 	ProjectUserStatus
 } from 'resource-manager-database';
@@ -91,6 +93,9 @@ export class OpenstackAllocationService {
 
 		this.tagsCatalog.resolveLabels(payload.customerKey, payload.organizationKey, payload.workplaceKey);
 
+		// Get the requestor's externalId from AllocationUser
+		const requestorExternalId = await this.getRequestorExternalId(allocationId);
+
 		const normalizedQuota = this.normalizeQuota(payload.quota);
 		const openstackProjectName = this.yamlBuilder.buildPrefixedProjectName(payload.customerKey, project.title);
 		const yamlContent = this.yamlBuilder.buildYaml({
@@ -104,7 +109,10 @@ export class OpenstackAllocationService {
 			organizationKey: payload.organizationKey,
 			workplaceKey: payload.workplaceKey,
 			quota: normalizedQuota,
-			additionalTags: payload.additionalTags
+			additionalTags: payload.additionalTags,
+			requestorExternalId,
+			flavors: payload.flavors,
+			networks: payload.networks
 		});
 
 		const mergeRequestTitle = `feat: Project management via MetaCentrum ZEUS, project-name ${openstackProjectName}`;
@@ -136,6 +144,36 @@ export class OpenstackAllocationService {
 	public validateRequestPayload(payload: AllocationOpenstackPayload): void {
 		this.constraints.ensureDomainAllowed(payload.domain);
 		this.constraints.ensureQuotaKeysAllowed(payload.quota ?? {});
+		this.constraints.ensureFlavorsAllowed(payload.flavors);
+		this.constraints.ensureNetworksAllowed(payload.networks);
+	}
+
+	/**
+	 * Retrieves the externalId (OIDC sub) of the user who submitted the allocation request.
+	 * The requestor is identified as the user in AllocationUser with status 'new' (initial request).
+	 */
+	private async getRequestorExternalId(allocationId: number): Promise<string | undefined> {
+		const allocationUserRepository = this.dataSource.getRepository(AllocationUser);
+
+		// Find the user who created the allocation request (status = 'new')
+		const allocationUser = await allocationUserRepository.findOne({
+			relations: {
+				user: true
+			},
+			where: {
+				allocationId,
+				status: AllocationStatus.NEW
+			}
+		});
+
+		if (!allocationUser?.user?.externalId) {
+			this.logger.warn(
+				`Could not find requestor externalId for allocation ${allocationId}. Principal-investigators will be empty.`
+			);
+			return undefined;
+		}
+
+		return allocationUser.user.externalId;
 	}
 
 	private collectContacts(project: Project): OpenstackContactInfo[] {

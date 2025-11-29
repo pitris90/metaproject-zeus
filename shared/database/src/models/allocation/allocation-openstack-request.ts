@@ -2,6 +2,15 @@ import { Column, Entity, Index, JoinColumn, OneToOne, PrimaryGeneratedColumn } f
 import { Allocation } from './allocation';
 import { TimeEntity } from '../time-entity';
 
+/**
+ * Network ACL configuration for OpenStack project.
+ * Networks can be assigned to access_as_external and/or access_as_shared.
+ */
+export interface AllocationOpenstackNetworks {
+	accessAsExternal?: string[];
+	accessAsShared?: string[];
+}
+
 export interface AllocationOpenstackPayload {
 	domain: string;
 	disableDate?: string;
@@ -11,6 +20,10 @@ export interface AllocationOpenstackPayload {
 	workplaceKey: string;
 	quota: Record<string, number>;
 	additionalTags?: string[];
+	/** Optional list of non-public flavor names to assign to the project */
+	flavors?: string[];
+	/** Optional network ACL configuration */
+	networks?: AllocationOpenstackNetworks;
 }
 
 @Entity()

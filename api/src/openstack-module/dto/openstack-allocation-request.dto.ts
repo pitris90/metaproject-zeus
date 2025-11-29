@@ -1,4 +1,21 @@
-import { IsArray, IsNotEmpty, IsObject, IsOptional, IsString, Matches } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsNotEmpty, IsObject, IsOptional, IsString, Matches, ValidateNested } from 'class-validator';
+
+/**
+ * DTO for network ACL configuration.
+ * Networks can be assigned to access_as_external and/or access_as_shared.
+ */
+export class OpenstackNetworksDto {
+	@IsOptional()
+	@IsArray()
+	@IsString({ each: true })
+	accessAsExternal?: string[];
+
+	@IsOptional()
+	@IsArray()
+	@IsString({ each: true })
+	accessAsShared?: string[];
+}
 
 export class OpenstackAllocationRequestDto {
 	@IsString()
@@ -34,4 +51,14 @@ export class OpenstackAllocationRequestDto {
 	@IsArray()
 	@IsString({ each: true })
 	additionalTags?: string[];
+
+	@IsOptional()
+	@IsArray()
+	@IsString({ each: true })
+	flavors?: string[];
+
+	@IsOptional()
+	@ValidateNested()
+	@Type(() => OpenstackNetworksDto)
+	networks?: OpenstackNetworksDto;
 }
