@@ -6,6 +6,7 @@ import { OpenstackTagsCatalogService } from './services/openstack-tags.service';
 import { OpenstackGitService } from './services/openstack-git.service';
 import { OpenstackTagsController } from './controllers/openstack-tags.controller';
 import { OpenstackConstraintsService } from './services/openstack-constraints.service';
+import { OpenstackTerraformParserService } from './services/openstack-terraform-parser.service';
 
 @Module({
 	imports: [ConfigModule],
@@ -15,7 +16,8 @@ import { OpenstackConstraintsService } from './services/openstack-constraints.se
 		OpenstackYamlBuilderService,
 		OpenstackTagsCatalogService,
 		OpenstackGitService,
-		OpenstackConstraintsService
+		OpenstackConstraintsService,
+		OpenstackTerraformParserService
 	],
 	exports: [OpenstackAllocationService]
 })
