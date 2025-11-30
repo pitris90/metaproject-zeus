@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Resource, ResourceAttributeType, ResourceToAttributeType } from 'resource-manager-database';
+import { Allocation, AllocationStatus, Project, Resource, ResourceAttributeType, ResourceToAttributeType } from 'resource-manager-database';
 import { ResourceInputDto } from '../dtos/input/resource-input.dto';
 import { ResourceMapper } from '../mappers/resource.mapper';
 import { ResourceNotFoundError } from '../../error-module/errors/resources/resource-not-found.error';
+
+/** Resource name that identifies OpenStack resources for restriction checks */
+const OPENSTACK_RESOURCE_NAME = 'OpenStack';
 
 @Injectable()
 export class ResourceService {
@@ -64,12 +67,52 @@ export class ResourceService {
 		);
 	}
 
-	async getResources() {
+	async getResources(projectId?: number) {
 		const resources = await this.dataSource.getRepository(Resource).find({
 			relations: ['resourceType']
 		});
 
-		return resources.map((resource) => this.resourceMapper.toResourceDto(resource));
+		// If no projectId provided, return all resources
+		if (!projectId) {
+			return resources.map((resource) => this.resourceMapper.toResourceDto(resource));
+		}
+
+		// Check if OpenStack should be filtered out for this project
+		const shouldFilterOpenstack = await this.shouldFilterOpenstackForProject(projectId);
+
+		const filteredResources = shouldFilterOpenstack
+			? resources.filter((resource) => resource.name !== OPENSTACK_RESOURCE_NAME)
+			: resources;
+
+		return filteredResources.map((resource) => this.resourceMapper.toResourceDto(resource));
+	}
+
+	/**
+	 * Determines if OpenStack resources should be filtered out for a given project.
+	 * Returns true if:
+	 * - Project is personal (isPersonal = true)
+	 * - Project already has an active OpenStack allocation
+	 */
+	private async shouldFilterOpenstackForProject(projectId: number): Promise<boolean> {
+		// Check if project is personal
+		const project = await this.dataSource.getRepository(Project).findOne({
+			where: { id: projectId }
+		});
+
+		if (project?.isPersonal) {
+			return true;
+		}
+
+		// Check if project already has an active OpenStack allocation
+		const existingActiveAllocation = await this.dataSource
+			.createQueryBuilder(Allocation, 'allocation')
+			.innerJoin('allocation.resource', 'resource')
+			.where('allocation.projectId = :projectId', { projectId })
+			.andWhere('allocation.status = :status', { status: AllocationStatus.ACTIVE })
+			.andWhere('resource.name = :resourceName', { resourceName: OPENSTACK_RESOURCE_NAME })
+			.getOne();
+
+		return !!existingActiveAllocation;
 	}
 
 	async createResource(resourceInputDto: ResourceInputDto) {

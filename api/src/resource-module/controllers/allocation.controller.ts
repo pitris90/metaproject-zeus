@@ -13,6 +13,7 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 import { PaginationMapper } from '../../config-module/mappers/pagination.mapper';
 import { AllocationStatusDto } from '../dtos/input/allocation-status.dto';
 import { IsStepUp } from '../../auth-module/decorators/is-step-up.decorator';
+import { OpenstackModifyRequestDto } from '../../openstack-module/dto/openstack-modify-request.dto';
 
 @Controller('/allocation')
 @ApiTags('Allocation')
@@ -92,8 +93,7 @@ export class AllocationController {
 		type: ProjectNotFoundApiException
 	})
 	async allocationDetail(@Param('id') id: number, @RequestUser() user: UserDto, @IsStepUp() isStepUp: boolean) {
-		const allocation = await this.allocationService.getDetail(user.id, id, isStepUp);
-		return this.allocationMapper.toAllocationDetailDto(allocation);
+		return this.allocationService.getDetail(user.id, id, isStepUp);
 	}
 
 	@MinRoleCheck(RoleEnum.ADMIN)
@@ -119,7 +119,8 @@ export class AllocationController {
 	@Get('/all')
 	@ApiOperation({
 		summary: 'Get all allocations',
-		description: 'Gets all allocations. Filterable by new for allocation requests. This method supports pagination.'
+		description:
+			'Gets all allocations. Filterable by status: "new" for new allocation requests, "pending-modification" for active allocations with pending modifications. This method supports pagination.'
 	})
 	@ApiOkResponse({
 		description: 'Allocations.'
@@ -129,14 +130,35 @@ export class AllocationController {
 		type: ProjectNotFoundApiException
 	})
 	async getAllAllocations(
-		@Query('status') status: 'new' | null,
+		@Query('status') status: 'new' | 'pending-modification' | null,
 		@GetPagination() pagination: Pagination,
 		@GetSorting() sorting: Sorting
 	) {
 		const [allocations, count] = await this.allocationService.getAll(status, pagination, sorting);
-		const allocationsMapped = allocations.map((allocation) =>
-			this.allocationMapper.toAllocationAdminDto(allocation)
-		);
-		return this.paginationMapper.toPaginatedResult(pagination, count, allocationsMapped);
+		return this.paginationMapper.toPaginatedResult(pagination, count, allocations);
+	}
+
+	@Post('/detail/:id/openstack/modify')
+	@MinRoleCheck(RoleEnum.USER)
+	@HttpCode(201)
+	@ApiOperation({
+		summary: 'Request OpenStack allocation modification',
+		description:
+			'Submit a modification request for an active OpenStack allocation. Domain cannot be changed. The request will need admin approval.'
+	})
+	@ApiCreatedResponse({
+		description: 'Modification request submitted successfully.'
+	})
+	@ApiNotFoundResponse({
+		description: 'Allocation not found or user has no access.',
+		type: ProjectNotFoundApiException
+	})
+	async modifyOpenstackAllocation(
+		@Param('id') allocationId: number,
+		@RequestUser() user: UserDto,
+		@Body() modifyRequest: OpenstackModifyRequestDto,
+		@IsStepUp() isStepUp: boolean
+	) {
+		await this.allocationService.modifyOpenstackAllocation(allocationId, user.id, modifyRequest, isStepUp);
 	}
 }

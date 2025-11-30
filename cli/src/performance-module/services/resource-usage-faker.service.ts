@@ -10,6 +10,7 @@ import {
 	Allocation,
 	AllocationStatus,
 	AllocationOpenstackRequest,
+	OpenstackRequestStatus,
 	ResourceUsageEvent
 } from 'resource-manager-database';
 
@@ -380,8 +381,8 @@ export class ResourceUsageFakerService {
 		const openstackRequestRepo = this.dataSource.getRepository(AllocationOpenstackRequest);
 
 		const openstackRequest = openstackRequestRepo.create({
-			allocationId: savedAllocation.id,
-			resourceType: 'OpenStack cloud',
+			allocation: savedAllocation,
+			status: OpenstackRequestStatus.APPROVED,
 			processed: true,
 			processedAt: new Date(),
 			payload: {

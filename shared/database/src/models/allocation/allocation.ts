@@ -1,4 +1,4 @@
-import { Column, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TimeEntity } from '../time-entity';
 import { Project } from '../project/project';
 import { Resource } from '../resource/resource';
@@ -55,6 +55,6 @@ export class Allocation {
 	@OneToMany(() => AllocationUser, allocationUser => allocationUser.allocation)
 	allocationUsers: AllocationUser[];
 
-	@OneToOne(() => AllocationOpenstackRequest, (openstackRequest) => openstackRequest.allocation)
-	openstackRequest: AllocationOpenstackRequest;
+	@OneToMany(() => AllocationOpenstackRequest, (openstackRequest) => openstackRequest.allocation)
+	openstackRequests: AllocationOpenstackRequest[];
 }

@@ -5,18 +5,22 @@ import {
 	AllocationOpenstackRequest,
 	AllocationUser,
 	AllocationStatus,
+	OpenstackRequestStatus,
 	Project,
 	ProjectUserStatus
 } from 'resource-manager-database';
 import { OpenstackContactInfo, OpenstackYamlBuilderService } from './openstack-yaml-builder.service';
 import { OpenstackTagsCatalogService } from './openstack-tags.service';
-import { OpenstackGitService } from './openstack-git.service';
+import { OpenstackGitService, MergeRequestState } from './openstack-git.service';
 import { OpenstackConstraintsService } from './openstack-constraints.service';
+
+// Re-export MergeRequestState for consumers
+export type { MergeRequestState };
 
 @Injectable()
 export class OpenstackAllocationService {
 	private readonly logger = new Logger(OpenstackAllocationService.name);
-	private readonly supportedResourceTypes: Set<string> = new Set(['openstack cloud']);
+	private readonly supportedResourceTypes: Set<string> = new Set(['cloud']);
 
 	constructor(
 		private readonly dataSource: DataSource,
@@ -32,6 +36,8 @@ export class OpenstackAllocationService {
 
 	public async processApprovedAllocation(allocationId: number): Promise<void> {
 		const repository = this.dataSource.getRepository(AllocationOpenstackRequest);
+
+		// Find the latest approved but unprocessed request for this allocation
 		const request = await repository.findOne({
 			relations: {
 				allocation: {
@@ -47,17 +53,17 @@ export class OpenstackAllocationService {
 				}
 			},
 			where: {
-				allocationId
+				allocationId,
+				status: OpenstackRequestStatus.APPROVED,
+				processed: false
+			},
+			order: {
+				id: 'DESC'
 			}
 		});
 
 		if (!request) {
-			this.logger.debug(`Allocation ${allocationId} has no OpenStack payload. Skipping GitOps flow.`);
-			return;
-		}
-
-		if (request.processed) {
-			this.logger.debug(`Allocation ${allocationId} OpenStack payload already processed. Skipping.`);
+			this.logger.debug(`Allocation ${allocationId} has no unprocessed approved OpenStack request. Skipping GitOps flow.`);
 			return;
 		}
 
@@ -68,7 +74,7 @@ export class OpenstackAllocationService {
 			);
 		}
 
-		const resourceTypeName = allocation.resource?.resourceType?.name ?? request.resourceType;
+		const resourceTypeName = allocation.resource?.resourceType?.name ?? '';
 		if (!this.isResourceTypeSupported(resourceTypeName ?? '')) {
 			this.logger.debug(
 				`Allocation ${allocationId} uses resource type "${resourceTypeName}" which is not OpenStack-enabled. Skipping.`
@@ -118,14 +124,17 @@ export class OpenstackAllocationService {
 		const mergeRequestTitle = `feat: Project management via MetaCentrum ZEUS, project-name ${openstackProjectName}`;
 		const mergeRequestDescription = `Project management via MetaCentrum ZEUS, project-name ${openstackProjectName}`;
 
-		const result = await this.gitService.commitAndOpenMergeRequest({
-			openstackProjectName,
-			domain: payload.domain,
-			yamlContent,
-			mergeRequestTitle,
-			mergeRequestDescription,
-			projectDisplayName: project.title
-		});
+		const result = await this.gitService.commitAndOpenMergeRequest(
+			{
+				openstackProjectName,
+				domain: payload.domain,
+				yamlContent,
+				mergeRequestTitle,
+				mergeRequestDescription,
+				projectDisplayName: project.title
+			},
+			request.id
+		);
 
 		await repository.update(
 			{ id: request.id },
@@ -146,6 +155,39 @@ export class OpenstackAllocationService {
 		this.constraints.ensureQuotaKeysAllowed(payload.quota ?? {});
 		this.constraints.ensureFlavorsAllowed(payload.flavors);
 		this.constraints.ensureNetworksAllowed(payload.networks);
+		this.validateDisableDate(payload.disableDate);
+	}
+
+	/**
+	 * Validates that disableDate is not in the past.
+	 */
+	private validateDisableDate(disableDate?: string): void {
+		if (!disableDate || disableDate === 'unlimited') {
+			return;
+		}
+
+		let parsedDate: Date | null = null;
+
+		// Try YYYY-MM-DD format
+		if (/^\d{4}-\d{2}-\d{2}$/.test(disableDate)) {
+			parsedDate = new Date(disableDate);
+		}
+
+		// Try DD.MM.YYYY format
+		if (/^\d{2}\.\d{2}\.\d{4}$/.test(disableDate)) {
+			const [day, month, year] = disableDate.split('.');
+			parsedDate = new Date(`${year}-${month}-${day}`);
+		}
+
+		if (parsedDate) {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			parsedDate.setHours(0, 0, 0, 0);
+
+			if (parsedDate < today) {
+				throw new BadRequestException('Disable date must be today or in the future.');
+			}
+		}
 	}
 
 	/**
@@ -223,13 +265,21 @@ export class OpenstackAllocationService {
 				throw new BadRequestException(`Quota value for "${key}" must be numeric.`);
 			}
 
-			if (numericValue < 0) {
-				throw new BadRequestException(`Quota value for "${key}" must be zero or positive.`);
+			if (numericValue < 1) {
+				throw new BadRequestException(`Quota value for "${key}" must be at least 1.`);
 			}
 
 			normalized[key] = numericValue;
 		}
 
 		return normalized;
+	}
+
+	/**
+	 * Gets the state of a GitLab merge request from its URL.
+	 * Returns null if GitLab is unavailable or URL is invalid.
+	 */
+	public async getMergeRequestState(mergeRequestUrl: string | null | undefined): Promise<MergeRequestState | null> {
+		return this.gitService.getMergeRequestState(mergeRequestUrl ?? null);
 	}
 }

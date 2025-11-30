@@ -1,6 +1,7 @@
-import { Column, Entity, Index, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Allocation } from './allocation';
 import { TimeEntity } from '../time-entity';
+import { OpenstackRequestStatus } from '../../enums/openstack-request.status';
 
 /**
  * Network ACL configuration for OpenStack project.
@@ -32,17 +33,21 @@ export class AllocationOpenstackRequest {
 	id: number;
 
 	@Column({ name: 'allocation_id' })
-	@Index({ unique: true })
+	@Index()
 	allocationId: number;
 
-	@OneToOne(() => Allocation, (allocation) => allocation.openstackRequest, {
+	@ManyToOne(() => Allocation, (allocation) => allocation.openstackRequests, {
 		onDelete: 'CASCADE'
 	})
 	@JoinColumn({ name: 'allocation_id' })
 	allocation: Allocation;
 
-	@Column({ type: 'varchar', length: 128 })
-	resourceType: string;
+	@Column({
+		type: 'varchar',
+		length: 32,
+		default: OpenstackRequestStatus.PENDING
+	})
+	status: OpenstackRequestStatus;
 
 	@Column({ type: 'jsonb' })
 	payload: AllocationOpenstackPayload;

@@ -21,13 +21,59 @@ interface CommitAndMergeRequestResult {
 	mergeRequestUrl: string;
 }
 
+/**
+ * Possible states of a GitLab merge request.
+ */
+export type MergeRequestState = 'merged' | 'opened' | 'closed';
+
 @Injectable()
 export class OpenstackGitService {
 	private readonly logger = new Logger(OpenstackGitService.name);
 
 	constructor(private readonly configService: ConfigService) {}
 
-	public async commitAndOpenMergeRequest(params: CommitAndMergeRequestParams): Promise<CommitAndMergeRequestResult> {
+	/**
+	 * Queries GitLab API to get the current state of a merge request.
+	 * @param mergeRequestUrl The web URL of the merge request
+	 * @returns The MR state ('merged', 'opened', 'closed') or null if unavailable
+	 */
+	public async getMergeRequestState(mergeRequestUrl: string | null): Promise<MergeRequestState | null> {
+		if (!mergeRequestUrl) {
+			return null;
+		}
+
+		try {
+			const gitlab = this.instantiateGitlabClient();
+			const projectId = this.resolveGitlabProjectId();
+
+			// Extract MR IID from URL (e.g., https://gitlab.example.com/group/project/-/merge_requests/123)
+			const mrIidMatch = mergeRequestUrl.match(/merge_requests\/(\d+)/);
+			if (!mrIidMatch) {
+				this.logger.warn(`Could not extract MR IID from URL: ${mergeRequestUrl}`);
+				return null;
+			}
+
+			const mrIid = parseInt(mrIidMatch[1], 10);
+			const mr = await gitlab.MergeRequests.show(projectId, mrIid);
+
+			// GitLab states: 'opened', 'closed', 'merged', 'locked'
+			if (mr.state === 'merged') {
+				return 'merged';
+			} else if (mr.state === 'opened' || mr.state === 'locked') {
+				return 'opened';
+			} else {
+				return 'closed';
+			}
+		} catch (error) {
+			this.logger.error(`Failed to fetch MR state for ${mergeRequestUrl}: ${error}`);
+			return null;
+		}
+	}
+
+	public async commitAndOpenMergeRequest(
+		params: CommitAndMergeRequestParams,
+		requestId: number
+	): Promise<CommitAndMergeRequestResult> {
 		const repoPath = this.resolveRepositoryPath();
 		const baseBranch = this.configService.get<string>('OPENSTACK_GIT_BASE_BRANCH') ?? 'master';
 		const targetBranch = this.configService.get<string>('OPENSTACK_GIT_TARGET_BRANCH') ?? 'master';
@@ -49,7 +95,7 @@ export class OpenstackGitService {
 		await git.checkout(baseBranch);
 		await git.pull('origin', baseBranch);
 
-		const branchName = await this.prepareBranch(git, params.openstackProjectName);
+		const branchName = await this.prepareBranch(git, params.openstackProjectName, requestId);
 
 		try {
 			const filePath = await this.writeYamlFile(
@@ -142,8 +188,8 @@ export class OpenstackGitService {
 		return new Gitlab({ host, token });
 	}
 
-	private async prepareBranch(git: SimpleGit, openstackProjectName: string): Promise<string> {
-		const base = this.buildBranchBase(openstackProjectName);
+	private async prepareBranch(git: SimpleGit, openstackProjectName: string, requestId: number): Promise<string> {
+		const base = this.buildBranchBase(openstackProjectName, requestId);
 
 		const conflicts = new Set<string>();
 		const localBranches = await git.branchLocal();
@@ -174,18 +220,9 @@ export class OpenstackGitService {
 		return trimmed.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'allocation';
 	}
 
-	private buildBranchBase(openstackProjectName: string): string {
+	private buildBranchBase(openstackProjectName: string, requestId: number): string {
 		const projectSegment = this.sanitizeBranchComponent(openstackProjectName);
-		const dateSegment = this.currentDateSegment();
-		return `zeus/${projectSegment}-${dateSegment}`;
-	}
-
-	private currentDateSegment(): string {
-		const now = new Date();
-		const year = now.getFullYear();
-		const month = `${now.getMonth() + 1}`.padStart(2, '0');
-		const day = `${now.getDate()}`.padStart(2, '0');
-		return `${year}-${month}-${day}`;
+		return `zeus/${projectSegment}-${requestId}`;
 	}
 
 	private async writeYamlFile(
