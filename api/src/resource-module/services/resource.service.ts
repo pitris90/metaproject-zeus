@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Allocation, AllocationStatus, Project, Resource, ResourceAttributeType, ResourceToAttributeType } from 'resource-manager-database';
+import {
+	Allocation,
+	AllocationStatus,
+	Project,
+	Resource,
+	ResourceAttributeType,
+	ResourceToAttributeType
+} from 'resource-manager-database';
 import { ResourceInputDto } from '../dtos/input/resource-input.dto';
 import { ResourceMapper } from '../mappers/resource.mapper';
 import { ResourceNotFoundError } from '../../error-module/errors/resources/resource-not-found.error';

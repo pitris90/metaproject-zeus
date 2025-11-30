@@ -26,7 +26,8 @@ export class ResourceController {
 		name: 'projectId',
 		required: false,
 		type: Number,
-		description: 'Optional project ID to filter resources based on project restrictions (e.g., exclude OpenStack for personal projects or projects with active OpenStack allocation)'
+		description:
+			'Optional project ID to filter resources based on project restrictions (e.g., exclude OpenStack for personal projects or projects with active OpenStack allocation)'
 	})
 	@ApiOkResponse({
 		description: 'Resources in the system.',

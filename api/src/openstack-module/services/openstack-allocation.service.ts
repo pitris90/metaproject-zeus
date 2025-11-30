@@ -63,7 +63,9 @@ export class OpenstackAllocationService {
 		});
 
 		if (!request) {
-			this.logger.debug(`Allocation ${allocationId} has no unprocessed approved OpenStack request. Skipping GitOps flow.`);
+			this.logger.debug(
+				`Allocation ${allocationId} has no unprocessed approved OpenStack request. Skipping GitOps flow.`
+			);
 			return;
 		}
 

@@ -17,7 +17,10 @@ import { Sorting } from '../../config-module/decorators/get-sorting';
 import { Pagination } from '../../config-module/decorators/get-pagination';
 import { AllocationNotFoundError } from '../../error-module/errors/allocations/allocation-not-found.error';
 import { AllocationStatusDto } from '../dtos/input/allocation-status.dto';
-import { OpenstackAllocationService, MergeRequestState } from '../../openstack-module/services/openstack-allocation.service';
+import {
+	OpenstackAllocationService,
+	MergeRequestState
+} from '../../openstack-module/services/openstack-allocation.service';
 import { OpenstackAllocationExistsError } from '../../error-module/errors/allocations/openstack-allocation-exists.error';
 import { OpenstackPersonalProjectError } from '../../error-module/errors/allocations/openstack-personal-project.error';
 import { AllocationMapper } from '../mappers/allocation.mapper';
@@ -205,13 +208,7 @@ export class AllocationService {
 			where: {
 				id: allocationId
 			},
-			relations: [
-				'resource',
-				'resource.resourceType',
-				'project',
-				'allocationUsers',
-				'allocationUsers.user'
-			]
+			relations: ['resource', 'resource.resourceType', 'project', 'allocationUsers', 'allocationUsers.user']
 		});
 
 		const projectId = allocation?.project?.id;
@@ -315,10 +312,9 @@ export class AllocationService {
 
 		if (isActivating && latestRequest) {
 			// Approve the OpenStack request
-			await this.dataSource.getRepository(AllocationOpenstackRequest).update(
-				{ id: latestRequest.id },
-				{ status: OpenstackRequestStatus.APPROVED }
-			);
+			await this.dataSource
+				.getRepository(AllocationOpenstackRequest)
+				.update({ id: latestRequest.id }, { status: OpenstackRequestStatus.APPROVED });
 
 			// Process the approved allocation (creates MR)
 			await this.openstackAllocationService.processApprovedAllocation(allocationId);
@@ -327,20 +323,18 @@ export class AllocationService {
 		// Handle denial
 		if (data.status === AllocationStatus.DENIED && latestRequest) {
 			// Deny the OpenStack request
-			await this.dataSource.getRepository(AllocationOpenstackRequest).update(
-				{ id: latestRequest.id },
-				{ status: OpenstackRequestStatus.DENIED }
-			);
+			await this.dataSource
+				.getRepository(AllocationOpenstackRequest)
+				.update({ id: latestRequest.id }, { status: OpenstackRequestStatus.DENIED });
 		}
 
 		// For modification approval, don't change allocation status (it stays active)
 		if (isModificationApproval) {
 			// Just update description if provided
 			if (data.description) {
-				await this.dataSource.getRepository(Allocation).update(
-					{ id: allocationId },
-					{ description: data.description }
-				);
+				await this.dataSource
+					.getRepository(Allocation)
+					.update({ id: allocationId }, { description: data.description });
 			}
 			return;
 		}
@@ -349,10 +343,9 @@ export class AllocationService {
 		if (allocation.status === AllocationStatus.ACTIVE && data.status === AllocationStatus.DENIED) {
 			// Just update description if provided, keep allocation active
 			if (data.description) {
-				await this.dataSource.getRepository(Allocation).update(
-					{ id: allocationId },
-					{ description: data.description }
-				);
+				await this.dataSource
+					.getRepository(Allocation)
+					.update({ id: allocationId }, { description: data.description });
 			}
 			return;
 		}
@@ -394,11 +387,7 @@ export class AllocationService {
 		} else if (status === 'pending-modification') {
 			// Filter for active allocations that have a pending OpenStack request
 			allocationQuery
-				.innerJoin(
-					AllocationOpenstackRequest,
-					'osr',
-					'osr.allocationId = allocation.id'
-				)
+				.innerJoin(AllocationOpenstackRequest, 'osr', 'osr.allocationId = allocation.id')
 				.where('allocation.status = :activeStatus', { activeStatus: AllocationStatus.ACTIVE })
 				.andWhere('osr.status = :pendingStatus', { pendingStatus: OpenstackRequestStatus.PENDING })
 				// Ensure we get the latest request
@@ -585,10 +574,7 @@ export class AllocationService {
 		if (modifyData.disableDate) {
 			const newEndDate = this.parseDisableDate(modifyData.disableDate);
 			if (newEndDate) {
-				await this.dataSource.getRepository(Allocation).update(
-					{ id: allocationId },
-					{ endDate: newEndDate }
-				);
+				await this.dataSource.getRepository(Allocation).update({ id: allocationId }, { endDate: newEndDate });
 			}
 		}
 

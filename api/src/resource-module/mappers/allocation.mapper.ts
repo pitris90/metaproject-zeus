@@ -1,6 +1,16 @@
-import { Allocation, AllocationOpenstackRequest, AllocationStatus, OpenstackRequestStatus } from 'resource-manager-database';
+import {
+	Allocation,
+	AllocationOpenstackRequest,
+	AllocationStatus,
+	OpenstackRequestStatus
+} from 'resource-manager-database';
 import { AllocationDto } from '../dtos/allocation.dto';
-import { AllocationDetailDto, MergeRequestStateDto, OpenstackRequestDto, OpenstackRequestStatusDto } from '../dtos/allocation-detail.dto';
+import {
+	AllocationDetailDto,
+	MergeRequestStateDto,
+	OpenstackRequestDto,
+	OpenstackRequestStatusDto
+} from '../dtos/allocation-detail.dto';
 import { AllocationAdminDto } from '../dtos/allocation-admin.dto';
 import { MergeRequestState } from '../../openstack-module/services/openstack-git.service';
 
