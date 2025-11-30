@@ -95,6 +95,7 @@ export class OpenstackYamlBuilderService {
 
 	/**
 	 * Builds the metadata section with contacts and principal-investigators.
+	 * Uses YAML nodes directly to allow comment attachment later.
 	 */
 	private buildMetadataSection(
 		root: YAMLMap,
@@ -102,20 +103,27 @@ export class OpenstackYamlBuilderService {
 		requestorExternalId?: string,
 		disableDate?: string
 	): void {
-		const metadata: Record<string, unknown> = {
-			contacts: contacts.map((c) => c.email)
-		};
+		const metadataMap = new YAMLMap();
+
+		// Build contacts as YAMLSeq with Scalar items (to allow comments)
+		const contactsSeq = new YAMLSeq();
+		for (const contact of contacts) {
+			contactsSeq.add(new Scalar(contact.email));
+		}
+		metadataMap.set('contacts', contactsSeq);
 
 		// Add principal-investigators if requestor externalId is available
 		if (requestorExternalId) {
-			metadata['principal-investigators'] = [requestorExternalId];
+			const piSeq = new YAMLSeq();
+			piSeq.add(requestorExternalId);
+			metadataMap.set('principal-investigators', piSeq);
 		}
 
 		if (disableDate) {
-			metadata['disable-date'] = disableDate;
+			metadataMap.set('disable-date', disableDate);
 		}
 
-		root.set('metadata', metadata);
+		root.set('metadata', metadataMap);
 	}
 
 	/**
@@ -263,8 +271,13 @@ export class OpenstackYamlBuilderService {
 	}
 
 	private attachProjectNameComment(document: Document, originalName: string): void {
-		const projectNode = document.get('project', true) as YAMLMap | undefined;
-		if (!projectNode) {
+		const root = document.contents as YAMLMap;
+		if (!root) {
+			return;
+		}
+
+		const projectNode = root.get('project', true) as YAMLMap | undefined;
+		if (!projectNode || typeof projectNode.get !== 'function') {
 			return;
 		}
 
@@ -275,8 +288,13 @@ export class OpenstackYamlBuilderService {
 	}
 
 	private attachContactComments(document: Document, contacts: OpenstackContactInfo[]): void {
-		const metadataNode = document.get('metadata', true) as YAMLMap | undefined;
-		if (!metadataNode) {
+		const root = document.contents as YAMLMap;
+		if (!root) {
+			return;
+		}
+
+		const metadataNode = root.get('metadata', true) as YAMLMap | undefined;
+		if (!metadataNode || typeof metadataNode.get !== 'function') {
 			return;
 		}
 

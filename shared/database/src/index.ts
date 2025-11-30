@@ -17,6 +17,7 @@ import { ResourceAttributeType } from './models/resource/resource-attribute-type
 import { ResourceToAttributeType } from './models/resource/resource-to-attribute-type';
 import { AttributeType } from './models/attribute-type';
 import { AllocationStatus } from './enums/allocation.status';
+import { OpenstackRequestStatus } from './enums/openstack-request.status';
 import { Allocation } from './models/allocation/allocation';
 import { AllocationUser } from './models/allocation/allocation-user';
 import { GroupFailedStage } from './models/project/group-failed-stage';
@@ -32,7 +33,7 @@ export { Resource, ResourceType, ResourceAttributeType, ResourceToAttributeType 
 export { ProjectArchival };
 export { File };
 export { Publication, PublicationSource, ProjectPublication }
-export { AllocationStatus, Allocation, AllocationUser, AllocationOpenstackRequest }
+export { AllocationStatus, OpenstackRequestStatus, Allocation, AllocationUser, AllocationOpenstackRequest }
 export { GroupFailedStage }
 export { ResourceUsageEvent, ResourceUsageDailySummary }
 export type { AllocationOpenstackPayload }

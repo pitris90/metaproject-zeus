@@ -1,7 +1,78 @@
-import { Allocation } from 'resource-manager-database';
+import { Allocation, AllocationOpenstackRequest, AllocationStatus, OpenstackRequestStatus } from 'resource-manager-database';
 import { AllocationDto } from '../dtos/allocation.dto';
-import { AllocationDetailDto } from '../dtos/allocation-detail.dto';
+import { AllocationDetailDto, MergeRequestStateDto, OpenstackRequestDto, OpenstackRequestStatusDto } from '../dtos/allocation-detail.dto';
 import { AllocationAdminDto } from '../dtos/allocation-admin.dto';
+import { MergeRequestState } from '../../openstack-module/services/openstack-git.service';
+
+/**
+ * Maps OpenStack request status enum to DTO string
+ */
+function mapOpenstackRequestStatus(status: OpenstackRequestStatus): OpenstackRequestStatusDto {
+	switch (status) {
+		case OpenstackRequestStatus.APPROVED:
+			return 'approved';
+		case OpenstackRequestStatus.DENIED:
+			return 'denied';
+		case OpenstackRequestStatus.PENDING:
+		default:
+			return 'pending';
+	}
+}
+
+/**
+ * Maps MR state to DTO
+ */
+function mapMergeRequestState(state: MergeRequestState | null): MergeRequestStateDto {
+	return state;
+}
+
+/**
+ * Determines if an OpenStack allocation can be modified.
+ * Conditions:
+ * - Allocation status is active
+ * - Resource isChangeable is true
+ * - Latest request status is NOT pending
+ * - If latest request status is approved, MR must NOT be 'opened'
+ * - If MR state is null (GitLab unavailable), don't allow modification
+ */
+function canModifyOpenstackAllocation(
+	allocationStatus: AllocationStatus,
+	isChangeable: boolean,
+	latestRequest: AllocationOpenstackRequest | null,
+	mrState: MergeRequestState | null
+): boolean {
+	if (allocationStatus !== AllocationStatus.ACTIVE) {
+		return false;
+	}
+
+	if (!isChangeable) {
+		return false;
+	}
+
+	if (!latestRequest) {
+		return false;
+	}
+
+	// Don't allow if latest request is pending (waiting for admin decision)
+	if (latestRequest.status === OpenstackRequestStatus.PENDING) {
+		return false;
+	}
+
+	// If latest request is approved, check MR state
+	if (latestRequest.status === OpenstackRequestStatus.APPROVED) {
+		// If GitLab is unavailable (null), don't allow modification
+		if (mrState === null) {
+			return false;
+		}
+		// Don't allow if MR is still opened
+		if (mrState === 'opened') {
+			return false;
+		}
+	}
+
+	// If latest request is denied, user can try again
+	return true;
+}
 
 export class AllocationMapper {
 	toAllocationDto(allocation: Allocation): AllocationDto {
@@ -21,25 +92,52 @@ export class AllocationMapper {
 		};
 	}
 
-	toAllocationDetailDto(allocation: Allocation): AllocationDetailDto {
-		const openstackRequest = allocation.openstackRequest;
-		const openstack = openstackRequest
-			? {
-					resourceType: openstackRequest.resourceType,
-					domain: openstackRequest.payload?.domain ?? '',
-					disableDate: openstackRequest.payload?.disableDate ?? null,
-					projectDescription: openstackRequest.payload?.projectDescription ?? '',
-					customerKey: openstackRequest.payload?.customerKey ?? '',
-					organizationKey: openstackRequest.payload?.organizationKey ?? '',
-					workplaceKey: openstackRequest.payload?.workplaceKey ?? '',
-					additionalTags: openstackRequest.payload?.additionalTags,
-					quota: openstackRequest.payload?.quota ?? {},
-					processed: openstackRequest.processed,
-					processedAt: openstackRequest.processedAt?.toISOString() ?? null,
-					mergeRequestUrl: openstackRequest.mergeRequestUrl,
-					branchName: openstackRequest.branchName,
-					yamlPath: openstackRequest.yamlPath
-				}
+	toAllocationDetailDto(
+		allocation: Allocation,
+		openstackRequests: AllocationOpenstackRequest[],
+		mrStates: Map<number, MergeRequestState | null>
+	): AllocationDetailDto {
+		// Sort requests by id DESC (newest first)
+		const sortedRequests = [...openstackRequests].sort((a, b) => b.id - a.id);
+		const latestRequest = sortedRequests[0] ?? null;
+		const historyRequests = sortedRequests.slice(1);
+
+		const latestMrState = latestRequest ? (mrStates.get(latestRequest.id) ?? null) : null;
+
+		const mapRequestToDto = (request: AllocationOpenstackRequest): OpenstackRequestDto => {
+			const mrState = mrStates.get(request.id) ?? null;
+			return {
+				id: request.id,
+				status: mapOpenstackRequestStatus(request.status),
+				domain: request.payload?.domain ?? '',
+				disableDate: request.payload?.disableDate ?? null,
+				projectDescription: request.payload?.projectDescription ?? '',
+				customerKey: request.payload?.customerKey ?? '',
+				organizationKey: request.payload?.organizationKey ?? '',
+				workplaceKey: request.payload?.workplaceKey ?? '',
+				additionalTags: request.payload?.additionalTags,
+				quota: request.payload?.quota ?? {},
+				flavors: request.payload?.flavors,
+				networks: request.payload?.networks,
+				processed: request.processed,
+				processedAt: request.processedAt?.toISOString() ?? null,
+				mergeRequestUrl: request.mergeRequestUrl,
+				branchName: request.branchName,
+				yamlPath: request.yamlPath,
+				mergeRequestState: mapMergeRequestState(mrState),
+				createdAt: request.time?.createdAt ?? new Date().toISOString()
+			};
+		};
+
+		const openstack = latestRequest ? mapRequestToDto(latestRequest) : undefined;
+		const openstackHistory = historyRequests.length > 0 ? historyRequests.map(mapRequestToDto) : undefined;
+
+		const resourceTypeName = allocation.resource?.resourceType?.name ?? '';
+		const isOpenstackResource = resourceTypeName.toLowerCase() === 'cloud';
+		const isChangeable = allocation.isChangeable ?? true;
+
+		const canModify = isOpenstackResource
+			? canModifyOpenstackAllocation(allocation.status, isChangeable, latestRequest, latestMrState)
 			: undefined;
 
 		return {
@@ -56,6 +154,7 @@ export class AllocationMapper {
 			description: allocation.description,
 			quantity: allocation.quantity,
 			isLocked: allocation.isLocked,
+			isChangeable,
 			project: {
 				id: allocation.project.id,
 				title: allocation.project.title
@@ -66,20 +165,34 @@ export class AllocationMapper {
 				name: allocationUser.user.name,
 				email: allocationUser.user.email
 			})),
-			openstack
+			openstack,
+			openstackHistory,
+			canModifyOpenstack: canModify
 		};
 	}
 
-	toAllocationAdminDto(allocation: Allocation): AllocationAdminDto {
-		const openstackRequest = allocation.openstackRequest;
-		const openstack = openstackRequest
+	toAllocationAdminDto(
+		allocation: Allocation,
+		latestOpenstackRequest: AllocationOpenstackRequest | null,
+		mrState: MergeRequestState | null
+	): AllocationAdminDto {
+		const openstack = latestOpenstackRequest
 			? {
-					domain: openstackRequest.payload?.domain ?? null,
-					organizationKey: openstackRequest.payload?.organizationKey ?? null,
-					processed: openstackRequest.processed,
-					mergeRequestUrl: openstackRequest.mergeRequestUrl
+					id: latestOpenstackRequest.id,
+					requestStatus: mapOpenstackRequestStatus(latestOpenstackRequest.status),
+					domain: latestOpenstackRequest.payload?.domain ?? null,
+					organizationKey: latestOpenstackRequest.payload?.organizationKey ?? null,
+					processed: latestOpenstackRequest.processed,
+					mergeRequestUrl: latestOpenstackRequest.mergeRequestUrl,
+					mergeRequestState: mapMergeRequestState(mrState)
 				}
 			: undefined;
+
+		// Check if this allocation has a pending modification
+		// (active allocation with a pending OpenStack request)
+		const hasPendingModification =
+			allocation.status === AllocationStatus.ACTIVE &&
+			latestOpenstackRequest?.status === OpenstackRequestStatus.PENDING;
 
 		return {
 			id: allocation.id,
@@ -96,7 +209,8 @@ export class AllocationMapper {
 					name: allocation.project.pi.name
 				}
 			},
-			openstack
+			openstack,
+			hasPendingModification
 		};
 	}
 }

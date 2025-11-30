@@ -1,5 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResourceService } from '../services/resource.service';
 import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
 import { RoleEnum } from '../../permission-module/models/role.enum';
@@ -20,14 +20,20 @@ export class ResourceController {
 	@ApiOperation({
 		summary: 'Get resources',
 		description:
-			'Get all resources present in the system. Pagination is not needed, because there is not that many resources.'
+			'Get all resources present in the system. Pagination is not needed, because there is not that many resources. Optionally filter by projectId to exclude OpenStack resources that are not available for the project.'
+	})
+	@ApiQuery({
+		name: 'projectId',
+		required: false,
+		type: Number,
+		description: 'Optional project ID to filter resources based on project restrictions (e.g., exclude OpenStack for personal projects or projects with active OpenStack allocation)'
 	})
 	@ApiOkResponse({
 		description: 'Resources in the system.',
 		type: ResourceDto
 	})
-	async getResources() {
-		return this.resourceService.getResources();
+	async getResources(@Query('projectId') projectId?: number) {
+		return this.resourceService.getResources(projectId);
 	}
 
 	@Get('/attributes')

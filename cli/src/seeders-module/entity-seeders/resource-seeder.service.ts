@@ -15,10 +15,10 @@ export class ResourceSeeder implements EntitySeederInterface<Resource> {
 	public async getInsertElements(): Promise<QueryDeepPartialEntity<Resource>[]> {
 		const openstackResourceType = await this.dataSource
 			.getRepository(ResourceType)
-			.findOne({ where: { name: 'OpenStack cloud' } });
+			.findOne({ where: { name: 'Cloud' } });
 
 		if (!openstackResourceType) {
-			throw new Error('Resource type "OpenStack cloud" must exist before seeding resources.');
+			throw new Error('Resource type "Cloud" must exist before seeding resources.');
 		}
 
 		return [
