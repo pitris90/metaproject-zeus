@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { ApprovalStatus, Project, ProjectApproval, ProjectStatus } from 'resource-manager-database';
 import { ProjectDto } from '../dtos/project.dto';
@@ -7,20 +7,26 @@ import { ProjectNotFoundApiException } from '../../error-module/errors/projects/
 import { ProjectHasApprovalApiException } from '../../error-module/errors/projects/project-has-approval.api-exception';
 import { ProjectMapper } from '../mappers/project.mapper';
 import { PerunFacade } from '../../perun-module/perun.facade';
+import { ResourceUsageProjectMapperService } from '../../resource-usage-module/services/resource-usage-project-mapper.service';
 import { ProjectLockService } from './project-lock.service';
 
 @Injectable()
 export class ProjectApprovalService {
+	private readonly logger = new Logger(ProjectApprovalService.name);
+
 	constructor(
 		private readonly dataSource: DataSource,
 		private readonly projectModel: ProjectModel,
 		private readonly projectMapper: ProjectMapper,
 		private readonly perunFacade: PerunFacade,
-		private readonly projectLockService: ProjectLockService
+		private readonly projectLockService: ProjectLockService,
+		private readonly resourceUsageMapper: ResourceUsageProjectMapperService
 	) {}
 
 	public async approveProject(userId: number, projectId: number): Promise<ProjectDto> {
-		return this.dataSource.transaction(async (manager) => {
+		let approvedProject: Project | null = null;
+
+		const projectDto = await this.dataSource.transaction(async (manager) => {
 			// lock project before manipulation
 			await this.projectLockService.lockProject(manager, projectId);
 
@@ -52,8 +58,19 @@ export class ProjectApprovalService {
 			});
 
 			project.status = ProjectStatus.ACTIVE;
+			approvedProject = project;
 			return this.projectMapper.toProjectDto(project);
 		});
+
+		// After transaction commits, backfill resource usage mapping asynchronously
+		// This maps any historical resource usage records to this newly approved project
+		if (approvedProject) {
+			this.resourceUsageMapper.backfillProjectMapping(approvedProject).catch((err) => {
+				this.logger.error(`Failed to backfill resource usage for project ${projectId}`, err);
+			});
+		}
+
+		return projectDto;
 	}
 
 	public async rejectProject(userId: number, projectId: number, reason: string): Promise<ProjectDto> {

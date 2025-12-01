@@ -14,7 +14,7 @@ import { Project } from '../project/project';
   },
 })
 @Index(['source', 'time_window_start'])
-@Index(['projectName'])
+@Index(['projectSlug'])
 export class ResourceUsageEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -34,8 +34,8 @@ export class ResourceUsageEvent {
   @Column({ type: 'text', nullable: false })
   source: string;
 
-  @Column({ type: 'text', nullable: true, name: 'project_name' })
-  projectName: string | null;
+  @Column({ type: 'text', nullable: true, name: 'project_slug' })
+  projectSlug: string | null;
 
   @Column({ type: 'boolean', nullable: false, default: false, name: 'is_personal' })
   isPersonal: boolean;

@@ -22,7 +22,7 @@ export class ResourceUsageAggregationService {
 	 *
 	 * Special handling:
 	 * - PBS personal projects (_pbs_project_default with is_personal=true): Group by user identity
-	 * - All other projects: Group by project_name
+	 * - All other projects: Group by project_slug
 	 */
 	async aggregateDailySummaries(startDate?: Date, endDate?: Date): Promise<void> {
 		this.logger.log('Starting daily aggregation...');
@@ -32,7 +32,7 @@ export class ResourceUsageAggregationService {
 			.createQueryBuilder('event')
 			.select('DATE(event.time_window_start)', 'summary_date')
 			.addSelect('event.source', 'source')
-			.addSelect('event.project_name', 'project_name')
+			.addSelect('event.project_slug', 'project_slug')
 			.addSelect('event.is_personal', 'is_personal')
 			// For PBS personal projects, extract user identifier from identities
 			// For other projects, use NULL as user_identifier
@@ -59,10 +59,10 @@ export class ResourceUsageAggregationService {
 			.addSelect("SUM(CAST(event.metrics->>'vcpus_allocated' AS INTEGER))", 'vcpus_allocated')
 			.addSelect('COUNT(*)', 'event_count')
 			.addSelect('(array_agg(event.identities))[1]', 'identities')
-			.where('event.project_name IS NOT NULL')
+			.where('event.project_slug IS NOT NULL')
 			.groupBy('DATE(event.time_window_start)')
 			.addGroupBy('event.source')
-			.addGroupBy('event.project_name')
+			.addGroupBy('event.project_slug')
 			.addGroupBy('event.is_personal')
 			.addGroupBy('user_identifier');
 
@@ -84,7 +84,7 @@ export class ResourceUsageAggregationService {
 			const whereClause: any = {
 				summaryDate: row.summary_date,
 				source: row.source,
-				projectName: row.project_name,
+				projectSlug: row.project_slug,
 				isPersonal: row.is_personal || false
 			};
 
@@ -119,7 +119,7 @@ export class ResourceUsageAggregationService {
 				const summary = this.summaryRepository.create({
 					summaryDate: row.summary_date,
 					source: row.source,
-					projectName: row.project_name,
+					projectSlug: row.project_slug,
 					isPersonal: row.is_personal || false,
 					allocationIdentifier: row.user_identifier || null,
 					cpuTimeSeconds: parseFloat(row.cpu_time_seconds) || 0,
@@ -163,10 +163,10 @@ export class ResourceUsageAggregationService {
 	/**
 	 * Aggregate for a specific project
 	 */
-	async aggregateForProject(projectName: string, source?: string): Promise<void> {
+	async aggregateForProject(projectSlug: string, source?: string): Promise<void> {
 		const queryBuilder = this.eventRepository
 			.createQueryBuilder('event')
-			.where('event.project_name = :projectName', { projectName });
+			.where('event.project_slug = :projectSlug', { projectSlug });
 
 		if (source) {
 			queryBuilder.andWhere('event.source = :source', { source });
@@ -207,16 +207,13 @@ export class ResourceUsageAggregationService {
 
 		for (const summary of unmappedSummaries) {
 			try {
-				let projectId: number | null = null;
-
-				// Use is_personal flag to determine mapping strategy
-				if (summary.isPersonal && summary.identities && summary.identities.length > 0) {
-					// Personal project - map via user identity
-					projectId = await this.projectMapper.mapPersonalProject(summary.identities);
-				} else if (summary.projectName) {
-					// Regular project - map via project name
-					projectId = await this.projectMapper.mapRegularProject(summary.projectName, summary.source);
-				}
+				// Use the consolidated mapper with all parameters
+				const projectId = await this.projectMapper.mapEventToProject(
+					summary.projectSlug,
+					summary.source,
+					summary.isPersonal,
+					summary.identities || []
+				);
 
 				if (projectId) {
 					await this.summaryRepository.update(summary.id, { projectId });

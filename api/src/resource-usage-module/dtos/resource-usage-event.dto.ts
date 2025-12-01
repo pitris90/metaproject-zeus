@@ -112,6 +112,15 @@ export class ResourceUsageEventDto {
 	@IsBoolean()
 	is_personal?: boolean;
 
+	@ApiPropertyOptional({
+		description:
+			'Project slug for mapping to Zeus projects. For PBS: the project name (e.g., "my-project"). For OpenStack: includes customer prefix (e.g., "metacentrum-my-project")',
+		example: 'metacentrum-my-project'
+	})
+	@IsOptional()
+	@IsString()
+	project_slug?: string;
+
 	@ApiProperty({
 		description: 'Additional contextual information (e.g., project identifiers, job metadata, cloud region)',
 		example: { project: 'project-123', jobname: '12345.meta', region: 'brno' }
