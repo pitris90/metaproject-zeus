@@ -33,14 +33,16 @@ export class ResourceUsageService {
 				entity.context = eventDto.context;
 				entity.extra = eventDto.extra || null;
 
-				// Extract and populate projectName from context
+				// Extract and populate projectSlug from DTO or context
+				// Priority: top-level project_slug > context.project > context.project_slug
 				const context = (eventDto.context ?? {}) as Record<string, unknown>;
-				const projectValue = context['project'] ?? context['project_name'] ?? context['projectTitle'];
+				const projectValue =
+					eventDto.project_slug ?? context['project'] ?? context['project_slug'] ?? context['projectTitle'];
 				if (projectValue) {
 					const normalized = String(projectValue).trim();
-					entity.projectName = normalized.length ? normalized : null;
+					entity.projectSlug = normalized.length ? normalized : null;
 				} else {
-					entity.projectName = null;
+					entity.projectSlug = null;
 				}
 
 				// Extract is_personal from top level (new format) or context (legacy format)
@@ -48,16 +50,13 @@ export class ResourceUsageService {
 					eventDto.is_personal ?? (context['is_personal'] === true || context['is_personal'] === 'true');
 				entity.isPersonal = isPersonal;
 
-				// Map project_id
-				if (isPersonal) {
-					// Personal project - map via user identity
-					entity.projectId = await this.projectMapper.mapPersonalProject(entity.identities);
-				} else if (entity.projectName) {
-					// Regular project - map via project name
-					entity.projectId = await this.projectMapper.mapRegularProject(entity.projectName, entity.source);
-				} else {
-					entity.projectId = null;
-				}
+				// Map project_id using the consolidated mapper
+				entity.projectId = await this.projectMapper.mapEventToProject(
+					entity.projectSlug,
+					entity.source,
+					entity.isPersonal,
+					entity.identities
+				);
 
 				return entity;
 			})

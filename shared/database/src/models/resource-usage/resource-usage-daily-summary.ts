@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, Index, ManyToOne, JoinColumn } 
 import { Project } from '../project/project';
 
 @Entity('resource_usage_daily_summaries')
-@Index(['projectName', 'source', 'summaryDate'])
+@Index(['projectSlug', 'source', 'summaryDate'])
 @Index(['source', 'summaryDate'])
 @Index(['summaryDate'])
 export class ResourceUsageDailySummary {
@@ -15,8 +15,8 @@ export class ResourceUsageDailySummary {
 	@Column({ type: 'text', nullable: false })
 	source: string;
 
-  @Column({ type: 'text', nullable: true, name: 'project_name' })
-  projectName: string | null;
+  @Column({ type: 'text', nullable: true, name: 'project_slug' })
+  projectSlug: string | null;
 
   @Column({ type: 'boolean', nullable: false, default: false, name: 'is_personal' })
   isPersonal: boolean;

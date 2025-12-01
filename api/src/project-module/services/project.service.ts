@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { Project, ProjectStatus, User } from 'resource-manager-database';
 import { RequestProjectDto } from '../dtos/input/request-project.dto';
@@ -17,8 +17,6 @@ import { ProjectPermissionService } from './project-permission.service';
 
 @Injectable()
 export class ProjectService {
-	private readonly logger = new Logger(ProjectService.name);
-
 	constructor(
 		private readonly dataSource: DataSource,
 		private readonly projectMapper: ProjectMapper,
@@ -89,10 +87,7 @@ export class ProjectService {
 					}
 				});
 
-				// Backfill resource usage mapping for this new project
-				this.resourceUsageMapper.backfillProjectMapping(project).catch((err) => {
-					this.logger.error(`Failed to backfill resource usage for project ${projectId}`, err);
-				});
+				// Note: Resource usage backfill happens on project approval, not on creation
 
 				return this.projectMapper.toProjectDto(project);
 			} catch (e) {
@@ -116,7 +111,6 @@ export class ProjectService {
 	): Promise<void> {
 		// Generate new slug to check if it changed
 		const newSlug = slugify(requestProjectDto.title);
-		let slugChanged = false;
 
 		await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
@@ -138,8 +132,8 @@ export class ProjectService {
 			}
 
 			// Check if slug changed - if yes, unmap existing resource usage
-			slugChanged = newSlug !== project.projectSlug;
-			if (slugChanged) {
+			// This handles edge case where project was previously approved then archived
+			if (newSlug !== project.projectSlug) {
 				await this.resourceUsageMapper.unmapProjectUsage(manager, projectId);
 			}
 
@@ -163,14 +157,6 @@ export class ProjectService {
 			}
 		});
 
-		// After transaction commits, remap resource usage asynchronously if slug changed
-		if (slugChanged) {
-			const updatedProject = await this.projectModel.getProject(projectId);
-			if (updatedProject) {
-				this.resourceUsageMapper.backfillProjectMapping(updatedProject).catch((err) => {
-					this.logger.error(`Failed to remap resource usage for project ${projectId}`, err);
-				});
-			}
-		}
+		// Note: Resource usage backfill happens on project approval, not on resubmission
 	}
 }

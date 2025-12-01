@@ -8,7 +8,6 @@ import {
 	ResourceUsageScopeOptionDto,
 	ResourceUsageAllocationOptionDto
 } from '../dtos/resource-usage-summary.dto';
-import { ResourceUsageIdentityMapperService } from './resource-usage-identity-mapper.service';
 
 interface SummaryParams {
 	scopeType?: 'user' | 'project' | 'allocation';
@@ -26,8 +25,7 @@ export class ResourceUsageSummaryService {
 		@InjectRepository(Project)
 		private readonly projectRepository: Repository<Project>,
 		@InjectRepository(User)
-		private readonly userRepository: Repository<User>,
-		private readonly identityMapper: ResourceUsageIdentityMapperService
+		private readonly userRepository: Repository<User>
 	) {}
 	async getSummary(params: SummaryParams): Promise<ResourceUsageSummaryResponseDto> {
 		const { scopeType = 'project', scopeId, source, allocationId } = params;
@@ -277,7 +275,7 @@ export class ResourceUsageSummaryService {
 	 * Get available allocations/jobs from raw events table
 	 * Queries the resource_usage_events table to get distinct job names or allocation identifiers
 	 * For PBS (personal & group): Uses context->>'jobname'
-	 * For OpenStack group projects: Uses project_name
+	 * For OpenStack group projects: Uses project_slug
 	 * For OpenStack personal projects: Shows "Personal Project" (filters by user's externalId)
 	 */
 	private async getAvailableAllocations(
@@ -310,8 +308,8 @@ export class ResourceUsageSummaryService {
 		}
 		// For PBS (both personal & group) and OpenStack group projects
 		// PBS: Use context->>'jobname'
-		// OpenStack group: Use project_name
-		const allocationField = effectiveSource === 'pbs' ? "event.context->>'jobname'" : 'event.project_name';
+		// OpenStack group: Use project_slug
+		const allocationField = effectiveSource === 'pbs' ? "event.context->>'jobname'" : 'event.project_slug';
 		// Query raw events for distinct allocation identifiers using JOIN
 		const queryBuilder = this.eventRepository
 			.createQueryBuilder('event')
@@ -396,40 +394,24 @@ export class ResourceUsageSummaryService {
 		};
 	}
 	private async getAvailableScopes(): Promise<ResourceUsageScopeOptionDto[]> {
-		// Get all unique projectName values from summaries
+		// Get all unique projects that have summaries with project_id set
 		const result = await this.summaryRepository
 			.createQueryBuilder('summary')
-			.select('summary.project_name', 'projectName')
+			.innerJoin('summary.project', 'project')
+			.select('project.id', 'projectId')
+			.addSelect('project.title', 'projectTitle')
 			.addSelect('summary.source', 'source')
-			.where('summary.project_name IS NOT NULL')
+			.where('summary.project_id IS NOT NULL')
 			.distinct(true)
-			.getRawMany<{ projectName: string; source: string }>();
+			.getRawMany<{ projectId: number; projectTitle: string; source: string }>();
 		const scopes: ResourceUsageScopeOptionDto[] = [];
-		// Try to map to actual projects
 		for (const row of result) {
-			try {
-				// Get a sample summary to get identities for mapping
-				const sampleSummary = await this.summaryRepository.findOne({
-					where: { projectName: row.projectName, source: row.source }
-				});
-				const identities = sampleSummary?.identities || [];
-				const project = await this.identityMapper.mapProjectNameToProject(
-					row.projectName,
-					row.source,
-					identities
-				);
-				if (project) {
-					scopes.push({
-						id: project.id.toString(),
-						type: 'project',
-						label: project.title,
-						source: row.source
-					});
-				}
-			} catch {
-				// Skip this project if mapping fails (e.g., duplicate user constraint)
-				continue;
-			}
+			scopes.push({
+				id: row.projectId.toString(),
+				type: 'project',
+				label: row.projectTitle,
+				source: row.source
+			});
 		}
 		// Deduplicate by id
 		return Array.from(new Map(scopes.map((s) => [s.id, s])).values());
