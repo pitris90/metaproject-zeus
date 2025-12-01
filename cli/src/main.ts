@@ -6,6 +6,7 @@ import { SeedCommand } from './seeders-module/seed.command';
 import { FakeDataService } from './performance-module/services/fake-data.service';
 import { PerformanceReportService } from './performance-module/services/performance-report.service';
 import { ResourceUsageFakerService } from './performance-module/services/resource-usage-faker.service';
+import { TestDataGeneratorService } from './performance-module/services/test-data-generator.service';
 
 async function bootstrap() {
 	const app = await NestFactory.createApplicationContext(AppModule);
@@ -30,8 +31,14 @@ async function bootstrap() {
 			const usageFaker = app.get(ResourceUsageFakerService);
 			await usageFaker.syncFromResourceUsage();
 			break;
+		case 'generate-test-data':
+			const testDataGenerator = app.get(TestDataGeneratorService);
+			await testDataGenerator.generateTestData();
+			break;
 		default:
-			throw new Error(`Command ${command} not found. Valid commands are: seed, generate, report, fake-usage`);
+			throw new Error(
+				`Command ${command} not found. Valid commands are: seed, generate, report, fake-usage, generate-test-data`
+			);
 	}
 
 	await app.close();
