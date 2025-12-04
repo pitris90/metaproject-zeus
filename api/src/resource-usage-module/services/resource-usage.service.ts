@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ResourceUsageEvent } from 'resource-manager-database';
 import { ResourceUsageEventDto } from '../dtos/resource-usage-event.dto';
+import { OpenstackTagsCatalogService } from '../../openstack-module/services/openstack-tags.service';
 import { ResourceUsageAggregationService } from './resource-usage-aggregation.service';
 import { ResourceUsageProjectMapperService } from './resource-usage-project-mapper.service';
 
@@ -14,7 +15,8 @@ export class ResourceUsageService {
 		@InjectRepository(ResourceUsageEvent)
 		private readonly resourceUsageRepository: Repository<ResourceUsageEvent>,
 		private readonly projectMapper: ResourceUsageProjectMapperService,
-		private readonly aggregationService: ResourceUsageAggregationService
+		private readonly aggregationService: ResourceUsageAggregationService,
+		private readonly openstackTagsCatalog: OpenstackTagsCatalogService
 	) {}
 
 	async createEvents(events: ResourceUsageEventDto[], isLastBatch: boolean = false): Promise<ResourceUsageEvent[]> {
@@ -58,6 +60,19 @@ export class ResourceUsageService {
 					entity.identities
 				);
 
+				// Populate allocation_identifier for filtering/grouping
+				// PBS: context.jobname (each job is an allocation)
+				// OpenStack: stripped project slug (the project allocation)
+				if (entity.source === 'pbs') {
+					const jobname = context['jobname'];
+					entity.allocationIdentifier = jobname ? String(jobname) : null;
+				} else if (entity.source === 'openstack' && entity.projectSlug) {
+					// Strip customer prefix for OpenStack (e.g., "metacentrum-myproject" → "myproject")
+					entity.allocationIdentifier = this.removeCustomerPrefix(entity.projectSlug);
+				} else {
+					entity.allocationIdentifier = null;
+				}
+
 				return entity;
 			})
 		);
@@ -90,5 +105,24 @@ export class ResourceUsageService {
 		}
 
 		return savedEvents;
+	}
+
+	/**
+	 * Remove known customer prefix from OpenStack project slug.
+	 * Tests each known customer key from the catalog (e.g., "cerit-sc", "metacentrum").
+	 * Only strips if the slug starts with a known customer key followed by a dash.
+	 */
+	private removeCustomerPrefix(openstackProjectSlug: string): string {
+		const customers = this.openstackTagsCatalog.getCatalog().customers;
+
+		for (const customer of customers) {
+			const prefix = `${customer.key}-`;
+			if (openstackProjectSlug.startsWith(prefix)) {
+				return openstackProjectSlug.substring(prefix.length);
+			}
+		}
+
+		// No known customer prefix found - return as-is
+		return openstackProjectSlug;
 	}
 }

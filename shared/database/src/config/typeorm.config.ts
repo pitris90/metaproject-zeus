@@ -21,7 +21,7 @@ import { AllocationUser } from '../models/allocation/allocation-user';
 import { GroupFailedStage } from '../models/project/group-failed-stage';
 import { AllocationOpenstackRequest } from '../models/allocation/allocation-openstack-request';
 import { ResourceUsageEvent } from '../models/resource-usage/resource-usage-event';
-import { ResourceUsageDailySummary } from '../models/resource-usage/resource-usage-daily-summary';
+import { ResourceUsageSummary } from '../models/resource-usage/resource-usage-summary';
 
 @Injectable()
 export class TypeormConfigService implements TypeOrmOptionsFactory {
@@ -60,7 +60,7 @@ export class TypeormConfigService implements TypeOrmOptionsFactory {
 				ProjectPublication,
 				// resource usage
 				ResourceUsageEvent,
-				ResourceUsageDailySummary,
+				ResourceUsageSummary,
 				// misc
 				File
 			],

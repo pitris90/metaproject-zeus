@@ -15,6 +15,7 @@ import { Project } from '../project/project';
 })
 @Index(['source', 'time_window_start'])
 @Index(['projectSlug'])
+@Index(['projectId', 'source', 'allocationIdentifier', 'time_window_start'])
 export class ResourceUsageEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -46,6 +47,9 @@ export class ResourceUsageEvent {
   @ManyToOne(() => Project, { createForeignKeyConstraints: false })
   @JoinColumn({ name: 'project_id' })
   project: Project;
+
+  @Column({ type: 'text', nullable: true, name: 'allocation_identifier' })
+  allocationIdentifier: string | null;
 
   @Column({ type: 'jsonb', nullable: false })
   metrics: {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ResourceUsageDailySummary, ResourceUsageEvent, Project, User } from 'resource-manager-database';
+import { ResourceUsageSummary, ResourceUsageEvent, Project, User } from 'resource-manager-database';
 import {
 	ResourceUsageSummaryResponseDto,
 	ResourceUsageSeriesPointDto,
@@ -18,8 +18,8 @@ interface SummaryParams {
 @Injectable()
 export class ResourceUsageSummaryService {
 	constructor(
-		@InjectRepository(ResourceUsageDailySummary)
-		private readonly summaryRepository: Repository<ResourceUsageDailySummary>,
+		@InjectRepository(ResourceUsageSummary)
+		private readonly summaryRepository: Repository<ResourceUsageSummary>,
 		@InjectRepository(ResourceUsageEvent)
 		private readonly eventRepository: Repository<ResourceUsageEvent>,
 		@InjectRepository(Project)
@@ -35,9 +35,12 @@ export class ResourceUsageSummaryService {
 		}
 		// Get summaries for the scope from aggregated table
 		const summaries = await this.getSummariesForScope(scopeType, scopeId, source);
+
+		// If no summaries exist, fall back to raw events
 		if (summaries.length === 0) {
-			return this.buildEmptyResponse(scopeType, scopeId);
+			return this.getSummaryFromRawEvents(scopeType, scopeId, source, undefined);
 		}
+
 		// Get available sources
 		const availableSources = [...new Set(summaries.map((s) => s.source))].filter(Boolean);
 		// Get available allocations/jobs from raw events
@@ -61,7 +64,7 @@ export class ResourceUsageSummaryService {
 	}
 	/**
 	 * Get summary from raw events for a specific allocation/job
-	 * Used when filtering by allocationId dropdown
+	 * Used when filtering by allocationId dropdown or when no summaries exist
 	 */
 	private async getSummaryFromRawEvents(
 		scopeType: string,
@@ -70,7 +73,7 @@ export class ResourceUsageSummaryService {
 		allocationId?: string
 	): Promise<ResourceUsageSummaryResponseDto> {
 		if (!scopeId) {
-			return this.buildEmptyResponse(scopeType, scopeId);
+			return await this.buildEmptyResponse(scopeType, scopeId);
 		}
 		const projectId = parseInt(scopeId, 10);
 		// Build query for raw events using JOIN
@@ -82,14 +85,14 @@ export class ResourceUsageSummaryService {
 		if (source) {
 			queryBuilder.andWhere('event.source = :source', { source });
 		}
-		// Filter by allocation/job
-		if (allocationId) {
+		// Filter by allocation/job - only for PBS jobs (OpenStack allocations are per-project)
+		if (allocationId && !allocationId.startsWith('openstack-')) {
 			queryBuilder.andWhere("event.context->>'jobname' = :allocationId", { allocationId });
 		}
 		queryBuilder.orderBy('event.time_window_start', 'ASC');
 		const events = await queryBuilder.getMany();
 		if (events.length === 0) {
-			return this.buildEmptyResponse(scopeType, scopeId);
+			return await this.buildEmptyResponse(scopeType, scopeId);
 		}
 		// Aggregate events by date
 		const dailyAggregates = this.aggregateEventsByDate(events);
@@ -181,10 +184,10 @@ export class ResourceUsageSummaryService {
 		scopeType: string,
 		scopeId?: string,
 		source?: string
-	): Promise<ResourceUsageDailySummary[]> {
+	): Promise<ResourceUsageSummary[]> {
 		const queryBuilder = this.summaryRepository
 			.createQueryBuilder('summary')
-			.orderBy('summary.summary_date', 'ASC');
+			.orderBy('summary.time_window_start', 'ASC');
 		if (scopeType === 'project' && scopeId) {
 			const projectId = parseInt(scopeId, 10);
 			// Use JOIN to query by project_id
@@ -219,13 +222,16 @@ export class ResourceUsageSummaryService {
 		return queryBuilder.getMany();
 	}
 	/**
-	 * Aggregate summaries by date, combining multiple sources into single data points per day
+	 * Aggregate summaries by time window start, combining multiple sources into single data points
 	 */
-	private aggregateSeriesByDate(summaries: ResourceUsageDailySummary[]): ResourceUsageSeriesPointDto[] {
-		// Group by date
+	private aggregateSeriesByDate(summaries: ResourceUsageSummary[]): ResourceUsageSeriesPointDto[] {
+		// Group by time_window_start date
 		const grouped = summaries.reduce(
 			(acc, summary) => {
-				const date = summary.summaryDate instanceof Date ? summary.summaryDate : new Date(summary.summaryDate);
+				const date =
+					summary.timeWindowStart instanceof Date
+						? summary.timeWindowStart
+						: new Date(summary.timeWindowStart);
 				const dateKey = date.toISOString().split('T')[0];
 				if (!acc[dateKey]) {
 					acc[dateKey] = [];
@@ -233,7 +239,7 @@ export class ResourceUsageSummaryService {
 				acc[dateKey].push(summary);
 				return acc;
 			},
-			{} as Record<string, ResourceUsageDailySummary[]>
+			{} as Record<string, ResourceUsageSummary[]>
 		);
 		// Aggregate each date group
 		return Object.entries(grouped)
@@ -274,9 +280,8 @@ export class ResourceUsageSummaryService {
 	/**
 	 * Get available allocations/jobs from raw events table
 	 * Queries the resource_usage_events table to get distinct job names or allocation identifiers
-	 * For PBS (personal & group): Uses context->>'jobname'
-	 * For OpenStack group projects: Uses project_slug
-	 * For OpenStack personal projects: Shows "Personal Project" (filters by user's externalId)
+	 * For PBS: Uses context->>'jobname' - each job is a separate allocation
+	 * For OpenStack: There's only one "allocation" per project (the OpenStack project itself)
 	 */
 	private async getAvailableAllocations(
 		scopeType: string,
@@ -287,51 +292,75 @@ export class ResourceUsageSummaryService {
 			return [];
 		}
 		const projectId = parseInt(scopeId, 10);
-		const effectiveSource = source || 'pbs';
+
 		// Get project to check if it's personal
 		const project = await this.projectRepository.findOne({
 			where: { id: projectId },
-			select: ['id', 'isPersonal']
+			select: ['id', 'isPersonal', 'title', 'projectSlug']
 		});
 		if (!project) {
 			return [];
 		}
-		// For OpenStack personal projects, return a single "Personal Project" option
-		if (effectiveSource === 'openstack' && project.isPersonal) {
-			return [
-				{
-					id: 'personal',
-					label: 'OpenStack: Personal Project',
-					source: 'openstack'
+
+		const allocations: ResourceUsageAllocationOptionDto[] = [];
+
+		// Determine which sources to query
+		const sourcesToQuery: string[] = source ? [source] : ['pbs', 'openstack'];
+
+		for (const currentSource of sourcesToQuery) {
+			if (currentSource === 'pbs') {
+				// For PBS: Get distinct job names
+				const pbsAllocations = await this.eventRepository
+					.createQueryBuilder('event')
+					.innerJoin('event.project', 'project')
+					.select("event.context->>'jobname'", 'allocation_id')
+					.where('project.id = :projectId', { projectId })
+					.andWhere('event.source = :source', { source: 'pbs' })
+					.andWhere("event.context->>'jobname' IS NOT NULL")
+					.groupBy("event.context->>'jobname'")
+					.orderBy("event.context->>'jobname'", 'ASC')
+					.getRawMany<{ allocation_id: string }>();
+
+				for (const alloc of pbsAllocations) {
+					allocations.push({
+						id: alloc.allocation_id,
+						label: `PBS: ${alloc.allocation_id}`,
+						source: 'pbs'
+					});
 				}
-			];
+			} else if (currentSource === 'openstack') {
+				// For OpenStack: Check if this project has any OpenStack events
+				// If yes, show a single "OpenStack Project" option (since 1 Zeus project = 1 OpenStack project)
+				const hasOpenstackEvents = await this.eventRepository
+					.createQueryBuilder('event')
+					.innerJoin('event.project', 'project')
+					.where('project.id = :projectId', { projectId })
+					.andWhere('event.source = :source', { source: 'openstack' })
+					.getCount();
+
+				if (hasOpenstackEvents > 0) {
+					// For personal projects
+					if (project.isPersonal) {
+						allocations.push({
+							id: 'openstack-personal',
+							label: 'OpenStack: Personal Project',
+							source: 'openstack'
+						});
+					} else {
+						// For group projects - show the project name
+						allocations.push({
+							id: 'openstack-project',
+							label: `OpenStack: ${project.title}`,
+							source: 'openstack'
+						});
+					}
+				}
+			}
 		}
-		// For PBS (both personal & group) and OpenStack group projects
-		// PBS: Use context->>'jobname'
-		// OpenStack group: Use project_slug
-		const allocationField = effectiveSource === 'pbs' ? "event.context->>'jobname'" : 'event.project_slug';
-		// Query raw events for distinct allocation identifiers using JOIN
-		const queryBuilder = this.eventRepository
-			.createQueryBuilder('event')
-			.innerJoin('event.project', 'project')
-			.select(allocationField, 'allocation_id')
-			.addSelect('event.source', 'source')
-			.where('project.id = :projectId', { projectId });
-		queryBuilder
-			.andWhere('event.source = :source', { source: effectiveSource })
-			.andWhere(`${allocationField} IS NOT NULL`)
-			.groupBy('allocation_id')
-			.addGroupBy('event.source')
-			.orderBy('event.source', 'ASC')
-			.addOrderBy('allocation_id', 'ASC');
-		const allocations = await queryBuilder.getRawMany<{ allocation_id: string; source: string }>();
-		return allocations.map((alloc) => ({
-			id: alloc.allocation_id,
-			label: alloc.source === 'pbs' ? `PBS: ${alloc.allocation_id}` : `OpenStack: ${alloc.allocation_id}`,
-			source: alloc.source
-		}));
+
+		return allocations;
 	}
-	private async calculateTotals(summaries: ResourceUsageDailySummary[]) {
+	private async calculateTotals(summaries: ResourceUsageSummary[]) {
 		if (summaries.length === 0) {
 			return {
 				totalVcpus: 0,
@@ -339,14 +368,14 @@ export class ResourceUsageSummaryService {
 				lastUpdated: new Date().toISOString()
 			};
 		}
-		// Find the latest date in the summaries
+		// Find the latest time window start in the summaries
 		const latestDate = summaries.reduce(
-			(max, s) => (new Date(s.summaryDate) > new Date(max) ? s.summaryDate : max),
-			summaries[0].summaryDate
+			(max, s) => (new Date(s.timeWindowStart) > new Date(max) ? s.timeWindowStart : max),
+			summaries[0].timeWindowStart
 		);
-		// Get all summaries for the latest date (across all users/allocations for this scope)
+		// Get all summaries for the latest time window (across all users/allocations for this scope)
 		const latestSummaries = summaries.filter(
-			(s) => new Date(s.summaryDate).getTime() === new Date(latestDate).getTime()
+			(s) => new Date(s.timeWindowStart).getTime() === new Date(latestDate).getTime()
 		);
 		// For vCPUs, we need to query raw events from the latest timestamp
 		// because summaries can't store the sum of concurrent jobs correctly
@@ -394,8 +423,10 @@ export class ResourceUsageSummaryService {
 		};
 	}
 	private async getAvailableScopes(): Promise<ResourceUsageScopeOptionDto[]> {
-		// Get all unique projects that have summaries with project_id set
-		const result = await this.summaryRepository
+		const scopes: ResourceUsageScopeOptionDto[] = [];
+
+		// First, get projects that have summaries with project_id set
+		const summaryResult = await this.summaryRepository
 			.createQueryBuilder('summary')
 			.innerJoin('summary.project', 'project')
 			.select('project.id', 'projectId')
@@ -404,8 +435,8 @@ export class ResourceUsageSummaryService {
 			.where('summary.project_id IS NOT NULL')
 			.distinct(true)
 			.getRawMany<{ projectId: number; projectTitle: string; source: string }>();
-		const scopes: ResourceUsageScopeOptionDto[] = [];
-		for (const row of result) {
+
+		for (const row of summaryResult) {
 			scopes.push({
 				id: row.projectId.toString(),
 				type: 'project',
@@ -413,6 +444,31 @@ export class ResourceUsageSummaryService {
 				source: row.source
 			});
 		}
+
+		// Also get projects that have events with project_id set (even if no summaries exist)
+		// This ensures we show projects that have events but haven't been aggregated yet
+		const eventResult = await this.eventRepository
+			.createQueryBuilder('event')
+			.innerJoin('event.project', 'project')
+			.select('project.id', 'projectId')
+			.addSelect('project.title', 'projectTitle')
+			.addSelect('event.source', 'source')
+			.where('event.project_id IS NOT NULL')
+			.distinct(true)
+			.getRawMany<{ projectId: number; projectTitle: string; source: string }>();
+
+		for (const row of eventResult) {
+			// Only add if not already in scopes
+			if (!scopes.find((s) => s.id === row.projectId.toString())) {
+				scopes.push({
+					id: row.projectId.toString(),
+					type: 'project',
+					label: row.projectTitle,
+					source: row.source
+				});
+			}
+		}
+
 		// Deduplicate by id
 		return Array.from(new Map(scopes.map((s) => [s.id, s])).values());
 	}
@@ -452,14 +508,14 @@ export class ResourceUsageSummaryService {
 			label: 'Unknown scope'
 		};
 	}
-	private buildEmptyResponse(scopeType: string, scopeId?: string): ResourceUsageSummaryResponseDto {
+	private async buildEmptyResponse(scopeType: string, scopeId?: string): Promise<ResourceUsageSummaryResponseDto> {
+		// Still fetch available scopes so user can switch to a project that has data
+		const availableScopes = await this.getAvailableScopes();
+		const scopeDetails = await this.getScopeDetails(scopeType, scopeId);
+
 		return {
-			scope: {
-				id: scopeId || 'unknown',
-				type: scopeType as any,
-				label: 'Unknown scope'
-			},
-			availableScopes: [],
+			scope: scopeDetails,
+			availableScopes,
 			availableSources: [],
 			availableAllocations: [],
 			totals: {

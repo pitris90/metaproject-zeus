@@ -5,7 +5,7 @@ import {
 	AllocationOpenstackRequest,
 	Project,
 	ResourceUsageEvent,
-	ResourceUsageDailySummary,
+	ResourceUsageSummary,
 	User
 } from 'resource-manager-database';
 import { OpenstackModule } from '../openstack-module/openstack.module';
@@ -17,12 +17,13 @@ import { ResourceUsageSummaryService } from './services/resource-usage-summary.s
 import { CollectorApiKeyGuard } from './guards/collector-api-key.guard';
 import { ResourceUsageAggregationService } from './services/resource-usage-aggregation.service';
 import { ResourceUsageProjectMapperService } from './services/resource-usage-project-mapper.service';
+import { ResourceUsageDownsamplingService } from './services/resource-usage-downsampling.service';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([
 			ResourceUsageEvent,
-			ResourceUsageDailySummary,
+			ResourceUsageSummary,
 			User,
 			Project,
 			Allocation,
@@ -36,6 +37,7 @@ import { ResourceUsageProjectMapperService } from './services/resource-usage-pro
 		ResourceUsageSummaryService,
 		ResourceUsageAggregationService,
 		ResourceUsageProjectMapperService,
+		ResourceUsageDownsamplingService,
 		CollectorApiKeyGuard
 	],
 	exports: [ResourceUsageService, ResourceUsageProjectMapperService]

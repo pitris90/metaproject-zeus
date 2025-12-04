@@ -598,7 +598,7 @@ export class ResourceUsageFakerService {
 
 					// Update summaries
 					await this.dataSource.query(
-						`UPDATE resource_usage_daily_summaries SET project_id = $1 WHERE project_id IS NULL AND (${identityConditions.join(' OR ')})`,
+						`UPDATE resource_usage_summaries SET project_id = $1 WHERE project_id IS NULL AND (${identityConditions.join(' OR ')})`,
 						params
 					);
 				} else {
@@ -619,7 +619,7 @@ export class ResourceUsageFakerService {
 					);
 
 					await this.dataSource.query(
-						`UPDATE resource_usage_daily_summaries 
+						`UPDATE resource_usage_summaries 
 						 SET project_id = $1 
 						 WHERE project_id IS NULL 
 						 AND (
