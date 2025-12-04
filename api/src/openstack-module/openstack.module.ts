@@ -19,6 +19,6 @@ import { OpenstackTerraformParserService } from './services/openstack-terraform-
 		OpenstackConstraintsService,
 		OpenstackTerraformParserService
 	],
-	exports: [OpenstackAllocationService]
+	exports: [OpenstackAllocationService, OpenstackTagsCatalogService]
 })
 export class OpenstackModule {}

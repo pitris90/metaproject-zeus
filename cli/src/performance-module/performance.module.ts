@@ -8,6 +8,7 @@ import { RequestProjectProvider } from './providers/request-project.provider';
 import { UserProjectsProvider } from './providers/user-projects.provider';
 import { ProjectDetailProvider } from './providers/project-detail.provider';
 import { ResourceUsageFakerService } from './services/resource-usage-faker.service';
+import { TestDataGeneratorService } from './services/test-data-generator.service';
 
 @Module({
 	imports: [HttpModule],
@@ -19,7 +20,8 @@ import { ResourceUsageFakerService } from './services/resource-usage-faker.servi
 		RequestProjectProvider,
 		UserProjectsProvider,
 		ProjectDetailProvider,
-		ResourceUsageFakerService
+		ResourceUsageFakerService,
+		TestDataGeneratorService
 	]
 })
 export class PerformanceModule {}

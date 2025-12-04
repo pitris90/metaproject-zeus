@@ -47,9 +47,9 @@ export class ResourceUsageFakerService {
 
 		for (const event of events) {
 			try {
-				// Skip events without project name
-				if (!event.projectName) {
-					console.log(`Skipping event ${event.id} - no project name`);
+				// Skip events without project slug
+				if (!event.projectSlug) {
+					console.log(`Skipping event ${event.id} - no project slug`);
 					continue;
 				}
 
@@ -77,7 +77,7 @@ export class ResourceUsageFakerService {
 
 				// Get or create project
 				const projectResult = await this.getOrCreateProject(
-					event.projectName,
+					event.projectSlug,
 					event.source,
 					user,
 					processedProjects,
@@ -194,39 +194,39 @@ export class ResourceUsageFakerService {
 	}
 
 	private async getOrCreateProject(
-		projectName: string | null,
+		eventProjectSlug: string | null,
 		source: string,
 		user: User,
 		cache: Map<string, Project>,
 		isPersonal: boolean
 	): Promise<{ project: Project; isNew: boolean }> {
-		if (!projectName) {
+		if (!eventProjectSlug) {
 			// Create personal project for user
 			const result = await this.getOrCreatePersonalProject(user, cache);
 			return { project: result.project, isNew: result.isNew };
 		}
 
 		// Handle personal project marker or is_personal flag
-		if (projectName === '_pbs_project_default' || isPersonal) {
+		if (eventProjectSlug === '_pbs_project_default' || isPersonal) {
 			const result = await this.getOrCreatePersonalProject(user, cache);
 			return { project: result.project, isNew: result.isNew };
 		}
 
 		// Determine actual project slug
-		let projectSlug = projectName;
+		let projectSlug = eventProjectSlug;
 
 		// For OpenStack, try to extract project slug by removing customer prefix
 		// Pattern: customer-key-project-slug -> project-slug
 		// But some projects don't have prefix, use them as-is
 		if (source === 'openstack') {
-			const firstDashIndex = projectName.indexOf('-');
-			const secondDashIndex = firstDashIndex !== -1 ? projectName.indexOf('-', firstDashIndex + 1) : -1;
+			const firstDashIndex = eventProjectSlug.indexOf('-');
+			const secondDashIndex = firstDashIndex !== -1 ? eventProjectSlug.indexOf('-', firstDashIndex + 1) : -1;
 
 			// Only extract if we have at least 2 dashes (customer-key-project-slug pattern)
 			if (secondDashIndex !== -1) {
-				projectSlug = projectName.substring(firstDashIndex + 1);
+				projectSlug = eventProjectSlug.substring(firstDashIndex + 1);
 			}
-			// Otherwise use the full project name as slug
+			// Otherwise use the full project slug as-is
 		}
 
 		const cacheKey = `${source}:${projectSlug}`;
@@ -242,18 +242,18 @@ export class ResourceUsageFakerService {
 			where: { projectSlug: projectSlug }
 		});
 
-		// Also try to find by title (original project name)
+		// Also try to find by title (original project slug)
 		if (!project) {
 			project = await projectRepo.findOne({
-				where: { title: projectName }
+				where: { title: eventProjectSlug }
 			});
 		}
 
-		// For OpenStack, also try to find by the full project name as slug
+		// For OpenStack, also try to find by the full project slug as slug
 		// in case a project was created with the full name
-		if (!project && source === 'openstack' && projectSlug !== projectName) {
+		if (!project && source === 'openstack' && projectSlug !== eventProjectSlug) {
 			project = await projectRepo.findOne({
-				where: { projectSlug: projectName }
+				where: { projectSlug: eventProjectSlug }
 			});
 			if (project) {
 				// Update cache to use the actual slug found
@@ -265,13 +265,13 @@ export class ResourceUsageFakerService {
 		let isNew = false;
 
 		if (!project) {
-			console.log(`Creating new project: ${projectSlug} (from ${projectName})`);
+			console.log(`Creating new project: ${projectSlug} (from ${eventProjectSlug})`);
 
 			// Use slugified version for project_slug, but keep original as title
 			const slugifiedProjectSlug = this.slugify(projectSlug);
 
 			project = projectRepo.create({
-				title: projectName, // Keep original name with dots as title
+				title: eventProjectSlug, // Keep original slug as title
 				projectSlug: slugifiedProjectSlug, // Slugified for URL-safe slug
 				description: `Project created from ${source} resource usage data`,
 				piId: user.id,
@@ -358,7 +358,7 @@ export class ResourceUsageFakerService {
 		console.log(`Creating OpenStack allocation for project: ${project.title}`);
 
 		// Extract customer key from event
-		const customerKey = this.extractCustomerKey(event.projectName || '');
+		const customerKey = this.extractCustomerKey(event.projectSlug || '');
 		const vcpus = (event.metrics as any).vcpus_allocated || 4;
 
 		// Create allocation
@@ -604,16 +604,16 @@ export class ResourceUsageFakerService {
 				} else {
 					// Regular project mapping
 					// Match against title (original name with dots) or project_slug (slugified)
-					// For OpenStack, also check prefixed pattern: project_name LIKE 'customer-key-' || title/slug
+					// For OpenStack, also check prefixed pattern: project_slug LIKE 'customer-key-' || title/slug
 					await this.dataSource.query(
 						`UPDATE resource_usage_events 
 						 SET project_id = $1 
 						 WHERE project_id IS NULL 
 						 AND (
-						   project_name = $2 
-						   OR project_name = $3
-						   OR (source = 'openstack' AND project_name LIKE '%' || '-' || $2)
-						   OR (source = 'openstack' AND project_name LIKE '%' || '-' || $3)
+						   project_slug = $2 
+						   OR project_slug = $3
+						   OR (source = 'openstack' AND project_slug LIKE '%' || '-' || $2)
+						   OR (source = 'openstack' AND project_slug LIKE '%' || '-' || $3)
 						 )`,
 						[project.id, project.title, project.projectSlug]
 					);
@@ -623,10 +623,10 @@ export class ResourceUsageFakerService {
 						 SET project_id = $1 
 						 WHERE project_id IS NULL 
 						 AND (
-						   project_name = $2 
-						   OR project_name = $3
-						   OR (source = 'openstack' AND project_name LIKE '%' || '-' || $2)
-						   OR (source = 'openstack' AND project_name LIKE '%' || '-' || $3)
+						   project_slug = $2 
+						   OR project_slug = $3
+						   OR (source = 'openstack' AND project_slug LIKE '%' || '-' || $2)
+						   OR (source = 'openstack' AND project_slug LIKE '%' || '-' || $3)
 						 )`,
 						[project.id, project.title, project.projectSlug]
 					);

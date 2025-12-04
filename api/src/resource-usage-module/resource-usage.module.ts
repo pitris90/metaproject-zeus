@@ -8,12 +8,12 @@ import {
 	ResourceUsageDailySummary,
 	User
 } from 'resource-manager-database';
+import { OpenstackModule } from '../openstack-module/openstack.module';
 import { ResourceUsageController } from './controllers/resource-usage.controller';
 import { ResourceUsageSummaryController } from './controllers/resource-usage-summary.controller';
 import { ResourceUsageAggregationController } from './controllers/resource-usage-aggregation.controller';
 import { ResourceUsageService } from './services/resource-usage.service';
 import { ResourceUsageSummaryService } from './services/resource-usage-summary.service';
-import { ResourceUsageIdentityMapperService } from './services/resource-usage-identity-mapper.service';
 import { CollectorApiKeyGuard } from './guards/collector-api-key.guard';
 import { ResourceUsageAggregationService } from './services/resource-usage-aggregation.service';
 import { ResourceUsageProjectMapperService } from './services/resource-usage-project-mapper.service';
@@ -27,13 +27,13 @@ import { ResourceUsageProjectMapperService } from './services/resource-usage-pro
 			Project,
 			Allocation,
 			AllocationOpenstackRequest
-		])
+		]),
+		OpenstackModule
 	],
 	controllers: [ResourceUsageController, ResourceUsageSummaryController, ResourceUsageAggregationController],
 	providers: [
 		ResourceUsageService,
 		ResourceUsageSummaryService,
-		ResourceUsageIdentityMapperService,
 		ResourceUsageAggregationService,
 		ResourceUsageProjectMapperService,
 		CollectorApiKeyGuard
