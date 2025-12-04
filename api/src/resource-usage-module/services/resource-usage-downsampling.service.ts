@@ -494,15 +494,19 @@ export class ResourceUsageDownsamplingService {
 		const first = summaries[0];
 
 		// MAX for cumulative metrics
-		const cpuTimeSeconds = Math.max(...summaries.map((s) => Number(s.cpuTimeSeconds) || 0));
-		const walltimeSeconds = Math.max(...summaries.map((s) => Number(s.walltimeSeconds) || 0));
-		const ramBytesAllocated = Math.max(...summaries.map((s) => Number(s.ramBytesAllocated) || 0));
-		const ramBytesUsed = Math.max(...summaries.map((s) => Number(s.ramBytesUsed) || 0));
-		const storageBytesAllocated = Math.max(...summaries.map((s) => Number(s.storageBytesAllocated) || 0));
-		const vcpusAllocated = Math.max(...summaries.map((s) => Number(s.vcpusAllocated) || 0));
+		const cpuTimeSeconds = Math.max(...summaries.map((s) => Number(s.metrics?.cpu_time_seconds) || 0));
+		const walltimeSeconds = Math.max(...summaries.map((s) => Number(s.metrics?.walltime_seconds) || 0));
+		const ramBytesAllocated = Math.max(...summaries.map((s) => Number(s.metrics?.ram_bytes_allocated) || 0));
+		const ramBytesUsed = Math.max(...summaries.map((s) => Number(s.metrics?.ram_bytes_used) || 0));
+		const storageBytesAllocated = Math.max(
+			...summaries.map((s) => Number(s.metrics?.storage_bytes_allocated) || 0)
+		);
+		const vcpusAllocated = Math.max(...summaries.map((s) => Number(s.metrics?.vcpus_allocated) || 0));
 
 		// AVG for percentages
-		const cpuPercentValues = summaries.map((s) => s.cpuPercentAvg).filter((v) => v !== null) as number[];
+		const cpuPercentValues = summaries
+			.map((s) => s.metrics?.cpu_percent_avg)
+			.filter((v) => v !== null && v !== undefined) as number[];
 		const cpuPercentAvg =
 			cpuPercentValues.length > 0 ? cpuPercentValues.reduce((a, b) => a + b, 0) / cpuPercentValues.length : null;
 
@@ -528,13 +532,15 @@ export class ResourceUsageDownsamplingService {
 			projectSlug: first.projectSlug,
 			isPersonal: first.isPersonal,
 			projectId: first.projectId,
-			cpuTimeSeconds,
-			walltimeSeconds,
-			cpuPercentAvg,
-			ramBytesAllocated,
-			ramBytesUsed,
-			storageBytesAllocated: storageBytesAllocated || null,
-			vcpusAllocated: vcpusAllocated || null,
+			metrics: {
+				cpu_time_seconds: cpuTimeSeconds,
+				walltime_seconds: walltimeSeconds,
+				cpu_percent_avg: cpuPercentAvg,
+				ram_bytes_allocated: ramBytesAllocated,
+				ram_bytes_used: ramBytesUsed,
+				storage_bytes_allocated: storageBytesAllocated || null,
+				vcpus_allocated: vcpusAllocated || null
+			},
 			eventCount,
 			identities
 		};

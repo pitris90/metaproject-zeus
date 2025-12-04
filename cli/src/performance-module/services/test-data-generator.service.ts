@@ -758,13 +758,15 @@ export class TestDataGeneratorService {
 				projectSlug: row.project_slug,
 				isPersonal: row.is_personal,
 				projectId: row.project_id,
-				cpuTimeSeconds: parseFloat(row.cpu_time_seconds) || 0,
-				walltimeSeconds: parseFloat(row.walltime_seconds) || 0,
-				cpuPercentAvg: parseFloat(row.cpu_percent_avg) || null,
-				ramBytesAllocated: parseInt(row.ram_bytes_allocated) || 0,
-				ramBytesUsed: parseInt(row.ram_bytes_used) || 0,
-				storageBytesAllocated: null,
-				vcpusAllocated: null,
+				metrics: {
+					cpu_time_seconds: parseFloat(row.cpu_time_seconds) || 0,
+					walltime_seconds: parseFloat(row.walltime_seconds) || 0,
+					cpu_percent_avg: parseFloat(row.cpu_percent_avg) || null,
+					ram_bytes_allocated: parseInt(row.ram_bytes_allocated) || 0,
+					ram_bytes_used: parseInt(row.ram_bytes_used) || 0,
+					storage_bytes_allocated: null,
+					vcpus_allocated: null
+				},
 				eventCount: parseInt(row.event_count) || 0,
 				identities
 			});
@@ -785,13 +787,15 @@ export class TestDataGeneratorService {
 				projectSlug: row.project_slug,
 				isPersonal: row.is_personal,
 				projectId: row.project_id,
-				cpuTimeSeconds: parseFloat(row.cpu_time_seconds) || 0,
-				walltimeSeconds: 0,
-				cpuPercentAvg: null,
-				ramBytesAllocated: parseInt(row.ram_bytes_allocated) || 0,
-				ramBytesUsed: parseInt(row.ram_bytes_used) || 0,
-				storageBytesAllocated: parseInt(row.storage_bytes_allocated) || null,
-				vcpusAllocated: parseInt(row.vcpus_allocated) || null,
+				metrics: {
+					cpu_time_seconds: parseFloat(row.cpu_time_seconds) || 0,
+					walltime_seconds: 0,
+					cpu_percent_avg: null,
+					ram_bytes_allocated: parseInt(row.ram_bytes_allocated) || 0,
+					ram_bytes_used: parseInt(row.ram_bytes_used) || 0,
+					storage_bytes_allocated: parseInt(row.storage_bytes_allocated) || null,
+					vcpus_allocated: parseInt(row.vcpus_allocated) || null
+				},
 				eventCount: parseInt(row.event_count) || 0,
 				identities
 			});

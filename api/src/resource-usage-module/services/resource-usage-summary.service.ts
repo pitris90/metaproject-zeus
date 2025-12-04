@@ -248,11 +248,11 @@ export class ResourceUsageSummaryService {
 				// Sum all metrics for this date
 				const aggregated = daySummaries.reduce(
 					(acc, s) => ({
-						cpuTimeSeconds: acc.cpuTimeSeconds + (s.cpuTimeSeconds || 0),
-						cpuPercent: acc.cpuPercent + (s.cpuPercentAvg || 0),
-						walltimeSeconds: acc.walltimeSeconds + (s.walltimeSeconds || 0),
-						ramBytesAllocated: acc.ramBytesAllocated + (s.ramBytesAllocated || 0),
-						ramBytesUsed: acc.ramBytesUsed + (s.ramBytesUsed || 0),
+						cpuTimeSeconds: acc.cpuTimeSeconds + (s.metrics?.cpu_time_seconds || 0),
+						cpuPercent: acc.cpuPercent + (s.metrics?.cpu_percent_avg || 0),
+						walltimeSeconds: acc.walltimeSeconds + (s.metrics?.walltime_seconds || 0),
+						ramBytesAllocated: acc.ramBytesAllocated + (s.metrics?.ram_bytes_allocated || 0),
+						ramBytesUsed: acc.ramBytesUsed + (s.metrics?.ram_bytes_used || 0),
 						count: acc.count + 1
 					}),
 					{
@@ -381,13 +381,16 @@ export class ResourceUsageSummaryService {
 		// because summaries can't store the sum of concurrent jobs correctly
 		// However, if no events exist (e.g., they were cleaned up), fall back to summary data
 		let totalVcpus = 0;
-		const totalStorage = latestSummaries.reduce((sum, s) => sum + Number(s.storageBytesAllocated || 0), 0);
+		const totalStorage = latestSummaries.reduce(
+			(sum, s) => sum + Number(s.metrics?.storage_bytes_allocated || 0),
+			0
+		);
 		if (latestSummaries.length > 0) {
 			const source = latestSummaries[0].source;
 			const projectIds = [...new Set(latestSummaries.map((s) => s.projectId).filter(Boolean))];
 			if (projectIds.length === 0) {
 				// No mapped projects - use summary data directly
-				totalVcpus = latestSummaries.reduce((sum, s) => sum + (s.vcpusAllocated || 0), 0);
+				totalVcpus = latestSummaries.reduce((sum, s) => sum + (s.metrics?.vcpus_allocated || 0), 0);
 			} else {
 				// Find the latest timestamp for this scope
 				const latestTimeQuery = this.eventRepository
@@ -411,7 +414,7 @@ export class ResourceUsageSummaryService {
 				}
 				// Fallback: If no events found (cleaned up or never existed), use summary data
 				if (totalVcpus === 0) {
-					totalVcpus = latestSummaries.reduce((sum, s) => sum + (s.vcpusAllocated || 0), 0);
+					totalVcpus = latestSummaries.reduce((sum, s) => sum + (s.metrics?.vcpus_allocated || 0), 0);
 				}
 			}
 		}
