@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ResourceUsageEvent, ResourceUsageDailySummary } from 'resource-manager-database';
+import { ResourceUsageEvent, ResourceUsageSummary } from 'resource-manager-database';
 import { ResourceUsageProjectMapperService } from './resource-usage-project-mapper.service';
 
 @Injectable()
@@ -11,8 +11,8 @@ export class ResourceUsageAggregationService {
 	constructor(
 		@InjectRepository(ResourceUsageEvent)
 		private readonly eventRepository: Repository<ResourceUsageEvent>,
-		@InjectRepository(ResourceUsageDailySummary)
-		private readonly summaryRepository: Repository<ResourceUsageDailySummary>,
+		@InjectRepository(ResourceUsageSummary)
+		private readonly summaryRepository: Repository<ResourceUsageSummary>,
 		private readonly projectMapper: ResourceUsageProjectMapperService
 	) {}
 
@@ -20,42 +20,26 @@ export class ResourceUsageAggregationService {
 	 * Aggregate raw events into daily summaries
 	 * Can be called after new events are inserted or on a schedule
 	 *
-	 * Special handling:
-	 * - PBS personal projects (_pbs_project_default with is_personal=true): Group by user identity
-	 * - All other projects: Group by project_slug
+	 * Groups by project_slug + source + date for project-level totals.
+	 * Uses SUM for cumulative metrics, AVG for percentages.
 	 */
 	async aggregateDailySummaries(startDate?: Date, endDate?: Date): Promise<void> {
 		this.logger.log('Starting daily aggregation...');
 
-		// Build date filter
+		// Build date filter - aggregate by day and project_slug + source
 		const queryBuilder = this.eventRepository
 			.createQueryBuilder('event')
 			.select('DATE(event.time_window_start)', 'summary_date')
 			.addSelect('event.source', 'source')
 			.addSelect('event.project_slug', 'project_slug')
 			.addSelect('event.is_personal', 'is_personal')
-			// For PBS personal projects, extract user identifier from identities
-			// For other projects, use NULL as user_identifier
-			.addSelect(
-				`CASE 
-					WHEN event.is_personal = true THEN 
-						COALESCE(
-							(SELECT identity->>'value' FROM jsonb_array_elements(event.identities) AS identity WHERE identity->>'scheme' = 'oidc_sub' LIMIT 1),
-							(SELECT identity->>'value' FROM jsonb_array_elements(event.identities) AS identity WHERE identity->>'scheme' = 'user_email' LIMIT 1),
-							(SELECT identity->>'value' FROM jsonb_array_elements(event.identities) AS identity WHERE identity->>'scheme' = 'perun_username' LIMIT 1)
-						)
-					ELSE NULL
-				END`,
-				'user_identifier'
-			)
+			// Aggregated metrics - use SUM for cumulative values, AVG for percentages
 			.addSelect("SUM(CAST(event.metrics->>'cpu_time_seconds' AS NUMERIC))", 'cpu_time_seconds')
 			.addSelect("SUM(CAST(event.metrics->>'walltime_used' AS NUMERIC))", 'walltime_seconds')
 			.addSelect("AVG(CAST(event.metrics->>'used_cpu_percent' AS NUMERIC))", 'cpu_percent_avg')
 			.addSelect("SUM(CAST(event.metrics->>'ram_bytes_allocated' AS NUMERIC))", 'ram_bytes_allocated')
 			.addSelect("SUM(CAST(event.metrics->>'ram_bytes_used' AS NUMERIC))", 'ram_bytes_used')
 			.addSelect("SUM(CAST(event.metrics->>'storage_bytes_allocated' AS NUMERIC))", 'storage_bytes_allocated')
-			// For vCPUs: Store the SUM of all vCPUs from all events for this user on this day
-			// When displaying totals, we'll query from latest timestamp via calculateTotals()
 			.addSelect("SUM(CAST(event.metrics->>'vcpus_allocated' AS INTEGER))", 'vcpus_allocated')
 			.addSelect('COUNT(*)', 'event_count')
 			.addSelect('(array_agg(event.identities))[1]', 'identities')
@@ -63,8 +47,7 @@ export class ResourceUsageAggregationService {
 			.groupBy('DATE(event.time_window_start)')
 			.addGroupBy('event.source')
 			.addGroupBy('event.project_slug')
-			.addGroupBy('event.is_personal')
-			.addGroupBy('user_identifier');
+			.addGroupBy('event.is_personal');
 
 		if (startDate) {
 			queryBuilder.andWhere('event.time_window_start >= :startDate', { startDate });
@@ -80,20 +63,20 @@ export class ResourceUsageAggregationService {
 
 		// Upsert aggregated data
 		for (const row of aggregatedData) {
-			// Build unique key
-			const whereClause: any = {
-				summaryDate: row.summary_date,
+			// Convert summary_date to time window (start and end of that day)
+			const summaryDate = new Date(row.summary_date);
+			const timeWindowStart = new Date(summaryDate);
+			timeWindowStart.setHours(0, 0, 0, 0);
+			const timeWindowEnd = new Date(summaryDate);
+			timeWindowEnd.setHours(23, 59, 59, 999);
+
+			// Build unique key for upsert (project_slug + source + timeWindowStart + isPersonal)
+			const whereClause: Record<string, unknown> = {
+				timeWindowStart,
 				source: row.source,
 				projectSlug: row.project_slug,
 				isPersonal: row.is_personal || false
 			};
-
-			// For personal projects, include user_identifier in the unique key
-			if (row.user_identifier) {
-				whereClause.allocationIdentifier = row.user_identifier;
-			} else {
-				whereClause.allocationIdentifier = null;
-			}
 
 			const existing = await this.summaryRepository.findOne({
 				where: whereClause
@@ -102,7 +85,7 @@ export class ResourceUsageAggregationService {
 			if (existing) {
 				// Update existing
 				await this.summaryRepository.update(existing.id, {
-					isPersonal: row.is_personal || false,
+					timeWindowEnd,
 					cpuTimeSeconds: parseFloat(row.cpu_time_seconds) || 0,
 					walltimeSeconds: parseFloat(row.walltime_seconds) || 0,
 					cpuPercentAvg: parseFloat(row.cpu_percent_avg) || null,
@@ -117,11 +100,11 @@ export class ResourceUsageAggregationService {
 			} else {
 				// Create new
 				const summary = this.summaryRepository.create({
-					summaryDate: row.summary_date,
+					timeWindowStart,
+					timeWindowEnd,
 					source: row.source,
 					projectSlug: row.project_slug,
 					isPersonal: row.is_personal || false,
-					allocationIdentifier: row.user_identifier || null,
 					cpuTimeSeconds: parseFloat(row.cpu_time_seconds) || 0,
 					walltimeSeconds: parseFloat(row.walltime_seconds) || 0,
 					cpuPercentAvg: parseFloat(row.cpu_percent_avg) || null,
@@ -194,11 +177,11 @@ export class ResourceUsageAggregationService {
 		const queryBuilder = this.summaryRepository.createQueryBuilder('summary').where('summary.project_id IS NULL');
 
 		if (startDate) {
-			queryBuilder.andWhere('summary.summary_date >= :startDate', { startDate });
+			queryBuilder.andWhere('summary.time_window_start >= :startDate', { startDate });
 		}
 
 		if (endDate) {
-			queryBuilder.andWhere('summary.summary_date <= :endDate', { endDate });
+			queryBuilder.andWhere('summary.time_window_start <= :endDate', { endDate });
 		}
 
 		const unmappedSummaries = await queryBuilder.getMany();

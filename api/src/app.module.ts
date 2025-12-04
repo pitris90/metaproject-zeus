@@ -5,6 +5,7 @@ import { TypeormConfigService } from 'resource-manager-database';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
 import { validationSchema } from '../config/validationSchema.config';
 import { AppController } from './app.controller';
 import { PermissionModule } from './permission-module/permission.module';
@@ -46,6 +47,7 @@ import { ResourceUsageModule } from './resource-usage-module/resource-usage.modu
 			},
 			inject: [ConfigService]
 		}),
+		ScheduleModule.forRoot(),
 		AuthModule,
 		PermissionModule,
 		UsersModule,

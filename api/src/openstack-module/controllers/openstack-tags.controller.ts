@@ -3,6 +3,8 @@ import { Controller, Get } from '@nestjs/common';
 import { OpenstackCatalogResponse, OpenstackTagsCatalogService } from '../services/openstack-tags.service';
 import { OpenstackConstraintsService } from '../services/openstack-constraints.service';
 import { OpenstackTerraformParserService } from '../services/openstack-terraform-parser.service';
+import { MinRoleCheck } from '../../permission-module/decorators/min-role.decorator';
+import { RoleEnum } from '../../permission-module/models/role.enum';
 
 /**
  * Flavor entry exposed in the catalog API.
@@ -38,6 +40,7 @@ export class OpenstackTagsController {
 	) {}
 
 	@Get()
+	@MinRoleCheck(RoleEnum.USER)
 	getCatalog(): ExtendedOpenstackCatalogResponse {
 		const catalog = this.catalogService.getCatalog();
 		const assignableFlavors = this.terraformParser.getAssignableFlavors();

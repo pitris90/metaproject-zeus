@@ -246,7 +246,7 @@ export class ResourceUsageProjectMapperService {
 
 		// Update summaries
 		const summariesResult = await this.projectRepository.manager.query(
-			`UPDATE resource_usage_daily_summaries 
+			`UPDATE resource_usage_summaries 
 			 SET project_id = $1 
 			 WHERE is_personal = true AND project_id IS NULL AND ${identityWhereClause}`,
 			queryParams
@@ -288,7 +288,7 @@ export class ResourceUsageProjectMapperService {
 
 		// Update summaries
 		const summariesResult = await this.projectRepository.manager.query(
-			`UPDATE resource_usage_daily_summaries 
+			`UPDATE resource_usage_summaries 
 			 SET project_id = $1 
 			 WHERE project_id IS NULL 
 			 AND is_personal = false
@@ -321,7 +321,7 @@ export class ResourceUsageProjectMapperService {
 
 		// Unmap summaries
 		await manager.query(
-			`UPDATE resource_usage_daily_summaries 
+			`UPDATE resource_usage_summaries 
 			 SET project_id = NULL 
 			 WHERE project_id = $1`,
 			[projectId]

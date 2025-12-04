@@ -1,35 +1,35 @@
 import { Entity, Column, PrimaryGeneratedColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { Project } from '../project/project';
 
-@Entity('resource_usage_daily_summaries')
-@Index(['projectSlug', 'source', 'summaryDate'])
-@Index(['source', 'summaryDate'])
-@Index(['summaryDate'])
-export class ResourceUsageDailySummary {
+@Entity('resource_usage_summaries')
+@Index(['projectId', 'source', 'timeWindowStart'])
+@Index(['projectSlug', 'source', 'timeWindowStart'])
+@Index(['source', 'timeWindowStart'])
+export class ResourceUsageSummary {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 
-	@Column({ type: 'date', nullable: false, name: 'summary_date' })
-	summaryDate: Date;
+	@Column({ type: 'timestamptz', nullable: false, name: 'time_window_start' })
+	timeWindowStart: Date;
+
+	@Column({ type: 'timestamptz', nullable: false, name: 'time_window_end' })
+	timeWindowEnd: Date;
 
 	@Column({ type: 'text', nullable: false })
 	source: string;
 
-  @Column({ type: 'text', nullable: true, name: 'project_slug' })
-  projectSlug: string | null;
+	@Column({ type: 'text', nullable: true, name: 'project_slug' })
+	projectSlug: string | null;
 
-  @Column({ type: 'boolean', nullable: false, default: false, name: 'is_personal' })
-  isPersonal: boolean;
+	@Column({ type: 'boolean', nullable: false, default: false, name: 'is_personal' })
+	isPersonal: boolean;
 
-  @Column({ type: 'integer', nullable: true, name: 'project_id' })
-  projectId: number | null;
+	@Column({ type: 'integer', nullable: true, name: 'project_id' })
+	projectId: number | null;
 
-  @ManyToOne(() => Project, { createForeignKeyConstraints: false })
-  @JoinColumn({ name: 'project_id' })
-  project: Project;
-
-  @Column({ type: 'text', nullable: true, name: 'allocation_identifier' })
-  allocationIdentifier: string | null;
+	@ManyToOne(() => Project, { createForeignKeyConstraints: false })
+	@JoinColumn({ name: 'project_id' })
+	project: Project;
 
 	// Aggregated metrics
 	@Column({ type: 'numeric', nullable: false, default: 0, name: 'cpu_time_seconds' })

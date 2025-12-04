@@ -13,9 +13,11 @@ import {
 	Role,
 	Allocation,
 	AllocationStatus,
+	AllocationUser,
 	AllocationOpenstackRequest,
 	OpenstackRequestStatus,
-	ResourceUsageEvent
+	ResourceUsageEvent,
+	ResourceUsageSummary
 } from 'resource-manager-database';
 
 // ============================================================================
@@ -54,6 +56,13 @@ const CONFIG_OPENSTACK_PERSONAL_PERCENTAGE = 20;
 // --- Customer Keys for OpenStack ---
 /** Available customer keys for OpenStack project naming */
 const CONFIG_CUSTOMER_KEYS = ['metacentrum', 'cerit-sc', 'elixir', 'deep', 'mu'];
+
+// --- Aggregation Configuration ---
+/** Whether to run aggregation after generating events (creates daily summaries) */
+const CONFIG_RUN_AGGREGATION = true;
+
+/** Whether to clear existing summaries before aggregating */
+const CONFIG_CLEAR_EXISTING_SUMMARIES = true;
 
 // --- Metrics Ranges ---
 const CONFIG_PBS_CPU_TIME_MIN = 60; // seconds
@@ -111,10 +120,15 @@ export class TestDataGeneratorService {
 
 			// Create allocations for projects
 			for (const project of generated.groupProjects) {
-				await this.createAllocationsForProject(project, openstackResource, pbsResource);
+				await this.createAllocationsForProject(project, generated.user, openstackResource, pbsResource);
 			}
 			if (generated.personalProject) {
-				await this.createAllocationsForProject(generated.personalProject, openstackResource, pbsResource);
+				await this.createAllocationsForProject(
+					generated.personalProject,
+					generated.user,
+					openstackResource,
+					pbsResource
+				);
 			}
 		}
 
@@ -124,6 +138,11 @@ export class TestDataGeneratorService {
 
 		// Backfill project mapping
 		await this.backfillProjectMapping(generatedUsers);
+
+		// Run aggregation to create daily summaries
+		if (CONFIG_RUN_AGGREGATION) {
+			await this.runAggregation();
+		}
 
 		this.logger.log('='.repeat(60));
 		this.logger.log('Test Data Generation Complete!');
@@ -141,6 +160,10 @@ export class TestDataGeneratorService {
 			`  OpenStack events: ${CONFIG_OPENSTACK_EVENT_COUNT} (${CONFIG_OPENSTACK_PERSONAL_PERCENTAGE}% personal)`
 		);
 		this.logger.log(`  Date range: last ${CONFIG_EVENT_DATE_RANGE_DAYS} days`);
+		this.logger.log(`  Run aggregation: ${CONFIG_RUN_AGGREGATION ? 'Yes' : 'No'}`);
+		if (CONFIG_RUN_AGGREGATION) {
+			this.logger.log(`  Clear existing summaries: ${CONFIG_CLEAR_EXISTING_SUMMARIES ? 'Yes' : 'No'}`);
+		}
 	}
 
 	// =========================================================================
@@ -286,10 +309,12 @@ export class TestDataGeneratorService {
 
 	private async createAllocationsForProject(
 		project: Project,
+		user: User,
 		openstackResource: Resource,
 		pbsResource: Resource
 	): Promise<void> {
 		const allocationRepo = this.dataSource.getRepository(Allocation);
+		const allocationUserRepo = this.dataSource.getRepository(AllocationUser);
 
 		// PBS allocation
 		const existingPbs = await allocationRepo.findOne({
@@ -308,7 +333,15 @@ export class TestDataGeneratorService {
 				isLocked: false,
 				isChangeable: true
 			});
-			await allocationRepo.save(pbsAllocation);
+			const savedPbsAllocation = await allocationRepo.save(pbsAllocation);
+
+			// Create AllocationUser entry for the PI
+			const pbsAllocationUser = allocationUserRepo.create({
+				allocationId: savedPbsAllocation.id,
+				userId: user.id,
+				status: AllocationStatus.ACTIVE
+			});
+			await allocationUserRepo.save(pbsAllocationUser);
 		}
 
 		// OpenStack allocation (only for group projects)
@@ -330,6 +363,14 @@ export class TestDataGeneratorService {
 					isChangeable: true
 				});
 				const savedAllocation = await allocationRepo.save(openstackAllocation);
+
+				// Create AllocationUser entry for the PI
+				const openstackAllocationUser = allocationUserRepo.create({
+					allocationId: savedAllocation.id,
+					userId: user.id,
+					status: AllocationStatus.ACTIVE
+				});
+				await allocationUserRepo.save(openstackAllocationUser);
 
 				// Create OpenStack request
 				await this.createOpenstackRequest(savedAllocation, project);
@@ -410,6 +451,15 @@ export class TestDataGeneratorService {
 		const cpuTimeSeconds = faker.number.int({ min: CONFIG_PBS_CPU_TIME_MIN, max: CONFIG_PBS_CPU_TIME_MAX });
 		const walltimeUsed = faker.number.int({ min: CONFIG_PBS_WALLTIME_MIN, max: CONFIG_PBS_WALLTIME_MAX });
 
+		const jobname =
+			faker.helpers.arrayElement([
+				'simulation_run',
+				'data_analysis',
+				'model_training',
+				'batch_process',
+				'compute_task'
+			]) + `_${faker.string.alphanumeric(6)}`;
+
 		return {
 			time_window_start: startDate,
 			time_window_end: endDate,
@@ -419,6 +469,7 @@ export class TestDataGeneratorService {
 			projectSlug: isPersonal ? '_pbs_project_default' : project.projectSlug,
 			isPersonal,
 			projectId: null, // Will be filled by backfill
+			allocationIdentifier: jobname, // PBS: jobname is the allocation identifier
 			metrics: {
 				cpu_time_seconds: cpuTimeSeconds,
 				walltime_allocated: Math.floor(walltimeUsed * 1.2),
@@ -433,14 +484,7 @@ export class TestDataGeneratorService {
 				{ scheme: 'user_email', value: user.email }
 			],
 			context: {
-				jobname:
-					faker.helpers.arrayElement([
-						'simulation_run',
-						'data_analysis',
-						'model_training',
-						'batch_process',
-						'compute_task'
-					]) + `_${faker.string.alphanumeric(6)}`,
+				jobname,
 				queue: faker.helpers.arrayElement(['default', 'long', 'gpu', 'express']),
 				hostname: `node${faker.number.int({ min: 1, max: 100 })}.metacentrum.cz`
 			},
@@ -497,11 +541,14 @@ export class TestDataGeneratorService {
 
 		// For group projects, prefix with customer key
 		let projectSlug: string;
+		let allocationIdentifier: string;
 		if (isPersonal) {
 			projectSlug = user.externalId || user.username; // Personal projects use user identifier
+			allocationIdentifier = user.externalId || user.username; // Same for allocation
 		} else {
 			const customerKey = faker.helpers.arrayElement(CONFIG_CUSTOMER_KEYS);
 			projectSlug = `${customerKey}-${project.projectSlug}`;
+			allocationIdentifier = project.projectSlug; // Stripped slug for allocation
 		}
 
 		return {
@@ -513,6 +560,7 @@ export class TestDataGeneratorService {
 			projectSlug,
 			isPersonal,
 			projectId: null, // Will be filled by backfill
+			allocationIdentifier, // OpenStack: stripped project slug
 			metrics: {
 				cpu_time_seconds: vcpus * durationSeconds,
 				vcpus_allocated: vcpus,
@@ -580,7 +628,7 @@ export class TestDataGeneratorService {
 						params
 					);
 					await this.dataSource.query(
-						`UPDATE resource_usage_daily_summaries SET project_id = $1 WHERE ${whereClause}`,
+						`UPDATE resource_usage_summaries SET project_id = $1 WHERE ${whereClause}`,
 						params
 					);
 				}
@@ -602,7 +650,7 @@ export class TestDataGeneratorService {
 				);
 
 				await this.dataSource.query(
-					`UPDATE resource_usage_daily_summaries 
+					`UPDATE resource_usage_summaries 
 					 SET project_id = $1 
 					 WHERE project_id IS NULL 
 					 AND is_personal = false
@@ -613,6 +661,169 @@ export class TestDataGeneratorService {
 		}
 
 		this.logger.log('Project mapping backfill complete');
+	}
+
+	// =========================================================================
+	// Aggregation - Creates Daily Summaries
+	// =========================================================================
+
+	private async runAggregation(): Promise<void> {
+		this.logger.log('Running aggregation to create daily summaries...');
+
+		const summaryRepo = this.dataSource.getRepository(ResourceUsageSummary);
+
+		// Optionally clear existing summaries
+		if (CONFIG_CLEAR_EXISTING_SUMMARIES) {
+			this.logger.log('Clearing existing summaries...');
+			await summaryRepo.clear();
+		}
+
+		// Get date range from events
+		const dateRangeResult = await this.dataSource.query(`
+			SELECT 
+				DATE(MIN(time_window_start)) as min_date,
+				DATE(MAX(time_window_start)) as max_date
+			FROM resource_usage_events
+			WHERE project_id IS NOT NULL
+		`);
+
+		if (!dateRangeResult[0]?.min_date) {
+			this.logger.log('No events with mapped projects found, skipping aggregation');
+			return;
+		}
+
+		const minDate = new Date(dateRangeResult[0].min_date);
+		const maxDate = new Date(dateRangeResult[0].max_date);
+		this.logger.log(
+			`Aggregating events from ${minDate.toISOString().split('T')[0]} to ${maxDate.toISOString().split('T')[0]}`
+		);
+
+		// Aggregate PBS events by day and project (no longer grouping by jobname - summaries are project-level)
+		const pbsAggregation = await this.dataSource.query(`
+			SELECT 
+				DATE(time_window_start) as summary_date,
+				source,
+				project_slug,
+				is_personal,
+				project_id,
+				MAX((metrics->>'cpu_time_seconds')::numeric) as cpu_time_seconds,
+				MAX(COALESCE((metrics->>'walltime_used')::numeric, 0)) as walltime_seconds,
+				AVG(COALESCE((metrics->>'used_cpu_percent')::numeric, 0)) as cpu_percent_avg,
+				MAX(COALESCE((metrics->>'ram_bytes_allocated')::bigint, 0)) as ram_bytes_allocated,
+				MAX(COALESCE((metrics->>'ram_bytes_used')::bigint, 0)) as ram_bytes_used,
+				COUNT(*) as event_count,
+				jsonb_agg(DISTINCT identities) as all_identities
+			FROM resource_usage_events
+			WHERE source = 'pbs' AND project_id IS NOT NULL
+			GROUP BY DATE(time_window_start), source, project_slug, is_personal, project_id
+		`);
+
+		this.logger.log(`Found ${pbsAggregation.length} PBS aggregation groups`);
+
+		// Aggregate OpenStack events by day and project
+		const openstackAggregation = await this.dataSource.query(`
+			SELECT 
+				DATE(time_window_start) as summary_date,
+				source,
+				project_slug,
+				is_personal,
+				project_id,
+				MAX((metrics->>'cpu_time_seconds')::numeric) as cpu_time_seconds,
+				0 as walltime_seconds,
+				0 as cpu_percent_avg,
+				MAX(COALESCE((metrics->>'ram_bytes_allocated')::bigint, 0)) as ram_bytes_allocated,
+				MAX(COALESCE((metrics->>'ram_bytes_used')::bigint, 0)) as ram_bytes_used,
+				MAX(COALESCE((metrics->>'storage_bytes_allocated')::bigint, 0)) as storage_bytes_allocated,
+				MAX(COALESCE((metrics->>'vcpus_allocated')::int, 0)) as vcpus_allocated,
+				COUNT(*) as event_count,
+				jsonb_agg(DISTINCT identities) as all_identities
+			FROM resource_usage_events
+			WHERE source = 'openstack' AND project_id IS NOT NULL
+			GROUP BY DATE(time_window_start), source, project_slug, is_personal, project_id
+		`);
+
+		this.logger.log(`Found ${openstackAggregation.length} OpenStack aggregation groups`);
+
+		// Insert PBS summaries
+		for (const row of pbsAggregation) {
+			const identities = this.flattenIdentities(row.all_identities);
+			const summaryDate = new Date(row.summary_date);
+			const nextDay = new Date(summaryDate);
+			nextDay.setDate(nextDay.getDate() + 1);
+
+			const summary = summaryRepo.create({
+				timeWindowStart: summaryDate,
+				timeWindowEnd: nextDay,
+				source: row.source,
+				projectSlug: row.project_slug,
+				isPersonal: row.is_personal,
+				projectId: row.project_id,
+				cpuTimeSeconds: parseFloat(row.cpu_time_seconds) || 0,
+				walltimeSeconds: parseFloat(row.walltime_seconds) || 0,
+				cpuPercentAvg: parseFloat(row.cpu_percent_avg) || null,
+				ramBytesAllocated: parseInt(row.ram_bytes_allocated) || 0,
+				ramBytesUsed: parseInt(row.ram_bytes_used) || 0,
+				storageBytesAllocated: null,
+				vcpusAllocated: null,
+				eventCount: parseInt(row.event_count) || 0,
+				identities
+			});
+			await summaryRepo.save(summary);
+		}
+
+		// Insert OpenStack summaries
+		for (const row of openstackAggregation) {
+			const identities = this.flattenIdentities(row.all_identities);
+			const summaryDate = new Date(row.summary_date);
+			const nextDay = new Date(summaryDate);
+			nextDay.setDate(nextDay.getDate() + 1);
+
+			const summary = summaryRepo.create({
+				timeWindowStart: summaryDate,
+				timeWindowEnd: nextDay,
+				source: row.source,
+				projectSlug: row.project_slug,
+				isPersonal: row.is_personal,
+				projectId: row.project_id,
+				cpuTimeSeconds: parseFloat(row.cpu_time_seconds) || 0,
+				walltimeSeconds: 0,
+				cpuPercentAvg: null,
+				ramBytesAllocated: parseInt(row.ram_bytes_allocated) || 0,
+				ramBytesUsed: parseInt(row.ram_bytes_used) || 0,
+				storageBytesAllocated: parseInt(row.storage_bytes_allocated) || null,
+				vcpusAllocated: parseInt(row.vcpus_allocated) || null,
+				eventCount: parseInt(row.event_count) || 0,
+				identities
+			});
+			await summaryRepo.save(summary);
+		}
+
+		const totalSummaries = pbsAggregation.length + openstackAggregation.length;
+		this.logger.log(`Created ${totalSummaries} summary records`);
+	}
+
+	private flattenIdentities(allIdentities: any[]): { scheme: string; value: string; authority?: string }[] {
+		// allIdentities is an array of jsonb arrays, need to flatten and dedupe
+		const seen = new Set<string>();
+		const result: { scheme: string; value: string; authority?: string }[] = [];
+
+		for (const identityArray of allIdentities) {
+			if (Array.isArray(identityArray)) {
+				for (const identity of identityArray) {
+					const key = `${identity.scheme}:${identity.value}`;
+					if (!seen.has(key)) {
+						seen.add(key);
+						result.push({
+							scheme: identity.scheme,
+							value: identity.value,
+							authority: identity.authority
+						});
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 
 	// =========================================================================
