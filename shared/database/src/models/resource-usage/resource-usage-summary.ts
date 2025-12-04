@@ -1,6 +1,21 @@
 import { Entity, Column, PrimaryGeneratedColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { Project } from '../project/project';
 
+/**
+ * Interface for the JSONB metrics object in ResourceUsageSummary.
+ * Matches the structure used in ResourceUsageEvent.metrics for consistency.
+ */
+export interface ResourceUsageSummaryMetrics {
+	cpu_time_seconds: number;
+	walltime_seconds: number;
+	cpu_percent_avg?: number | null;
+	ram_bytes_allocated: number;
+	ram_bytes_used: number;
+	storage_bytes_allocated?: number | null;
+	vcpus_allocated?: number | null;
+	gpu_time_seconds?: number;
+}
+
 @Entity('resource_usage_summaries')
 @Index(['projectId', 'source', 'timeWindowStart'])
 @Index(['projectSlug', 'source', 'timeWindowStart'])
@@ -31,27 +46,9 @@ export class ResourceUsageSummary {
 	@JoinColumn({ name: 'project_id' })
 	project: Project;
 
-	// Aggregated metrics
-	@Column({ type: 'numeric', nullable: false, default: 0, name: 'cpu_time_seconds' })
-	cpuTimeSeconds: number;
-
-	@Column({ type: 'numeric', nullable: false, default: 0, name: 'walltime_seconds' })
-	walltimeSeconds: number;
-
-	@Column({ type: 'numeric', nullable: true, name: 'cpu_percent_avg' })
-	cpuPercentAvg: number | null;
-
-	@Column({ type: 'bigint', nullable: false, default: 0, name: 'ram_bytes_allocated' })
-	ramBytesAllocated: number;
-
-	@Column({ type: 'bigint', nullable: false, default: 0, name: 'ram_bytes_used' })
-	ramBytesUsed: number;
-
-	@Column({ type: 'bigint', nullable: true, name: 'storage_bytes_allocated' })
-	storageBytesAllocated: number | null;
-
-	@Column({ type: 'integer', nullable: true, name: 'vcpus_allocated' })
-	vcpusAllocated: number | null;
+	// Aggregated metrics stored as JSONB (matching ResourceUsageEvent structure)
+	@Column({ type: 'jsonb', nullable: false })
+	metrics: ResourceUsageSummaryMetrics;
 
 	@Column({ type: 'integer', nullable: false, default: 0, name: 'event_count' })
 	eventCount: number;
