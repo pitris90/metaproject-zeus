@@ -13,6 +13,7 @@ export class ProjectMapper {
 		return {
 			id: project.id,
 			title: project.title,
+			projectSlug: project.projectSlug,
 			link: project.link,
 			description: project.description,
 			status: this.fromProjectStatus(project.status),

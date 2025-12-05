@@ -15,6 +15,12 @@ export class ProjectDto {
 	 */
 	title: string;
 	/**
+	 * The project's unique slug
+	 *
+	 * @example "my-project"
+	 */
+	projectSlug: string;
+	/**
 	 * The project's link
 	 *
 	 * @example "https://is.muni,cz"
