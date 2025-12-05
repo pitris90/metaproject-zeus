@@ -41,8 +41,9 @@ export class ResourceUsageSummaryService {
 			return this.getSummaryFromRawEvents(scopeType, scopeId, source, undefined);
 		}
 
-		// Get available sources
-		const availableSources = [...new Set(summaries.map((s) => s.source))].filter(Boolean);
+		// Get available sources - hide pbsAcct, show only 'pbs' for PBS data
+		const rawSources = [...new Set(summaries.map((s) => s.source))].filter(Boolean);
+		const availableSources = this.normalizeAvailableSources(rawSources);
 		// Get available allocations/jobs from raw events
 		const availableAllocations = await this.getAvailableAllocations(scopeType, scopeId, source);
 		// Build series from summaries and aggregate by date if multiple sources
@@ -81,9 +82,13 @@ export class ResourceUsageSummaryService {
 			.createQueryBuilder('event')
 			.innerJoin('event.project', 'project')
 			.where('project.id = :projectId', { projectId });
-		// Filter by source
+		// Filter by source - when 'pbs' is requested, also include 'pbsAcct' transparently
 		if (source) {
-			queryBuilder.andWhere('event.source = :source', { source });
+			if (source === 'pbs') {
+				queryBuilder.andWhere('event.source IN (:...sources)', { sources: ['pbs', 'pbsAcct'] });
+			} else {
+				queryBuilder.andWhere('event.source = :source', { source });
+			}
 		}
 		// Filter by allocation/job - only for PBS jobs (OpenStack allocations are per-project)
 		if (allocationId && !allocationId.startsWith('openstack-')) {
@@ -96,8 +101,9 @@ export class ResourceUsageSummaryService {
 		}
 		// Aggregate events by date
 		const dailyAggregates = this.aggregateEventsByDate(events);
-		// Get available sources and allocations
-		const availableSources = [...new Set(events.map((e) => e.source))].filter(Boolean);
+		// Get available sources and allocations - hide pbsAcct, show only 'pbs'
+		const rawSources = [...new Set(events.map((e) => e.source))].filter(Boolean);
+		const availableSources = this.normalizeAvailableSources(rawSources);
 		const availableAllocations = await this.getAvailableAllocations(scopeType, scopeId, source);
 		// Calculate totals from events (similar to summary-based calculation)
 		const latestEvents = events.filter(
@@ -216,8 +222,13 @@ export class ResourceUsageSummaryService {
 			return [];
 		}
 		// Filter by source if provided
+		// When 'pbs' is requested, also include 'pbsAcct' transparently
 		if (source) {
-			queryBuilder.andWhere('summary.source = :source', { source });
+			if (source === 'pbs') {
+				queryBuilder.andWhere('summary.source IN (:...sources)', { sources: ['pbs', 'pbsAcct'] });
+			} else {
+				queryBuilder.andWhere('summary.source = :source', { source });
+			}
 		}
 		return queryBuilder.getMany();
 	}
@@ -309,13 +320,13 @@ export class ResourceUsageSummaryService {
 
 		for (const currentSource of sourcesToQuery) {
 			if (currentSource === 'pbs') {
-				// For PBS: Get distinct job names
+				// For PBS: Get distinct job names from both 'pbs' and 'pbsAcct' sources
 				const pbsAllocations = await this.eventRepository
 					.createQueryBuilder('event')
 					.innerJoin('event.project', 'project')
 					.select("event.context->>'jobname'", 'allocation_id')
 					.where('project.id = :projectId', { projectId })
-					.andWhere('event.source = :source', { source: 'pbs' })
+					.andWhere('event.source IN (:...sources)', { sources: ['pbs', 'pbsAcct'] })
 					.andWhere("event.context->>'jobname' IS NOT NULL")
 					.groupBy("event.context->>'jobname'")
 					.orderBy("event.context->>'jobname'", 'ASC')
@@ -528,5 +539,23 @@ export class ResourceUsageSummaryService {
 			},
 			series: []
 		};
+	}
+
+	/**
+	 * Normalize available sources for display.
+	 * Hides 'pbsAcct' from the user - if pbsAcct exists, show 'pbs' instead.
+	 * This ensures users only see 'pbs' and 'openstack' as source options.
+	 */
+	private normalizeAvailableSources(sources: string[]): string[] {
+		const normalized = new Set<string>();
+		for (const source of sources) {
+			if (source === 'pbsAcct') {
+				// Replace pbsAcct with pbs
+				normalized.add('pbs');
+			} else {
+				normalized.add(source);
+			}
+		}
+		return Array.from(normalized);
 	}
 }

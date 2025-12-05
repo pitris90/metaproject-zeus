@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ResourceUsageEvent, ResourceUsageSummary } from 'resource-manager-database';
+import { Repository, LessThan } from 'typeorm';
+import { ResourceUsageEvent, ResourceUsageSummary, ResourceUsageSummaryMetrics } from 'resource-manager-database';
 import { ResourceUsageProjectMapperService } from './resource-usage-project-mapper.service';
 
 @Injectable()
@@ -22,6 +22,11 @@ export class ResourceUsageAggregationService {
 	 *
 	 * Groups by project_slug + source + date for project-level totals.
 	 * Uses SUM for cumulative metrics, AVG for percentages.
+	 *
+	 * For pbsAcct source, implements cumulative aggregation:
+	 * - Finds previous summary and adds current day's metrics to it
+	 * - For group projects: matches by project_slug
+	 * - For personal projects: matches by user identity (perun_username)
 	 */
 	async aggregateDailySummaries(startDate?: Date, endDate?: Date): Promise<void> {
 		this.logger.log('Starting daily aggregation...');
@@ -69,6 +74,12 @@ export class ResourceUsageAggregationService {
 			timeWindowStart.setHours(0, 0, 0, 0);
 			const timeWindowEnd = new Date(summaryDate);
 			timeWindowEnd.setHours(23, 59, 59, 999);
+
+			// For pbsAcct source, use cumulative aggregation
+			if (row.source === 'pbsAcct') {
+				await this.aggregatePbsAcctSummary(row, timeWindowStart, timeWindowEnd);
+				continue;
+			}
 
 			// Build unique key for upsert (project_slug + source + timeWindowStart + isPersonal)
 			const whereClause: Record<string, unknown> = {
@@ -128,7 +139,155 @@ export class ResourceUsageAggregationService {
 
 		// Map project_id for summaries that were just created/updated
 		await this.mapProjectIdsToSummaries(startDate, endDate);
-	} /**
+	}
+
+	/**
+	 * Aggregate pbsAcct events with cumulative logic.
+	 * Finds the most recent previous summary and adds current day's metrics to it.
+	 *
+	 * For group projects: matches by project_slug + source
+	 * For personal projects: matches by user identity (perun_username) + isPersonal + source
+	 */
+	private async aggregatePbsAcctSummary(
+		row: Record<string, any>,
+		timeWindowStart: Date,
+		timeWindowEnd: Date
+	): Promise<void> {
+		const isPersonal = row['is_personal'] || false;
+		const projectSlug = row['project_slug'];
+		const identities = row['identities'] || [];
+
+		// Current day's metrics from events
+		const currentMetrics: ResourceUsageSummaryMetrics = {
+			cpu_time_seconds: parseFloat(row['cpu_time_seconds']) || 0,
+			walltime_seconds: parseFloat(row['walltime_seconds']) || 0,
+			cpu_percent_avg: parseFloat(row['cpu_percent_avg']) || null,
+			ram_bytes_allocated: parseInt(row['ram_bytes_allocated']) || 0,
+			ram_bytes_used: parseInt(row['ram_bytes_used']) || 0,
+			storage_bytes_allocated: parseInt(row['storage_bytes_allocated']) || null,
+			vcpus_allocated: parseInt(row['vcpus_allocated']) || null
+		};
+
+		// Find previous summary to accumulate from
+		const previousSummary = await this.findPreviousPbsAcctSummary(
+			timeWindowStart,
+			projectSlug,
+			isPersonal,
+			identities
+		);
+
+		// Calculate cumulative metrics
+		let cumulativeMetrics: ResourceUsageSummaryMetrics;
+		if (previousSummary) {
+			cumulativeMetrics = {
+				cpu_time_seconds: (previousSummary.metrics?.cpu_time_seconds || 0) + currentMetrics.cpu_time_seconds,
+				walltime_seconds: (previousSummary.metrics?.walltime_seconds || 0) + currentMetrics.walltime_seconds,
+				cpu_percent_avg: currentMetrics.cpu_percent_avg, // Not cumulative, just current day's average
+				ram_bytes_allocated:
+					(previousSummary.metrics?.ram_bytes_allocated || 0) + currentMetrics.ram_bytes_allocated,
+				ram_bytes_used: (previousSummary.metrics?.ram_bytes_used || 0) + currentMetrics.ram_bytes_used,
+				storage_bytes_allocated: currentMetrics.storage_bytes_allocated, // Use current value, not cumulative
+				vcpus_allocated: (previousSummary.metrics?.vcpus_allocated || 0) + (currentMetrics.vcpus_allocated || 0)
+			};
+		} else {
+			// No previous summary, use current metrics as baseline
+			cumulativeMetrics = currentMetrics;
+		}
+
+		// Check if summary already exists for this day
+		const whereClause: Record<string, unknown> = {
+			timeWindowStart,
+			source: 'pbsAcct',
+			projectSlug,
+			isPersonal
+		};
+
+		const existing = await this.summaryRepository.findOne({
+			where: whereClause
+		});
+
+		if (existing) {
+			// Update existing summary with cumulative metrics
+			await this.summaryRepository.update(existing.id, {
+				timeWindowEnd,
+				metrics: cumulativeMetrics,
+				eventCount: parseInt(row['event_count']) || 0,
+				identities,
+				updatedAt: new Date()
+			});
+		} else {
+			// Create new summary with cumulative metrics
+			const summary = this.summaryRepository.create({
+				timeWindowStart,
+				timeWindowEnd,
+				source: 'pbsAcct',
+				projectSlug,
+				isPersonal,
+				metrics: cumulativeMetrics,
+				eventCount: parseInt(row['event_count']) || 0,
+				identities
+			});
+
+			await this.summaryRepository.save(summary);
+		}
+	}
+
+	/**
+	 * Find the most recent previous pbsAcct summary for cumulative aggregation.
+	 *
+	 * For group projects (isPersonal=false): matches by project_slug
+	 * For personal projects (isPersonal=true): matches by user identity (perun_username)
+	 */
+	private async findPreviousPbsAcctSummary(
+		currentTimeWindowStart: Date,
+		projectSlug: string,
+		isPersonal: boolean,
+		identities: Array<{ scheme: string; value: string; authority?: string }>
+	): Promise<ResourceUsageSummary | null> {
+		if (!isPersonal) {
+			// Group project: match by project_slug
+			return await this.summaryRepository.findOne({
+				where: {
+					source: 'pbsAcct',
+					projectSlug,
+					isPersonal: false,
+					timeWindowStart: LessThan(currentTimeWindowStart)
+				},
+				order: {
+					timeWindowStart: 'DESC'
+				}
+			});
+		}
+
+		// Personal project: match by user identity (perun_username)
+		const perunUsername = identities.find((id) => id.scheme === 'perun_username')?.value;
+
+		if (!perunUsername) {
+			this.logger.warn(`No perun_username found for personal pbsAcct summary, cannot find previous summary`);
+			return null;
+		}
+
+		// Query using JSONB to match identity
+		const result = await this.summaryRepository
+			.createQueryBuilder('summary')
+			.where('summary.source = :source', { source: 'pbsAcct' })
+			.andWhere('summary.is_personal = :isPersonal', { isPersonal: true })
+			.andWhere('summary.time_window_start < :currentTime', { currentTime: currentTimeWindowStart })
+			.andWhere(
+				`EXISTS (
+					SELECT 1 FROM jsonb_array_elements(summary.identities) AS identity
+					WHERE identity->>'scheme' = 'perun_username' AND identity->>'value' = :username
+				)`,
+				{ username: perunUsername }
+			)
+			.orderBy('summary.time_window_start', 'DESC')
+			.limit(1)
+			.getOne();
+
+		return result;
+	}
+
+	/**
 	 * Aggregate only for specific dates (used when new events are received)
 	 * More efficient than re-aggregating all data
 	 */
