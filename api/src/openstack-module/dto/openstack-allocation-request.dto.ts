@@ -30,10 +30,6 @@ export class OpenstackAllocationRequestDto {
 
 	@IsString()
 	@IsNotEmpty()
-	projectDescription: string;
-
-	@IsString()
-	@IsNotEmpty()
 	customerKey: string;
 
 	@IsString()

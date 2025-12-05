@@ -121,7 +121,6 @@ export class AllocationMapper {
 				status: mapOpenstackRequestStatus(request.status),
 				domain: request.payload?.domain ?? '',
 				disableDate: request.payload?.disableDate ?? null,
-				projectDescription: request.payload?.projectDescription ?? '',
 				customerKey: request.payload?.customerKey ?? '',
 				organizationKey: request.payload?.organizationKey ?? '',
 				workplaceKey: request.payload?.workplaceKey ?? '',
