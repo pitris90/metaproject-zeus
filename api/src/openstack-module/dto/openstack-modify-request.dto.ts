@@ -14,10 +14,6 @@ export class OpenstackModifyRequestDto {
 
 	@IsString()
 	@IsNotEmpty()
-	projectDescription: string;
-
-	@IsString()
-	@IsNotEmpty()
 	customerKey: string;
 
 	@IsString()

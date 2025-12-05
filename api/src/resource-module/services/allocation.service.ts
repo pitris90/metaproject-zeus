@@ -70,10 +70,13 @@ export class AllocationService {
 				? this.openstackAllocationService.isResourceTypeSupported(resourceTypeName)
 				: false;
 
+			// Fetch project for OpenStack validation and to get description
+			let project: Project | null = null;
+
 			// Check OpenStack-specific restrictions when requesting an OpenStack resource
 			if (isOpenstackResource || resource.name === OPENSTACK_RESOURCE_NAME) {
 				// Check if project is personal
-				const project = await manager.getRepository(Project).findOne({
+				project = await manager.getRepository(Project).findOne({
 					where: { id: projectId }
 				});
 
@@ -141,10 +144,13 @@ export class AllocationService {
 				.execute();
 
 			if (isOpenstackResource && openstack) {
+				// Use project description from database instead of user-provided value
+				const projectDescription = project?.description ?? '';
+
 				const payload: AllocationOpenstackPayload = {
 					domain: openstack.domain,
 					disableDate: openstack.disableDate,
-					projectDescription: openstack.projectDescription,
+					projectDescription,
 					customerKey: openstack.customerKey,
 					organizationKey: openstack.organizationKey,
 					workplaceKey: openstack.workplaceKey,
@@ -450,13 +456,13 @@ export class AllocationService {
 	/**
 	 * Creates a modification request for an active OpenStack allocation.
 	 * This creates a new AllocationOpenstackRequest with status 'pending'.
+	 * Note: projectDescription is automatically taken from project.description in the database.
 	 */
 	async modifyOpenstackAllocation(
 		allocationId: number,
 		userId: number,
 		modifyData: {
 			disableDate?: string;
-			projectDescription: string;
 			customerKey: string;
 			organizationKey: string;
 			workplaceKey: string;
@@ -554,11 +560,14 @@ export class AllocationService {
 
 		const domain = latestApprovedRequest.payload.domain;
 
+		// Use project description from database instead of user-provided value
+		const projectDescription = allocation.project?.description ?? '';
+
 		// Validate the new payload
 		const payload: AllocationOpenstackPayload = {
 			domain,
 			disableDate: modifyData.disableDate,
-			projectDescription: modifyData.projectDescription,
+			projectDescription,
 			customerKey: modifyData.customerKey,
 			organizationKey: modifyData.organizationKey,
 			workplaceKey: modifyData.workplaceKey,

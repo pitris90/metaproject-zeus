@@ -39,11 +39,6 @@ export class OpenstackRequestDto {
 	disableDate?: string | null;
 
 	/**
-	 * Project description
-	 */
-	projectDescription: string;
-
-	/**
 	 * Customer key tag
 	 */
 	customerKey: string;
