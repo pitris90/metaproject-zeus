@@ -14,6 +14,7 @@ import { ResourceUsageMetricsDto } from './resource-usage-metrics.dto';
 
 export enum ResourceUsageSource {
 	PBS = 'pbs',
+	PBS_ACCT = 'pbsAcct',
 	OPENSTACK = 'openstack'
 }
 
