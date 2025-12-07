@@ -31,7 +31,11 @@ export class ResourceUsageAggregationService {
 	async aggregateDailySummaries(startDate?: Date, endDate?: Date): Promise<void> {
 		this.logger.log('Starting daily aggregation...');
 
+		// First, handle personal pbsAcct events separately (per-user aggregation)
+		await this.aggregatePersonalPbsAcctEvents(startDate, endDate);
+
 		// Build date filter - aggregate by day and project_slug + source
+		// Exclude personal pbsAcct events (they are handled separately above)
 		const queryBuilder = this.eventRepository
 			.createQueryBuilder('event')
 			.select('DATE(event.time_window_start)', 'summary_date')
@@ -49,6 +53,8 @@ export class ResourceUsageAggregationService {
 			.addSelect('COUNT(*)', 'event_count')
 			.addSelect('(array_agg(event.identities))[1]', 'identities')
 			.where('event.project_slug IS NOT NULL')
+			// Exclude personal pbsAcct events - they are handled by aggregatePersonalPbsAcctEvents
+			.andWhere("NOT (event.source = 'pbsAcct' AND event.is_personal = true)")
 			.groupBy('DATE(event.time_window_start)')
 			.addGroupBy('event.source')
 			.addGroupBy('event.project_slug')
@@ -142,6 +148,74 @@ export class ResourceUsageAggregationService {
 	}
 
 	/**
+	 * Aggregate personal pbsAcct events separately, grouped by user identity.
+	 * Each user gets their own summary row instead of all personal users being aggregated together.
+	 */
+	private async aggregatePersonalPbsAcctEvents(startDate?: Date, endDate?: Date): Promise<void> {
+		this.logger.log('Aggregating personal pbsAcct events per-user...');
+
+		// Query personal pbsAcct events grouped by date AND user identity (perun_username)
+		// Extract perun_username from identities JSONB array
+		const queryBuilder = this.eventRepository
+			.createQueryBuilder('event')
+			.select('DATE(event.time_window_start)', 'summary_date')
+			.addSelect('event.source', 'source')
+			.addSelect('event.project_slug', 'project_slug')
+			.addSelect('event.is_personal', 'is_personal')
+			// Extract perun_username from identities array for grouping
+			.addSelect(
+				`(SELECT identity->>'value' FROM jsonb_array_elements(event.identities) AS identity WHERE identity->>'scheme' = 'perun_username' LIMIT 1)`,
+				'perun_username'
+			)
+			// Aggregated metrics
+			.addSelect("SUM(CAST(event.metrics->>'cpu_time_seconds' AS NUMERIC))", 'cpu_time_seconds')
+			.addSelect("SUM(CAST(event.metrics->>'walltime_used' AS NUMERIC))", 'walltime_seconds')
+			.addSelect("AVG(CAST(event.metrics->>'used_cpu_percent' AS NUMERIC))", 'cpu_percent_avg')
+			.addSelect("SUM(CAST(event.metrics->>'ram_bytes_allocated' AS NUMERIC))", 'ram_bytes_allocated')
+			.addSelect("SUM(CAST(event.metrics->>'ram_bytes_used' AS NUMERIC))", 'ram_bytes_used')
+			.addSelect("SUM(CAST(event.metrics->>'storage_bytes_allocated' AS NUMERIC))", 'storage_bytes_allocated')
+			.addSelect("SUM(CAST(event.metrics->>'vcpus_allocated' AS INTEGER))", 'vcpus_allocated')
+			.addSelect('COUNT(*)', 'event_count')
+			.addSelect('(array_agg(event.identities))[1]', 'identities')
+			.where("event.source = 'pbsAcct'")
+			.andWhere('event.is_personal = true')
+			.andWhere('event.project_slug IS NOT NULL')
+			.groupBy('DATE(event.time_window_start)')
+			.addGroupBy('event.source')
+			.addGroupBy('event.project_slug')
+			.addGroupBy('event.is_personal')
+			// Group by perun_username to get per-user aggregation
+			.addGroupBy(
+				`(SELECT identity->>'value' FROM jsonb_array_elements(event.identities) AS identity WHERE identity->>'scheme' = 'perun_username' LIMIT 1)`
+			);
+
+		if (startDate) {
+			queryBuilder.andWhere('event.time_window_start >= :startDate', { startDate });
+		}
+
+		if (endDate) {
+			queryBuilder.andWhere('event.time_window_start <= :endDate', { endDate });
+		}
+
+		const aggregatedData = await queryBuilder.getRawMany();
+
+		this.logger.log(`Found ${aggregatedData.length} personal pbsAcct user-day aggregations to process`);
+
+		// Process each user-day combination using cumulative aggregation
+		for (const row of aggregatedData) {
+			const summaryDate = new Date(row['summary_date']);
+			const timeWindowStart = new Date(summaryDate);
+			timeWindowStart.setHours(0, 0, 0, 0);
+			const timeWindowEnd = new Date(summaryDate);
+			timeWindowEnd.setHours(23, 59, 59, 999);
+
+			await this.aggregatePbsAcctSummary(row, timeWindowStart, timeWindowEnd);
+		}
+
+		this.logger.log('Personal pbsAcct per-user aggregation completed');
+	}
+
+	/**
 	 * Aggregate pbsAcct events with cumulative logic.
 	 * Finds the most recent previous summary and adds current day's metrics to it.
 	 *
@@ -195,16 +269,38 @@ export class ResourceUsageAggregationService {
 		}
 
 		// Check if summary already exists for this day
-		const whereClause: Record<string, unknown> = {
-			timeWindowStart,
-			source: 'pbsAcct',
-			projectSlug,
-			isPersonal
-		};
+		// For personal projects, we need to match by identity (perun_username) too
+		let existing: ResourceUsageSummary | null = null;
 
-		const existing = await this.summaryRepository.findOne({
-			where: whereClause
-		});
+		if (isPersonal) {
+			// Personal project: match by identity
+			const perunUsername = identities.find((id) => id.scheme === 'perun_username')?.value;
+			if (perunUsername) {
+				existing = await this.summaryRepository
+					.createQueryBuilder('summary')
+					.where('summary.source = :source', { source: 'pbsAcct' })
+					.andWhere('summary.is_personal = :isPersonal', { isPersonal: true })
+					.andWhere('summary.time_window_start = :timeWindowStart', { timeWindowStart })
+					.andWhere(
+						`EXISTS (
+							SELECT 1 FROM jsonb_array_elements(summary.identities) AS identity
+							WHERE identity->>'scheme' = 'perun_username' AND identity->>'value' = :username
+						)`,
+						{ username: perunUsername }
+					)
+					.getOne();
+			}
+		} else {
+			// Group project: match by project_slug
+			existing = await this.summaryRepository.findOne({
+				where: {
+					timeWindowStart,
+					source: 'pbsAcct',
+					projectSlug,
+					isPersonal: false
+				}
+			});
+		}
 
 		if (existing) {
 			// Update existing summary with cumulative metrics
