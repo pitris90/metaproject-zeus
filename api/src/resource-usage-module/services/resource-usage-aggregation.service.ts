@@ -31,8 +31,11 @@ export class ResourceUsageAggregationService {
 	async aggregateDailySummaries(startDate?: Date, endDate?: Date): Promise<void> {
 		this.logger.log('Starting daily aggregation...');
 
-		// First, handle personal pbsAcct events separately (per-user aggregation)
+		// First, handle personal pbsAcct events separately (per-user aggregation with cumulative logic)
 		await this.aggregatePersonalPbsAcctEvents(startDate, endDate);
+
+		// Also handle personal pbs events separately (per-user aggregation, non-cumulative)
+		await this.aggregatePersonalPbsEvents(startDate, endDate);
 
 		// Build date filter - aggregate by day and project_slug + source
 		// Exclude personal pbsAcct events (they are handled separately above)
@@ -53,8 +56,8 @@ export class ResourceUsageAggregationService {
 			.addSelect('COUNT(*)', 'event_count')
 			.addSelect('(array_agg(event.identities))[1]', 'identities')
 			.where('event.project_slug IS NOT NULL')
-			// Exclude personal pbsAcct events - they are handled by aggregatePersonalPbsAcctEvents
-			.andWhere("NOT (event.source = 'pbsAcct' AND event.is_personal = true)")
+			// Exclude personal pbs/pbsAcct events - they are handled separately per-user
+			.andWhere("NOT (event.source IN ('pbs', 'pbsAcct') AND event.is_personal = true)")
 			.groupBy('DATE(event.time_window_start)')
 			.addGroupBy('event.source')
 			.addGroupBy('event.project_slug')
@@ -148,14 +151,21 @@ export class ResourceUsageAggregationService {
 	}
 
 	/**
-	 * Aggregate personal pbsAcct events separately, grouped by user identity.
+	 * Aggregate personal events (pbs or pbsAcct) separately, grouped by user identity.
 	 * Each user gets their own summary row instead of all personal users being aggregated together.
+	 *
+	 * @param source - 'pbs' or 'pbsAcct'
+	 * @param useCumulativeLogic - If true, uses cumulative aggregation (for pbsAcct)
 	 */
-	private async aggregatePersonalPbsAcctEvents(startDate?: Date, endDate?: Date): Promise<void> {
-		this.logger.log('Aggregating personal pbsAcct events per-user...');
+	private async aggregatePersonalEvents(
+		source: 'pbs' | 'pbsAcct',
+		useCumulativeLogic: boolean,
+		startDate?: Date,
+		endDate?: Date
+	): Promise<void> {
+		this.logger.log(`Aggregating personal ${source} events per-user...`);
 
-		// Query personal pbsAcct events grouped by date AND user identity (perun_username)
-		// Extract perun_username from identities JSONB array
+		// Build query for personal events grouped by date AND user identity (perun_username)
 		const queryBuilder = this.eventRepository
 			.createQueryBuilder('event')
 			.select('DATE(event.time_window_start)', 'summary_date')
@@ -177,7 +187,7 @@ export class ResourceUsageAggregationService {
 			.addSelect("SUM(CAST(event.metrics->>'vcpus_allocated' AS INTEGER))", 'vcpus_allocated')
 			.addSelect('COUNT(*)', 'event_count')
 			.addSelect('(array_agg(event.identities))[1]', 'identities')
-			.where("event.source = 'pbsAcct'")
+			.where('event.source = :source', { source })
 			.andWhere('event.is_personal = true')
 			.andWhere('event.project_slug IS NOT NULL')
 			.groupBy('DATE(event.time_window_start)')
@@ -199,9 +209,9 @@ export class ResourceUsageAggregationService {
 
 		const aggregatedData = await queryBuilder.getRawMany();
 
-		this.logger.log(`Found ${aggregatedData.length} personal pbsAcct user-day aggregations to process`);
+		this.logger.log(`Found ${aggregatedData.length} personal ${source} user-day aggregations to process`);
 
-		// Process each user-day combination using cumulative aggregation
+		// Process each user-day combination
 		for (const row of aggregatedData) {
 			const summaryDate = new Date(row['summary_date']);
 			const timeWindowStart = new Date(summaryDate);
@@ -209,10 +219,111 @@ export class ResourceUsageAggregationService {
 			const timeWindowEnd = new Date(summaryDate);
 			timeWindowEnd.setHours(23, 59, 59, 999);
 
-			await this.aggregatePbsAcctSummary(row, timeWindowStart, timeWindowEnd);
+			if (useCumulativeLogic) {
+				await this.aggregatePbsAcctSummary(row, timeWindowStart, timeWindowEnd);
+			} else {
+				await this.upsertPersonalSummary(row, timeWindowStart, timeWindowEnd, source);
+			}
 		}
 
-		this.logger.log('Personal pbsAcct per-user aggregation completed');
+		this.logger.log(`Personal ${source} per-user aggregation completed`);
+	}
+
+	/**
+	 * Convenience wrapper for pbsAcct personal aggregation
+	 */
+	private async aggregatePersonalPbsAcctEvents(startDate?: Date, endDate?: Date): Promise<void> {
+		await this.aggregatePersonalEvents('pbsAcct', true, startDate, endDate);
+	}
+
+	/**
+	 * Convenience wrapper for pbs personal aggregation
+	 */
+	private async aggregatePersonalPbsEvents(startDate?: Date, endDate?: Date): Promise<void> {
+		await this.aggregatePersonalEvents('pbs', false, startDate, endDate);
+	}
+
+	/**
+	 * Extract metrics from aggregated row data.
+	 */
+	private extractMetricsFromRow(row: Record<string, any>): ResourceUsageSummaryMetrics {
+		return {
+			cpu_time_seconds: parseFloat(row['cpu_time_seconds']) || 0,
+			walltime_seconds: parseFloat(row['walltime_seconds']) || 0,
+			cpu_percent_avg: parseFloat(row['cpu_percent_avg']) || null,
+			ram_bytes_allocated: parseInt(row['ram_bytes_allocated']) || 0,
+			ram_bytes_used: parseInt(row['ram_bytes_used']) || 0,
+			storage_bytes_allocated: parseInt(row['storage_bytes_allocated']) || null,
+			vcpus_allocated: parseInt(row['vcpus_allocated']) || null
+		};
+	}
+
+	/**
+	 * Find existing personal summary by identity matching.
+	 */
+	private async findPersonalSummaryByIdentity(
+		source: string,
+		timeWindowStart: Date,
+		perunUsername: string
+	): Promise<ResourceUsageSummary | null> {
+		return await this.summaryRepository
+			.createQueryBuilder('summary')
+			.where('summary.source = :source', { source })
+			.andWhere('summary.is_personal = :isPersonal', { isPersonal: true })
+			.andWhere('summary.time_window_start = :timeWindowStart', { timeWindowStart })
+			.andWhere(
+				`EXISTS (
+					SELECT 1 FROM jsonb_array_elements(summary.identities) AS identity
+					WHERE identity->>'scheme' = 'perun_username' AND identity->>'value' = :username
+				)`,
+				{ username: perunUsername }
+			)
+			.getOne();
+	}
+
+	/**
+	 * Upsert a personal summary (non-cumulative).
+	 * Uses identity matching to find existing summaries for this user.
+	 */
+	private async upsertPersonalSummary(
+		row: Record<string, any>,
+		timeWindowStart: Date,
+		timeWindowEnd: Date,
+		source: string
+	): Promise<void> {
+		const identities = row['identities'] || [];
+		const projectSlug = row['project_slug'];
+		const perunUsername = identities.find((id: any) => id.scheme === 'perun_username')?.value;
+
+		const metrics = this.extractMetricsFromRow(row);
+
+		// Find existing summary by identity
+		const existing = perunUsername
+			? await this.findPersonalSummaryByIdentity(source, timeWindowStart, perunUsername)
+			: null;
+
+		if (existing) {
+			await this.summaryRepository.update(existing.id, {
+				timeWindowEnd,
+				metrics,
+				eventCount: parseInt(row['event_count']) || 0,
+				identities,
+				updatedAt: new Date()
+			});
+		} else {
+			const summary = this.summaryRepository.create({
+				timeWindowStart,
+				timeWindowEnd,
+				source,
+				projectSlug,
+				isPersonal: true,
+				metrics,
+				eventCount: parseInt(row['event_count']) || 0,
+				identities
+			});
+
+			await this.summaryRepository.save(summary);
+		}
 	}
 
 	/**
