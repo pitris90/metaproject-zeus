@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ProjectUser } from 'resource-manager-database';
 import { ProjectNotFoundApiException } from '../../error-module/errors/projects/project-not-found.api-exception';
+import { ProjectPersonalMembersApiException } from '../../error-module/errors/projects/project-personal-members.api-exception';
 import { UserDto } from '../../users-module/dtos/user.dto';
 import { ProjectModel } from '../models/project.model';
 import { MemberRequestDto } from '../dtos/input/member-request.dto';
@@ -76,6 +77,15 @@ export class MemberService {
 		members: MemberRequestDto[],
 		isStepUp: boolean
 	): Promise<string[]> {
+		// Check if the project is personal before allowing member addition
+		const project = await this.projectModel.getProject(projectId);
+		if (!project) {
+			throw new ProjectNotFoundApiException();
+		}
+		if (project.isPersonal) {
+			throw new ProjectPersonalMembersApiException();
+		}
+
 		const usesManagerRole = members.some((member) => member.role === 'manager');
 		return await this.dataSource.transaction(async (manager) => {
 			await this.projectPermissionService.validateUserPermissions(
