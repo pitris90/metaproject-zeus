@@ -90,9 +90,17 @@ export class ResourceUsageSummaryService {
 				queryBuilder.andWhere('event.source = :source', { source });
 			}
 		}
-		// Filter by allocation/job - only for PBS jobs (OpenStack allocations are per-project)
-		if (allocationId && !allocationId.startsWith('openstack-')) {
-			queryBuilder.andWhere("event.context->>'jobname' = :allocationId", { allocationId });
+		// Filter by allocation/job
+		if (allocationId) {
+			if (allocationId.startsWith('openstack-instance-')) {
+				// OpenStack instance: filter by server UUID from extra.allocation_identifier
+				const serverUuid = allocationId.replace('openstack-instance-', '');
+				queryBuilder.andWhere("event.extra->>'allocation_identifier' = :serverUuid", { serverUuid });
+			} else if (!allocationId.startsWith('openstack-')) {
+				// PBS job: filter by jobname
+				queryBuilder.andWhere("event.context->>'jobname' = :allocationId", { allocationId });
+			}
+			// For openstack-project or openstack-personal, no additional filtering needed
 		}
 		queryBuilder.orderBy('event.time_window_start', 'ASC');
 		const events = await queryBuilder.getMany();
@@ -340,8 +348,7 @@ export class ResourceUsageSummaryService {
 					});
 				}
 			} else if (currentSource === 'openstack') {
-				// For OpenStack: Check if this project has any OpenStack events
-				// If yes, show a single "OpenStack Project" option (since 1 Zeus project = 1 OpenStack project)
+				// For OpenStack: Show project-level option and individual instances
 				const hasOpenstackEvents = await this.eventRepository
 					.createQueryBuilder('event')
 					.innerJoin('event.project', 'project')
@@ -350,7 +357,7 @@ export class ResourceUsageSummaryService {
 					.getCount();
 
 				if (hasOpenstackEvents > 0) {
-					// For personal projects
+					// Project-level option (shows aggregated data from summaries)
 					if (project.isPersonal) {
 						allocations.push({
 							id: 'openstack-personal',
@@ -358,12 +365,34 @@ export class ResourceUsageSummaryService {
 							source: 'openstack'
 						});
 					} else {
-						// For group projects - show the project name
 						allocations.push({
 							id: 'openstack-project',
 							label: `OpenStack: ${project.title}`,
 							source: 'openstack'
 						});
+					}
+
+					// Individual instances from raw events
+					const openstackInstances = await this.eventRepository
+						.createQueryBuilder('event')
+						.innerJoin('event.project', 'project')
+						.select("event.extra->>'allocation_identifier'", 'server_uuid')
+						.addSelect("event.context->'server'->>'name'", 'server_name')
+						.where('project.id = :projectId', { projectId })
+						.andWhere('event.source = :source', { source: 'openstack' })
+						.andWhere("event.extra->>'allocation_identifier' IS NOT NULL")
+						.groupBy("event.extra->>'allocation_identifier'")
+						.addGroupBy("event.context->'server'->>'name'")
+						.getRawMany<{ server_uuid: string; server_name: string }>();
+
+					for (const instance of openstackInstances) {
+						if (instance.server_uuid && instance.server_name) {
+							allocations.push({
+								id: `openstack-instance-${instance.server_uuid}`,
+								label: `OpenStack Instance: ${instance.server_name}`,
+								source: 'openstack'
+							});
+						}
 					}
 				}
 			}
