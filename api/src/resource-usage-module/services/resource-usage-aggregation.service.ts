@@ -595,7 +595,8 @@ export class ResourceUsageAggregationService {
 		}
 
 		if (endDate) {
-			queryBuilder.andWhere('event.time_window_end <= :endDate', { endDate });
+			// Use time_window_start for filtering (events may span to next day)
+			queryBuilder.andWhere('event.time_window_start <= :endDate', { endDate });
 		}
 
 		const events = await queryBuilder.orderBy('event.time_window_start', 'ASC').getMany();
