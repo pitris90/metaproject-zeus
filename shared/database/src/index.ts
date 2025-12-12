@@ -23,7 +23,7 @@ import { AllocationUser } from './models/allocation/allocation-user';
 import { GroupFailedStage } from './models/project/group-failed-stage';
 import { AllocationOpenstackRequest, AllocationOpenstackPayload } from './models/allocation/allocation-openstack-request';
 import { ResourceUsageEvent } from './models/resource-usage/resource-usage-event';
-import { ResourceUsageSummary, ResourceUsageSummaryMetrics } from './models/resource-usage/resource-usage-summary';
+import { ResourceUsageSummary, ResourceUsageSummaryMetrics, OpenstackInstanceMetrics, ResourceUsageSummaryExtra } from './models/resource-usage/resource-usage-summary';
 
 export { TypeormConfigService };
 export { AttributeType };
@@ -36,4 +36,4 @@ export { Publication, PublicationSource, ProjectPublication }
 export { AllocationStatus, OpenstackRequestStatus, Allocation, AllocationUser, AllocationOpenstackRequest }
 export { GroupFailedStage }
 export { ResourceUsageEvent, ResourceUsageSummary }
-export type { AllocationOpenstackPayload, ResourceUsageSummaryMetrics }
+export type { AllocationOpenstackPayload, ResourceUsageSummaryMetrics, OpenstackInstanceMetrics, ResourceUsageSummaryExtra }

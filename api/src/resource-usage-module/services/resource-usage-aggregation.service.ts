@@ -1,7 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { ResourceUsageEvent, ResourceUsageSummary, ResourceUsageSummaryMetrics } from 'resource-manager-database';
+import {
+	ResourceUsageEvent,
+	ResourceUsageSummary,
+	ResourceUsageSummaryMetrics,
+	OpenstackInstanceMetrics,
+	ResourceUsageSummaryExtra
+} from 'resource-manager-database';
 import { ResourceUsageProjectMapperService } from './resource-usage-project-mapper.service';
 
 @Injectable()
@@ -31,14 +37,31 @@ export class ResourceUsageAggregationService {
 	async aggregateDailySummaries(startDate?: Date, endDate?: Date): Promise<void> {
 		this.logger.log('Starting daily aggregation...');
 
-		// First, handle personal pbsAcct events separately (per-user aggregation with cumulative logic)
+		// 1. Personal PBS events (per-user, cumulative)
 		await this.aggregatePersonalPbsAcctEvents(startDate, endDate);
 
-		// Also handle personal pbs events separately (per-user aggregation, non-cumulative)
+		// 2. Personal PBS events (per-user, non-cumulative)
 		await this.aggregatePersonalPbsEvents(startDate, endDate);
 
-		// Build date filter - aggregate by day and project_slug + source
-		// Exclude personal pbsAcct events (they are handled separately above)
+		// 3. OpenStack events (per-instance cumulative)
+		await this.aggregateOpenstackEvents(startDate, endDate);
+
+		// 4. General events (everything else: group PBS, other sources)
+		await this.aggregateGeneralEvents(startDate, endDate);
+
+		this.logger.log('Daily aggregation completed');
+
+		// Map project_id for summaries that were just created/updated
+		await this.mapProjectIdsToSummaries(startDate, endDate);
+	}
+
+	/**
+	 * Aggregate general events (group PBS, and any other non-specialized sources).
+	 * Excludes: personal PBS/pbsAcct (handled per-user) and OpenStack (handled per-instance).
+	 */
+	private async aggregateGeneralEvents(startDate?: Date, endDate?: Date): Promise<void> {
+		this.logger.log('Aggregating general events (group PBS and other sources)...');
+
 		const queryBuilder = this.eventRepository
 			.createQueryBuilder('event')
 			.select('DATE(event.time_window_start)', 'summary_date')
@@ -56,8 +79,10 @@ export class ResourceUsageAggregationService {
 			.addSelect('COUNT(*)', 'event_count')
 			.addSelect('(array_agg(event.identities))[1]', 'identities')
 			.where('event.project_slug IS NOT NULL')
-			// Exclude personal pbs/pbsAcct events - they are handled separately per-user
+			// Exclude personal pbs/pbsAcct - handled by aggregatePersonalEvents
 			.andWhere("NOT (event.source IN ('pbs', 'pbsAcct') AND event.is_personal = true)")
+			// Exclude openstack - handled by aggregateOpenstackEvents
+			.andWhere("event.source != 'openstack'")
 			.groupBy('DATE(event.time_window_start)')
 			.addGroupBy('event.source')
 			.addGroupBy('event.project_slug')
@@ -73,11 +98,9 @@ export class ResourceUsageAggregationService {
 
 		const aggregatedData = await queryBuilder.getRawMany();
 
-		this.logger.log(`Found ${aggregatedData.length} daily aggregations to process`);
+		this.logger.log(`Found ${aggregatedData.length} general aggregations to process`);
 
-		// Upsert aggregated data
 		for (const row of aggregatedData) {
-			// Convert summary_date to time window (start and end of that day)
 			const summaryDate = new Date(row.summary_date);
 			const timeWindowStart = new Date(summaryDate);
 			timeWindowStart.setHours(0, 0, 0, 0);
@@ -90,7 +113,7 @@ export class ResourceUsageAggregationService {
 				continue;
 			}
 
-			// Build unique key for upsert (project_slug + source + timeWindowStart + isPersonal)
+			// Standard upsert for other sources
 			const whereClause: Record<string, unknown> = {
 				timeWindowStart,
 				source: row.source,
@@ -102,40 +125,24 @@ export class ResourceUsageAggregationService {
 				where: whereClause
 			});
 
+			const metrics = this.extractMetricsFromRow(row);
+
 			if (existing) {
-				// Update existing
 				await this.summaryRepository.update(existing.id, {
 					timeWindowEnd,
-					metrics: {
-						cpu_time_seconds: parseFloat(row.cpu_time_seconds) || 0,
-						walltime_seconds: parseFloat(row.walltime_seconds) || 0,
-						cpu_percent_avg: parseFloat(row.cpu_percent_avg) || null,
-						ram_bytes_allocated: parseInt(row.ram_bytes_allocated) || 0,
-						ram_bytes_used: parseInt(row.ram_bytes_used) || 0,
-						storage_bytes_allocated: parseInt(row.storage_bytes_allocated) || null,
-						vcpus_allocated: parseInt(row.vcpus_allocated) || null
-					},
+					metrics,
 					eventCount: parseInt(row.event_count) || 0,
 					identities: row.identities,
 					updatedAt: new Date()
 				});
 			} else {
-				// Create new
 				const summary = this.summaryRepository.create({
 					timeWindowStart,
 					timeWindowEnd,
 					source: row.source,
 					projectSlug: row.project_slug,
 					isPersonal: row.is_personal || false,
-					metrics: {
-						cpu_time_seconds: parseFloat(row.cpu_time_seconds) || 0,
-						walltime_seconds: parseFloat(row.walltime_seconds) || 0,
-						cpu_percent_avg: parseFloat(row.cpu_percent_avg) || null,
-						ram_bytes_allocated: parseInt(row.ram_bytes_allocated) || 0,
-						ram_bytes_used: parseInt(row.ram_bytes_used) || 0,
-						storage_bytes_allocated: parseInt(row.storage_bytes_allocated) || null,
-						vcpus_allocated: parseInt(row.vcpus_allocated) || null
-					},
+					metrics,
 					eventCount: parseInt(row.event_count) || 0,
 					identities: row.identities
 				});
@@ -144,10 +151,7 @@ export class ResourceUsageAggregationService {
 			}
 		}
 
-		this.logger.log('Daily aggregation completed');
-
-		// Map project_id for summaries that were just created/updated
-		await this.mapProjectIdsToSummaries(startDate, endDate);
+		this.logger.log('General events aggregation completed');
 	}
 
 	/**
@@ -259,13 +263,24 @@ export class ResourceUsageAggregationService {
 	}
 
 	/**
-	 * Find existing personal summary by identity matching.
+	 * Find existing summary by identity matching (supports multiple schemes).
+	 * Uses extractPrimaryUserIdentity to find the best identity for matching.
 	 */
-	private async findPersonalSummaryByIdentity(
+	private async findSummaryByIdentity(
 		source: string,
 		timeWindowStart: Date,
-		perunUsername: string
+		isPersonal: boolean,
+		identities: Array<{ scheme: string; value: string; authority?: string }>
 	): Promise<ResourceUsageSummary | null> {
+		if (!isPersonal) {
+			return null; // Group projects don't use identity matching
+		}
+
+		const userIdentity = this.extractPrimaryUserIdentity(identities);
+		if (!userIdentity) {
+			return null;
+		}
+
 		return await this.summaryRepository
 			.createQueryBuilder('summary')
 			.where('summary.source = :source', { source })
@@ -274,9 +289,9 @@ export class ResourceUsageAggregationService {
 			.andWhere(
 				`EXISTS (
 					SELECT 1 FROM jsonb_array_elements(summary.identities) AS identity
-					WHERE identity->>'scheme' = 'perun_username' AND identity->>'value' = :username
+					WHERE identity->>'scheme' = :scheme AND identity->>'value' = :value
 				)`,
-				{ username: perunUsername }
+				{ scheme: userIdentity.scheme, value: userIdentity.value }
 			)
 			.getOne();
 	}
@@ -293,14 +308,10 @@ export class ResourceUsageAggregationService {
 	): Promise<void> {
 		const identities = row['identities'] || [];
 		const projectSlug = row['project_slug'];
-		const perunUsername = identities.find((id: any) => id.scheme === 'perun_username')?.value;
-
 		const metrics = this.extractMetricsFromRow(row);
 
-		// Find existing summary by identity
-		const existing = perunUsername
-			? await this.findPersonalSummaryByIdentity(source, timeWindowStart, perunUsername)
-			: null;
+		// Find existing summary by identity (supports multiple schemes)
+		const existing = await this.findSummaryByIdentity(source, timeWindowStart, true, identities);
 
 		if (existing) {
 			await this.summaryRepository.update(existing.id, {
@@ -343,18 +354,11 @@ export class ResourceUsageAggregationService {
 		const identities = row['identities'] || [];
 
 		// Current day's metrics from events
-		const currentMetrics: ResourceUsageSummaryMetrics = {
-			cpu_time_seconds: parseFloat(row['cpu_time_seconds']) || 0,
-			walltime_seconds: parseFloat(row['walltime_seconds']) || 0,
-			cpu_percent_avg: parseFloat(row['cpu_percent_avg']) || null,
-			ram_bytes_allocated: parseInt(row['ram_bytes_allocated']) || 0,
-			ram_bytes_used: parseInt(row['ram_bytes_used']) || 0,
-			storage_bytes_allocated: parseInt(row['storage_bytes_allocated']) || null,
-			vcpus_allocated: parseInt(row['vcpus_allocated']) || null
-		};
+		const currentMetrics = this.extractMetricsFromRow(row);
 
 		// Find previous summary to accumulate from
-		const previousSummary = await this.findPreviousPbsAcctSummary(
+		const previousSummary = await this.findPreviousSummary(
+			'pbsAcct',
 			timeWindowStart,
 			projectSlug,
 			isPersonal,
@@ -380,27 +384,12 @@ export class ResourceUsageAggregationService {
 		}
 
 		// Check if summary already exists for this day
-		// For personal projects, we need to match by identity (perun_username) too
+		// For personal projects, use identity matching; for group projects, use project_slug
 		let existing: ResourceUsageSummary | null = null;
 
 		if (isPersonal) {
-			// Personal project: match by identity
-			const perunUsername = identities.find((id) => id.scheme === 'perun_username')?.value;
-			if (perunUsername) {
-				existing = await this.summaryRepository
-					.createQueryBuilder('summary')
-					.where('summary.source = :source', { source: 'pbsAcct' })
-					.andWhere('summary.is_personal = :isPersonal', { isPersonal: true })
-					.andWhere('summary.time_window_start = :timeWindowStart', { timeWindowStart })
-					.andWhere(
-						`EXISTS (
-							SELECT 1 FROM jsonb_array_elements(summary.identities) AS identity
-							WHERE identity->>'scheme' = 'perun_username' AND identity->>'value' = :username
-						)`,
-						{ username: perunUsername }
-					)
-					.getOne();
-			}
+			// Personal project: match by identity (supports multiple schemes)
+			existing = await this.findSummaryByIdentity('pbsAcct', timeWindowStart, true, identities);
 		} else {
 			// Group project: match by project_slug
 			existing = await this.summaryRepository.findOne({
@@ -440,22 +429,30 @@ export class ResourceUsageAggregationService {
 	}
 
 	/**
-	 * Find the most recent previous pbsAcct summary for cumulative aggregation.
+	 * Find the most recent previous summary for cumulative aggregation.
+	 * Works for any source (pbsAcct, openstack, etc.).
 	 *
-	 * For group projects (isPersonal=false): matches by project_slug
-	 * For personal projects (isPersonal=true): matches by user identity (perun_username)
+	 * For group projects (isPersonal=false): matches by project_slug + source
+	 * For personal projects (isPersonal=true): matches by user identity (perun_username) + source
+	 *
+	 * @param source - The source type (e.g., 'pbsAcct', 'openstack')
+	 * @param currentTimeWindowStart - Find summaries before this date
+	 * @param projectSlug - Project slug to match
+	 * @param isPersonal - Whether this is a personal project
+	 * @param identities - User identities (required for personal project matching)
 	 */
-	private async findPreviousPbsAcctSummary(
+	private async findPreviousSummary(
+		source: string,
 		currentTimeWindowStart: Date,
 		projectSlug: string,
 		isPersonal: boolean,
-		identities: Array<{ scheme: string; value: string; authority?: string }>
+		identities?: Array<{ scheme: string; value: string; authority?: string }>
 	): Promise<ResourceUsageSummary | null> {
 		if (!isPersonal) {
-			// Group project: match by project_slug
+			// Group project: match by project_slug + source
 			return await this.summaryRepository.findOne({
 				where: {
-					source: 'pbsAcct',
+					source,
 					projectSlug,
 					isPersonal: false,
 					timeWindowStart: LessThan(currentTimeWindowStart)
@@ -466,32 +463,68 @@ export class ResourceUsageAggregationService {
 			});
 		}
 
-		// Personal project: match by user identity (perun_username)
-		const perunUsername = identities.find((id) => id.scheme === 'perun_username')?.value;
+		// Personal project: find a suitable user identity to match on
+		const userIdentity = this.extractPrimaryUserIdentity(identities);
 
-		if (!perunUsername) {
-			this.logger.warn(`No perun_username found for personal pbsAcct summary, cannot find previous summary`);
+		if (!userIdentity) {
+			this.logger.warn(`No user identity found for personal ${source} summary, cannot find previous summary`);
 			return null;
 		}
 
-		// Query using JSONB to match identity
+		// Query using JSONB to match identity - uses the same scheme to ensure consistency
 		const result = await this.summaryRepository
 			.createQueryBuilder('summary')
-			.where('summary.source = :source', { source: 'pbsAcct' })
+			.where('summary.source = :source', { source })
 			.andWhere('summary.is_personal = :isPersonal', { isPersonal: true })
 			.andWhere('summary.time_window_start < :currentTime', { currentTime: currentTimeWindowStart })
 			.andWhere(
 				`EXISTS (
 					SELECT 1 FROM jsonb_array_elements(summary.identities) AS identity
-					WHERE identity->>'scheme' = 'perun_username' AND identity->>'value' = :username
+					WHERE identity->>'scheme' = :scheme AND identity->>'value' = :value
 				)`,
-				{ username: perunUsername }
+				{ scheme: userIdentity.scheme, value: userIdentity.value }
 			)
 			.orderBy('summary.time_window_start', 'DESC')
 			.limit(1)
 			.getOne();
 
 		return result;
+	}
+
+	/**
+	 * Priority order for user identity schemes.
+	 * More specific/reliable schemes come first.
+	 */
+	private static readonly USER_IDENTITY_SCHEMES = [
+		'perun_username', // PBS: unique MetaCentrum username
+		'oidc_sub', // OpenStack: OIDC subject identifier
+		'user_email' // Fallback: email address
+	];
+
+	/**
+	 * Extract the primary user identity from a list of identities.
+	 * Tries schemes in priority order to find the best match.
+	 *
+	 * @param identities - Array of identity objects
+	 * @returns The first matching identity or null if none found
+	 */
+	private extractPrimaryUserIdentity(
+		identities?: Array<{ scheme: string; value: string; authority?: string }>
+	): { scheme: string; value: string } | null {
+		if (!identities || identities.length === 0) {
+			return null;
+		}
+
+		// Try each scheme in priority order
+		for (const scheme of ResourceUsageAggregationService.USER_IDENTITY_SCHEMES) {
+			const identity = identities.find((id) => id.scheme === scheme);
+			if (identity) {
+				return { scheme: identity.scheme, value: identity.value };
+			}
+		}
+
+		// If no known scheme, return the first identity as fallback
+		return { scheme: identities[0].scheme, value: identities[0].value };
 	}
 
 	/**
@@ -535,6 +568,208 @@ export class ResourceUsageAggregationService {
 		const maxDate = new Date(Math.max(...events.map((e) => e.time_window_start.getTime())));
 
 		await this.aggregateDailySummaries(minDate, maxDate);
+	}
+
+	/**
+	 * Aggregate OpenStack events with per-instance cumulative tracking.
+	 *
+	 * OpenStack events come per-server (one event per VM instance).
+	 * This method:
+	 * 1. Groups events by project_slug + date
+	 * 2. For each project+date, loads the previous summary's instance dictionary
+	 * 3. Updates the instance dictionary with current events (preserving deleted instances)
+	 * 4. Calculates totals by summing all instances
+	 * 5. Upserts the summary with the new instance dictionary and totals
+	 */
+	private async aggregateOpenstackEvents(startDate?: Date, endDate?: Date): Promise<void> {
+		this.logger.log('Aggregating OpenStack events with per-instance tracking...');
+
+		// Query OpenStack events - they come per-server, not pre-aggregated
+		const queryBuilder = this.eventRepository
+			.createQueryBuilder('event')
+			.where('event.source = :source', { source: 'openstack' })
+			.andWhere('event.project_slug IS NOT NULL');
+
+		if (startDate) {
+			queryBuilder.andWhere('event.time_window_start >= :startDate', { startDate });
+		}
+
+		if (endDate) {
+			queryBuilder.andWhere('event.time_window_end <= :endDate', { endDate });
+		}
+
+		const events = await queryBuilder.orderBy('event.time_window_start', 'ASC').getMany();
+
+		if (events.length === 0) {
+			this.logger.log('No OpenStack events to aggregate');
+			return;
+		}
+
+		this.logger.log(`Found ${events.length} OpenStack per-server events to aggregate`);
+
+		// Group events by project_slug + date
+		const eventsByProjectDate = new Map<
+			string,
+			{
+				projectSlug: string;
+				isPersonal: boolean;
+				date: Date;
+				events: ResourceUsageEvent[];
+			}
+		>();
+
+		for (const event of events) {
+			const dateKey = event.time_window_start.toISOString().split('T')[0]; // YYYY-MM-DD
+			const key = `${event.projectSlug}:${dateKey}`;
+
+			if (!eventsByProjectDate.has(key)) {
+				const date = new Date(event.time_window_start);
+				date.setHours(0, 0, 0, 0);
+				eventsByProjectDate.set(key, {
+					projectSlug: event.projectSlug!,
+					isPersonal: event.isPersonal,
+					date,
+					events: []
+				});
+			}
+			eventsByProjectDate.get(key)!.events.push(event);
+		}
+
+		this.logger.log(`Processing ${eventsByProjectDate.size} project-date combinations`);
+
+		// Process each project-date combination
+		for (const [, group] of eventsByProjectDate) {
+			await this.aggregateOpenstackProjectDay(group.projectSlug, group.isPersonal, group.date, group.events);
+		}
+
+		this.logger.log('OpenStack per-instance aggregation completed');
+	}
+
+	/**
+	 * Aggregate OpenStack events for a single project on a single day.
+	 * Builds/updates the per-instance dictionary and calculates totals.
+	 */
+	private async aggregateOpenstackProjectDay(
+		projectSlug: string,
+		isPersonal: boolean,
+		date: Date,
+		events: ResourceUsageEvent[]
+	): Promise<void> {
+		const timeWindowStart = new Date(date);
+		timeWindowStart.setHours(0, 0, 0, 0);
+		const timeWindowEnd = new Date(date);
+		timeWindowEnd.setHours(23, 59, 59, 999);
+
+		// Find previous summary to get existing instance dictionary
+		const previousSummary = await this.findPreviousSummary('openstack', timeWindowStart, projectSlug, isPersonal);
+
+		// Start with previous instance dictionary or empty
+		const instanceDict: Record<string, OpenstackInstanceMetrics> = previousSummary?.extra?.instances
+			? { ...previousSummary.extra.instances }
+			: {};
+
+		// Get identities from the first event (all events for same project should have same identities)
+		const identities = events[0]?.identities || [];
+
+		// Update instance dictionary with current events
+		for (const event of events) {
+			// Get server UUID from the extra.allocation_identifier field
+			const serverUuid = (event.extra as Record<string, unknown>)?.['allocation_identifier'] as string;
+			if (!serverUuid) {
+				this.logger.warn(`OpenStack event ${event.id} missing allocation_identifier, skipping`);
+				continue;
+			}
+
+			// Update instance metrics (replace with current values, not cumulative per-instance)
+			instanceDict[serverUuid] = {
+				cpu_time_seconds: event.metrics.cpu_time_seconds || 0,
+				ram_bytes_allocated: event.metrics.ram_bytes_allocated || 0,
+				ram_bytes_used: event.metrics.ram_bytes_used || 0,
+				storage_bytes_allocated: event.metrics.storage_bytes_allocated || 0,
+				vcpus_allocated: event.metrics.vcpus_allocated || 0,
+				used_cpu_percent: event.metrics.used_cpu_percent || null,
+				last_seen: new Date().toISOString()
+			};
+		}
+
+		// Calculate totals by summing all instances
+		const totals = this.calculateTotalsFromInstances(instanceDict);
+
+		// Build extra object with instance dictionary
+		const extra: ResourceUsageSummaryExtra = {
+			instances: instanceDict
+		};
+
+		// Find or create today's summary
+		const existingSummary = await this.summaryRepository.findOne({
+			where: {
+				source: 'openstack',
+				projectSlug,
+				isPersonal,
+				timeWindowStart
+			}
+		});
+
+		if (existingSummary) {
+			await this.summaryRepository.update(existingSummary.id, {
+				timeWindowEnd,
+				metrics: totals,
+				extra,
+				eventCount: events.length,
+				identities,
+				updatedAt: new Date()
+			});
+		} else {
+			const summary = this.summaryRepository.create({
+				timeWindowStart,
+				timeWindowEnd,
+				source: 'openstack',
+				projectSlug,
+				isPersonal,
+				metrics: totals,
+				extra,
+				eventCount: events.length,
+				identities
+			});
+			await this.summaryRepository.save(summary);
+		}
+	}
+
+	/**
+	 * Calculate total metrics by summing all instances in the dictionary.
+	 */
+	private calculateTotalsFromInstances(
+		instances: Record<string, OpenstackInstanceMetrics>
+	): ResourceUsageSummaryMetrics {
+		let totalCpuTime = 0;
+		let totalRamAllocated = 0;
+		let totalRamUsed = 0;
+		let totalStorageAllocated = 0;
+		let totalVcpus = 0;
+		let cpuPercentSum = 0;
+		let cpuPercentCount = 0;
+
+		for (const instance of Object.values(instances)) {
+			totalCpuTime += instance.cpu_time_seconds || 0;
+			totalRamAllocated += instance.ram_bytes_allocated || 0;
+			totalRamUsed += instance.ram_bytes_used || 0;
+			totalStorageAllocated += instance.storage_bytes_allocated || 0;
+			totalVcpus += instance.vcpus_allocated || 0;
+			if (instance.used_cpu_percent != null) {
+				cpuPercentSum += instance.used_cpu_percent;
+				cpuPercentCount++;
+			}
+		}
+
+		return {
+			cpu_time_seconds: totalCpuTime,
+			walltime_seconds: 0, // OpenStack doesn't track walltime
+			cpu_percent_avg: cpuPercentCount > 0 ? cpuPercentSum / cpuPercentCount : null,
+			ram_bytes_allocated: totalRamAllocated,
+			ram_bytes_used: totalRamUsed,
+			storage_bytes_allocated: totalStorageAllocated || null,
+			vcpus_allocated: totalVcpus || null
+		};
 	}
 
 	/**

@@ -2,6 +2,30 @@ import { Entity, Column, PrimaryGeneratedColumn, Index, ManyToOne, JoinColumn } 
 import { Project } from '../project/project';
 
 /**
+ * Per-instance metrics for OpenStack cumulative tracking.
+ * Stored in the extra.instances dictionary keyed by server UUID.
+ */
+export interface OpenstackInstanceMetrics {
+	cpu_time_seconds: number;
+	ram_bytes_allocated: number;
+	ram_bytes_used: number;
+	storage_bytes_allocated: number;
+	vcpus_allocated: number;
+	used_cpu_percent?: number | null;
+	/** ISO timestamp when this instance was last reported by the collector */
+	last_seen: string;
+}
+
+/**
+ * Type for the extra JSONB column content.
+ * For OpenStack: stores per-instance metrics dictionary for cumulative tracking.
+ */
+export interface ResourceUsageSummaryExtra {
+	/** Per-instance metrics keyed by server UUID (OpenStack only) */
+	instances?: Record<string, OpenstackInstanceMetrics>;
+}
+
+/**
  * Interface for the JSONB metrics object in ResourceUsageSummary.
  * Matches the structure used in ResourceUsageEvent.metrics for consistency.
  */
@@ -59,6 +83,13 @@ export class ResourceUsageSummary {
 		value: string;
 		authority?: string;
 	}[];
+
+	/**
+	 * Extra data for source-specific tracking.
+	 * For OpenStack: stores per-instance metrics dictionary for cumulative tracking.
+	 */
+	@Column({ type: 'jsonb', nullable: true })
+	extra: ResourceUsageSummaryExtra | null;
 
 	@Column({ type: 'timestamptz', nullable: false, name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
 	createdAt: Date;
