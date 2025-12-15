@@ -20,10 +20,28 @@ MetaProject Zeus is project implemented as part of a master thesis for FI MUNI. 
 
 ## Run Locally
 
-1. Clone project and navigate to the project directory.
-1. Copy variables from `.env.example` to `.env`
-1. Change variables accordingly (see section `Environment Variables`)
-1. Make sure openstack-external submodule's origin is using https instead of ssh
+1. Clone the project:
+   ```bash
+   git clone <repository-url>
+   cd metaproject-zeus
+   ```
+
+2. Initialize and update submodules:
+
+   **For Unix-based systems (Linux, macOS) or WSL:**
+   ```bash
+   ./update_submodules.sh
+   ```
+
+   **For Windows (without WSL) or manual setup:**
+   ```bash
+   git submodule update --init --recursive
+   git submodule foreach 'git checkout main || git checkout master; git pull'
+   ```
+
+3. Copy variables from `.env.example` to `.env`
+4. Change variables accordingly (see section `Environment Variables`)
+5. Make sure openstack-external submodule's origin is using https instead of ssh
 
 If you are using UNIX-based system or you are using WSL (and have access to bash), you can run following helper script:
 
