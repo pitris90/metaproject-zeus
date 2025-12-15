@@ -1,9 +1,12 @@
 [submodule "api/src/openstack-module/openstack-external"]
 	path = api/src/openstack-module/openstack-external
 	url = https://gitlab.ics.muni.cz/cloud/g2/prod-brno-cloud-entities-zeus.git
+	branch = master
 [submodule "gui"]
 	path = gui
 	url = git@github.com:pitris90/metaproject-zeus-gui.git
+	branch = master
 [submodule "collector"]
 	path = collector
 	url = git@github.com:pitris90/metaproject-zeus-collector.git
+	branch = main
