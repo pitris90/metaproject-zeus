@@ -131,10 +131,10 @@ OPENSTACK_GIT_TARGET_BRANCH=master
 OPENSTACK_GIT_AUTHOR_NAME=Zeus Bot
 OPENSTACK_GIT_AUTHOR_EMAIL=zeus@example.com
 OPENSTACK_GITLAB_PROJECT_ID=123
-OPENSTACK_GITLAB_HOST=https://gitlab.example.com
+OPENSTACK_GITLAB_HOST=https://gitlab.ics.muni.cz/
 OPENSTACK_GITLAB_TOKEN=gitlab-token
 ```
-Configuration for OpenStack allocation requests via GitOps workflow. `OPENSTACK_REPO_PATH` points to the external submodule containing OpenStack definitions. GitLab project access token must have permissions to create merge requests on the target project. Configuration for particular OpenStack repository must be obtained from OpenStack administrator in Metacentrum, and after you will have access to the repository, you will need to generate and set `OPENSTACK_GITLAB_TOKEN` to generated project access token for given repository.
+Configuration for OpenStack allocation requests via GitOps workflow. `OPENSTACK_REPO_PATH` points to the external submodule containing OpenStack definitions. GitLab project access token must have permissions to create merge requests on the target project. Configuration for particular OpenStack repository must be obtained from OpenStack administrator in Metacentrum - particulary access to the project repository of OpenStack (test Zeus repo or production repo), and after you will have access to the repository, you will need to generate and set `OPENSTACK_GITLAB_TOKEN` to generated project access token for given repository.
 
 ### Collector Integration
 
